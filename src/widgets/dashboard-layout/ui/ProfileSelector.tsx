@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
-import { ChevronDown, Plus, X, Check } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ChevronDown, Plus, Check } from "lucide-react";
+import { CHILD_PROFILES_STORAGE_KEY } from "@/shared/api/dashboardMockData";
 
 // ─── Types ───────────────────────────────────────────────────
 interface ChildProfile {
@@ -29,12 +31,19 @@ const INITIAL_PROFILES: ChildProfile[] = [
   },
 ];
 
-// ─── Avatar options for new profile ──────────────────────────
-const AVATAR_OPTIONS = [
-  { emoji: "🐻", bg: "#a78bfa", label: "Gấu tím" },
-  { emoji: "🐶", bg: "#34d399", label: "Cún xanh" },
-  { emoji: "🐸", bg: "#f59e0b", label: "Ếch vàng" },
-];
+// ─── Helpers ──────────────────────────────────────────────────
+function loadProfilesFromStorage(fallback: ChildProfile[]): ChildProfile[] {
+  try {
+    const raw = localStorage.getItem(CHILD_PROFILES_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as ChildProfile[];
+      if (parsed.length > 0) return parsed;
+    }
+  } catch {
+    // ignore
+  }
+  return fallback;
+}
 
 // ─── Avatar bubble ────────────────────────────────────────────
 function AvatarBubble({
@@ -61,145 +70,30 @@ function AvatarBubble({
   );
 }
 
-// ─── Add Profile Modal ───────────────────────────────────────
-function AddProfileModal({
-  onClose,
-  onSave,
-}: {
-  onClose: () => void;
-  onSave: (profile: Omit<ChildProfile, "id">) => void;
-}) {
-  const [name, setName] = useState("");
-  const [selectedAvatar, setSelectedAvatar] = useState(0);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    // auto-focus input when modal opens
-    setTimeout(() => inputRef.current?.focus(), 80);
-  }, []);
-
-  const handleSave = () => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    onSave({
-      name: trimmed,
-      grade: "Lớp 2",
-      avatarEmoji: AVATAR_OPTIONS[selectedAvatar].emoji,
-      avatarBg: AVATAR_OPTIONS[selectedAvatar].bg,
-    });
-    onClose();
-  };
-
-  return (
-    /* Backdrop */
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ backgroundColor: "rgba(0,0,0,0.45)" }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      {/* Modal card */}
-      <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-6 animate-fade-in-up">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="text-base font-extrabold text-gray-800">
-            Thêm hồ sơ bé
-          </h3>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
-          >
-            <X size={16} />
-          </button>
-        </div>
-
-        {/* Name input */}
-        <div className="mb-4">
-          <label className="block text-xs font-bold text-gray-600 mb-1.5">
-            Tên của bé
-          </label>
-          <input
-            ref={inputRef}
-            type="text"
-            placeholder="VD: Bé Na, Bé Bin..."
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSave()}
-            className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm text-gray-800 font-semibold outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition placeholder:font-normal placeholder:text-gray-300"
-          />
-        </div>
-
-        {/* Programme info (fixed grade 2) */}
-        <div className="flex items-center gap-2 mb-5 px-3.5 py-2.5 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-          <span className="text-base">📚</span>
-          <p className="text-xs text-gray-400 font-medium">
-            Chương trình:{" "}
-            <span className="text-gray-600 font-semibold">
-              Toán Học Lớp 2 (Mặc định)
-            </span>
-          </p>
-        </div>
-
-        {/* Avatar picker */}
-        <div className="mb-6">
-          <p className="text-xs font-bold text-gray-600 mb-3">
-            Chọn avatar cho bé
-          </p>
-          <div className="flex items-center justify-center gap-4">
-            {AVATAR_OPTIONS.map((av, i) => (
-              <button
-                key={av.label}
-                onClick={() => setSelectedAvatar(i)}
-                className={`relative flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all duration-200 ${
-                  selectedAvatar === i
-                    ? "border-blue-500 bg-blue-50 scale-105 shadow-md"
-                    : "border-gray-100 hover:border-gray-300 hover:bg-gray-50"
-                }`}
-              >
-                <AvatarBubble emoji={av.emoji} bg={av.bg} size="lg" />
-                <span className="text-[11px] font-semibold text-gray-500">
-                  {av.label}
-                </span>
-                {selectedAvatar === i && (
-                  <span className="absolute -top-2 -right-2 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                    <Check size={11} className="text-white" strokeWidth={3} />
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Save button */}
-        <button
-          onClick={handleSave}
-          disabled={!name.trim()}
-          className="w-full py-3.5 rounded-2xl text-sm font-extrabold text-white transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
-          style={{
-            background: name.trim()
-              ? "linear-gradient(135deg, #3b82f6, #2563eb)"
-              : "#e5e7eb",
-            color: name.trim() ? "white" : "#9ca3af",
-            boxShadow: name.trim()
-              ? "0 4px 14px rgba(59,130,246,0.35)"
-              : "none",
-          }}
-        >
-          Lưu hồ sơ
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // ─── ProfileSelector (main export) ───────────────────────────
 export function ProfileSelector() {
-  const [profiles, setProfiles] = useState<ChildProfile[]>(INITIAL_PROFILES);
-  const [activeId, setActiveId] = useState(INITIAL_PROFILES[0].id);
+  const navigate = useNavigate();
+  const [profiles, setProfiles] = useState<ChildProfile[]>(() =>
+    loadProfilesFromStorage(INITIAL_PROFILES),
+  );
+  const [activeId, setActiveId] = useState(() => {
+    const loaded = loadProfilesFromStorage(INITIAL_PROFILES);
+    return loaded[0].id;
+  });
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const activeProfile = profiles.find((p) => p.id === activeId) ?? profiles[0];
+
+  // Re-read localStorage when window regains focus (after returning from /add-child)
+  useEffect(() => {
+    const onFocus = () => {
+      const refreshed = loadProfilesFromStorage(INITIAL_PROFILES);
+      setProfiles(refreshed);
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -215,15 +109,6 @@ export function ProfileSelector() {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [dropdownOpen]);
-
-  const handleAddProfile = (data: Omit<ChildProfile, "id">) => {
-    const newProfile: ChildProfile = {
-      ...data,
-      id: `child-${Date.now()}`,
-    };
-    setProfiles((prev) => [...prev, newProfile]);
-    setActiveId(newProfile.id);
-  };
 
   return (
     <div ref={dropdownRef} className="relative mx-4 mt-4 mb-2">
@@ -301,24 +186,20 @@ export function ProfileSelector() {
           <button
             onClick={() => {
               setDropdownOpen(false);
-              setModalOpen(true);
+              navigate("/add-child");
             }}
-            className="w-full flex items-center gap-2 px-3 py-3 text-blue-600 hover:bg-blue-50 transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-3 hover:bg-orange-50 transition-colors"
+            style={{ color: "var(--brand-primary)" }}
           >
-            <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-              <Plus size={14} className="text-blue-600" />
+            <div
+              className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+              style={{ backgroundColor: "#fff7ed" }}
+            >
+              <Plus size={14} style={{ color: "var(--brand-primary)" }} />
             </div>
             <span className="text-xs font-bold">Thêm hồ sơ bé</span>
           </button>
         </div>
-      )}
-
-      {/* Add Profile Modal */}
-      {modalOpen && (
-        <AddProfileModal
-          onClose={() => setModalOpen(false)}
-          onSave={handleAddProfile}
-        />
       )}
     </div>
   );

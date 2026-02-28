@@ -7,8 +7,10 @@ import {
   ProgressPage,
   HistoryPage,
   SubscriptionPage,
+  ProfilePage,
 } from "@/pages/dashboard";
 import { LearningMapPage, InteractiveMathSpacePage } from "@/pages/student";
+import { AddChildPage } from "@/pages/add-child";
 import { ParentDashboardLayout } from "@/widgets/dashboard-layout";
 import { StudentLayout } from "@/widgets/student-layout";
 
@@ -18,6 +20,7 @@ export function RouterProvider() {
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/add-child" element={<AddChildPage />} />
 
       {/* Parent Dashboard */}
       <Route path="/dashboard" element={<ParentDashboardLayout />}>
@@ -25,6 +28,7 @@ export function RouterProvider() {
         <Route path="progress" element={<ProgressPage />} />
         <Route path="history" element={<HistoryPage />} />
         <Route path="subscription" element={<SubscriptionPage />} />
+        <Route path="profile" element={<ProfilePage />} />
       </Route>
 
       {/* Student Portal */}

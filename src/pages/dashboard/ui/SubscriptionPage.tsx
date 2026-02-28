@@ -1,4 +1,13 @@
-import { Check, Zap, Shield, RefreshCw, CreditCard, AlertCircle, ArrowRight, Gift } from "lucide-react";
+import {
+  Check,
+  Zap,
+  Shield,
+  RefreshCw,
+  CreditCard,
+  AlertCircle,
+  ArrowRight,
+  Gift,
+} from "lucide-react";
 import {
   MOCK_BILLING,
   FREE_PLAN_FEATURES,
@@ -30,7 +39,8 @@ export function SubscriptionPage() {
       <div
         className="rounded-2xl p-6 text-white relative overflow-hidden"
         style={{
-          background: "linear-gradient(135deg, var(--brand-primary) 0%, #f97316 100%)",
+          background:
+            "linear-gradient(135deg, var(--brand-primary) 0%, #f97316 100%)",
         }}
       >
         {/* Decorative blobs */}
@@ -50,7 +60,8 @@ export function SubscriptionPage() {
                 {billing.planName}
               </p>
               <p className="text-sm text-white/70 mt-0.5">
-                Gia hạn ngày {billing.renewalDate} · còn {DAYS_UNTIL_RENEWAL} ngày
+                Gia hạn ngày {billing.renewalDate} · còn {DAYS_UNTIL_RENEWAL}{" "}
+                ngày
               </p>
             </div>
           </div>
@@ -72,7 +83,9 @@ export function SubscriptionPage() {
         <div className="flex items-center gap-3 bg-orange-50 border border-orange-200 rounded-2xl p-4">
           <AlertCircle size={18} className="text-orange-500 shrink-0" />
           <p className="text-sm text-orange-700 font-medium">
-            Gói của bạn sắp hết hạn trong <strong>{DAYS_UNTIL_RENEWAL} ngày</strong>. Vui lòng gia hạn để không gián đoạn việc học.
+            Gói của bạn sắp hết hạn trong{" "}
+            <strong>{DAYS_UNTIL_RENEWAL} ngày</strong>. Vui lòng gia hạn để
+            không gián đoạn việc học.
           </p>
           <button className="ml-auto shrink-0 px-4 py-2 bg-orange-500 text-white text-xs font-bold rounded-xl hover:bg-orange-600 transition">
             Gia hạn ngay
@@ -113,7 +126,9 @@ export function SubscriptionPage() {
             className={`bg-white rounded-2xl shadow-sm border ${item.border} p-5`}
           >
             <div className="flex items-start gap-3 mb-3">
-              <div className={`w-9 h-9 rounded-xl ${item.bg} flex items-center justify-center shrink-0`}>
+              <div
+                className={`w-9 h-9 rounded-xl ${item.bg} flex items-center justify-center shrink-0`}
+              >
                 {item.icon}
               </div>
               <div className="min-w-0">
@@ -142,7 +157,8 @@ export function SubscriptionPage() {
             Giới thiệu bạn bè – Nhận 1 tháng miễn phí!
           </p>
           <p className="text-xs text-gray-500 mt-0.5">
-            Mỗi phụ huynh bạn giới thiệu đăng ký Pro, bạn được tặng 1 tháng dùng thử.
+            Mỗi phụ huynh bạn giới thiệu đăng ký Pro, bạn được tặng 1 tháng dùng
+            thử.
           </p>
         </div>
         <button className="shrink-0 px-4 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition shadow-sm shadow-blue-200 whitespace-nowrap">
@@ -165,7 +181,10 @@ export function SubscriptionPage() {
             </p>
             <ul className="space-y-3 mb-6">
               {FREE_PLAN_FEATURES.map((p) => (
-                <li key={p} className="flex items-center gap-2.5 text-sm text-gray-500">
+                <li
+                  key={p}
+                  className="flex items-center gap-2.5 text-sm text-gray-500"
+                >
                   <Check size={15} className="text-gray-300 shrink-0" />
                   {p}
                 </li>
@@ -199,7 +218,10 @@ export function SubscriptionPage() {
             </p>
             <ul className="space-y-3 mb-6">
               {PRO_PLAN_FEATURES.map((p) => (
-                <li key={p} className="flex items-center gap-2.5 text-sm text-gray-700 font-medium">
+                <li
+                  key={p}
+                  className="flex items-center gap-2.5 text-sm text-gray-700 font-medium"
+                >
                   <Check size={15} className="text-green-500 shrink-0" />
                   {p}
                 </li>
@@ -209,7 +231,8 @@ export function SubscriptionPage() {
               <button
                 className="flex-1 py-3 rounded-xl text-sm font-bold transition-all"
                 style={{
-                  background: "linear-gradient(135deg, var(--brand-primary), #f97316)",
+                  background:
+                    "linear-gradient(135deg, var(--brand-primary), #f97316)",
                   color: "white",
                 }}
               >

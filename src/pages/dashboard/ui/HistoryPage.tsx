@@ -1,5 +1,12 @@
 import { useState, useMemo } from "react";
-import { Search, Download, Filter, CheckCircle2, Clock, XCircle } from "lucide-react";
+import {
+  Search,
+  Download,
+  Filter,
+  CheckCircle2,
+  Clock,
+  XCircle,
+} from "lucide-react";
 import {
   MOCK_ACTIVITIES,
   SUBJECT_FILTER_OPTIONS,
@@ -23,14 +30,18 @@ const PAGE_SIZE = 7;
 export function HistoryPage() {
   const [search, setSearch] = useState("");
   const [subjectFilter, setSubjectFilter] = useState("Tất cả");
-  const [statusFilter, setStatusFilter] = useState<"Tất cả" | ActivityStatus>("Tất cả");
+  const [statusFilter, setStatusFilter] = useState<"Tất cả" | ActivityStatus>(
+    "Tất cả",
+  );
   const [page, setPage] = useState(1);
 
   const filtered = useMemo(() => {
     return MOCK_ACTIVITIES.filter((a) => {
       const matchSearch = a.lesson.toLowerCase().includes(search.toLowerCase());
-      const matchSubject = subjectFilter === "Tất cả" || a.subject === subjectFilter;
-      const matchStatus = statusFilter === "Tất cả" || a.status === statusFilter;
+      const matchSubject =
+        subjectFilter === "Tất cả" || a.subject === subjectFilter;
+      const matchStatus =
+        statusFilter === "Tất cả" || a.status === statusFilter;
       return matchSearch && matchSubject && matchStatus;
     });
   }, [search, subjectFilter, statusFilter]);
@@ -39,14 +50,25 @@ export function HistoryPage() {
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   // Reset to first page when filters change
-  const handleSearch = (v: string) => { setSearch(v); setPage(1); };
-  const handleSubject = (v: string) => { setSubjectFilter(v); setPage(1); };
-  const handleStatus = (v: string) => { setStatusFilter(v as "Tất cả" | ActivityStatus); setPage(1); };
+  const handleSearch = (v: string) => {
+    setSearch(v);
+    setPage(1);
+  };
+  const handleSubject = (v: string) => {
+    setSubjectFilter(v);
+    setPage(1);
+  };
+  const handleStatus = (v: string) => {
+    setStatusFilter(v as "Tất cả" | ActivityStatus);
+    setPage(1);
+  };
 
   // Stats summary
   const total = MOCK_ACTIVITIES.length;
   const done = MOCK_ACTIVITIES.filter((a) => a.status === "Hoàn thành").length;
-  const inProgress = MOCK_ACTIVITIES.filter((a) => a.status === "Đang dở").length;
+  const inProgress = MOCK_ACTIVITIES.filter(
+    (a) => a.status === "Đang dở",
+  ).length;
 
   return (
     <div className="space-y-6">
@@ -78,7 +100,9 @@ export function HistoryPage() {
         </div>
         <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-100 rounded-xl px-4 py-2.5">
           <span className="w-2.5 h-2.5 rounded-full bg-yellow-400 inline-block" />
-          <span className="text-sm font-bold text-yellow-700">{inProgress}</span>
+          <span className="text-sm font-bold text-yellow-700">
+            {inProgress}
+          </span>
           <span className="text-sm text-yellow-600">Đang dở</span>
         </div>
       </div>
@@ -87,7 +111,10 @@ export function HistoryPage() {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-col sm:flex-row gap-3">
         {/* Search */}
         <div className="relative flex-1">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search
+            size={15}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+          />
           <input
             type="text"
             placeholder="Tìm bài học..."
@@ -98,7 +125,10 @@ export function HistoryPage() {
         </div>
         {/* Subject */}
         <div className="relative">
-          <Filter size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          <Filter
+            size={13}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+          />
           <select
             value={subjectFilter}
             onChange={(e) => handleSubject(e.target.value)}
@@ -130,7 +160,11 @@ export function HistoryPage() {
               Không tìm thấy kết quả phù hợp.
             </p>
             <button
-              onClick={() => { setSearch(""); setSubjectFilter("Tất cả"); setStatusFilter("Tất cả"); }}
+              onClick={() => {
+                setSearch("");
+                setSubjectFilter("Tất cả");
+                setStatusFilter("Tất cả");
+              }}
               className="text-sm text-blue-600 font-semibold hover:underline"
             >
               Xóa bộ lọc
@@ -141,12 +175,22 @@ export function HistoryPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-gray-400 bg-gray-50 border-b border-gray-100">
-                  <th className="px-6 py-3.5 font-semibold whitespace-nowrap">Ngày / Giờ</th>
+                  <th className="px-6 py-3.5 font-semibold whitespace-nowrap">
+                    Ngày / Giờ
+                  </th>
                   <th className="px-6 py-3.5 font-semibold">Tên bài học</th>
-                  <th className="px-6 py-3.5 font-semibold whitespace-nowrap">Chủ đề</th>
-                  <th className="px-6 py-3.5 font-semibold whitespace-nowrap">Thời gian</th>
-                  <th className="px-6 py-3.5 font-semibold whitespace-nowrap">Điểm số</th>
-                  <th className="px-6 py-3.5 font-semibold whitespace-nowrap">Trạng thái</th>
+                  <th className="px-6 py-3.5 font-semibold whitespace-nowrap">
+                    Chủ đề
+                  </th>
+                  <th className="px-6 py-3.5 font-semibold whitespace-nowrap">
+                    Thời gian
+                  </th>
+                  <th className="px-6 py-3.5 font-semibold whitespace-nowrap">
+                    Điểm số
+                  </th>
+                  <th className="px-6 py-3.5 font-semibold whitespace-nowrap">
+                    Trạng thái
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -193,7 +237,8 @@ export function HistoryPage() {
           <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
             <p className="text-xs text-gray-400">
               Hiển thị {(page - 1) * PAGE_SIZE + 1}–
-              {Math.min(page * PAGE_SIZE, filtered.length)} / {filtered.length} kết quả
+              {Math.min(page * PAGE_SIZE, filtered.length)} / {filtered.length}{" "}
+              kết quả
             </p>
             <div className="flex items-center gap-1.5">
               <button

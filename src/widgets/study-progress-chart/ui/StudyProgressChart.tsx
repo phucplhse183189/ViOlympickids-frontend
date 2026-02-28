@@ -30,8 +30,12 @@ function CustomTooltip({
         <p style={{ color: "var(--brand-primary)" }} className="font-bold">
           {val} phút
         </p>
-        <p className={`text-xs mt-0.5 ${val >= GOAL_MINUTES ? "text-green-600" : "text-orange-500"}`}>
-          {val >= GOAL_MINUTES ? "✓ Đạt mục tiêu" : `Còn ${GOAL_MINUTES - val} phút`}
+        <p
+          className={`text-xs mt-0.5 ${val >= GOAL_MINUTES ? "text-green-600" : "text-orange-500"}`}
+        >
+          {val >= GOAL_MINUTES
+            ? "✓ Đạt mục tiêu"
+            : `Còn ${GOAL_MINUTES - val} phút`}
         </p>
       </div>
     );
@@ -81,7 +85,9 @@ export function StudyProgressChart() {
         {/* Mini stats */}
         <div className="flex items-center gap-3">
           <div className="text-center">
-            <p className="text-lg font-extrabold text-gray-800">{totalMinutes}</p>
+            <p className="text-lg font-extrabold text-gray-800">
+              {totalMinutes}
+            </p>
             <p className="text-[11px] text-gray-400 font-medium">Tổng phút</p>
           </div>
           <div className="w-px h-8 bg-gray-100" />
@@ -91,8 +97,12 @@ export function StudyProgressChart() {
           </div>
           <div className="w-px h-8 bg-gray-100" />
           <div className="text-center">
-            <p className="text-lg font-extrabold text-green-600">{goalDays}/7</p>
-            <p className="text-[11px] text-gray-400 font-medium">Đạt mục tiêu</p>
+            <p className="text-lg font-extrabold text-green-600">
+              {goalDays}/7
+            </p>
+            <p className="text-[11px] text-gray-400 font-medium">
+              Đạt mục tiêu
+            </p>
           </div>
         </div>
       </div>
@@ -127,7 +137,11 @@ export function StudyProgressChart() {
             {data.map((entry, index) => (
               <Cell
                 key={`cell-${index}`}
-                fill={entry.phut >= GOAL_MINUTES ? "var(--brand-primary)" : "#e0e7ff"}
+                fill={
+                  entry.phut >= GOAL_MINUTES
+                    ? "var(--brand-primary)"
+                    : "#e0e7ff"
+                }
               />
             ))}
           </Bar>
@@ -137,7 +151,10 @@ export function StudyProgressChart() {
       {/* Goal legend */}
       <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-50 text-xs text-gray-400">
         <span className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded-sm inline-block" style={{ backgroundColor: "var(--brand-primary)" }} />
+          <span
+            className="w-3 h-3 rounded-sm inline-block"
+            style={{ backgroundColor: "var(--brand-primary)" }}
+          />
           Đạt mục tiêu
         </span>
         <span className="flex items-center gap-1.5">
@@ -147,5 +164,4 @@ export function StudyProgressChart() {
       </div>
     </div>
   );
-}
 }

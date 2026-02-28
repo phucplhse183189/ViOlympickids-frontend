@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, CheckCircle2, Clock } from "lucide-react";
-import { MOCK_ACTIVITIES, type ActivityStatus } from "@/shared/api/dashboardMockData";
+import {
+  MOCK_ACTIVITIES,
+  type ActivityStatus,
+} from "@/shared/api/dashboardMockData";
 
 // Show only the 5 most recent entries in the overview widget
 const PREVIEW_COUNT = 5;
@@ -45,9 +48,7 @@ export function RecentActivityTable() {
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
-        <h3 className="text-base font-bold text-gray-700">
-          Hoạt động gần đây
-        </h3>
+        <h3 className="text-base font-bold text-gray-700">Hoạt động gần đây</h3>
         <a
           href="/dashboard/history"
           className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:underline"
@@ -60,10 +61,16 @@ export function RecentActivityTable() {
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-gray-400 border-b border-gray-100">
-              <th className="pb-3 pr-4 font-semibold whitespace-nowrap">Ngày / Giờ</th>
+              <th className="pb-3 pr-4 font-semibold whitespace-nowrap">
+                Ngày / Giờ
+              </th>
               <th className="pb-3 pr-4 font-semibold">Tên bài học</th>
-              <th className="pb-3 pr-4 font-semibold whitespace-nowrap">Điểm số</th>
-              <th className="pb-3 font-semibold whitespace-nowrap">Trạng thái</th>
+              <th className="pb-3 pr-4 font-semibold whitespace-nowrap">
+                Điểm số
+              </th>
+              <th className="pb-3 font-semibold whitespace-nowrap">
+                Trạng thái
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">

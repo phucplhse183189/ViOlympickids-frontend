@@ -28,7 +28,10 @@ function useReveal(threshold = 0.1) {
     if (!el) return;
     const obs = new IntersectionObserver(
       ([e]) => {
-        if (e.isIntersecting) { setVisible(true); obs.disconnect(); }
+        if (e.isIntersecting) {
+          setVisible(true);
+          obs.disconnect();
+        }
       },
       { threshold },
     );
@@ -39,7 +42,11 @@ function useReveal(threshold = 0.1) {
 }
 
 const radialData = [
-  { name: "Tổng thể", value: MOCK_DASHBOARD_STATS.overallScore, fill: "var(--brand-primary)" },
+  {
+    name: "Tổng thể",
+    value: MOCK_DASHBOARD_STATS.overallScore,
+    fill: "var(--brand-primary)",
+  },
 ];
 
 function CustomLineTooltip({
@@ -218,21 +225,25 @@ export function ProgressPage() {
         className={`grid grid-cols-1 sm:grid-cols-3 gap-4 ${compCard.visible ? "animate-fade-in-up" : "opacity-0"}`}
         style={{ animationDelay: "60ms" }}
       >
-        {COMPARISON_CARDS.map(({ label, value, sub, icon: Icon, color, bg, border }) => (
-          <div
-            key={label}
-            className={`bg-white rounded-2xl shadow-sm border ${border} p-5 flex items-center gap-4`}
-          >
-            <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center shrink-0`}>
-              <Icon size={18} className={color} />
+        {COMPARISON_CARDS.map(
+          ({ label, value, sub, icon: Icon, color, bg, border }) => (
+            <div
+              key={label}
+              className={`bg-white rounded-2xl shadow-sm border ${border} p-5 flex items-center gap-4`}
+            >
+              <div
+                className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center shrink-0`}
+              >
+                <Icon size={18} className={color} />
+              </div>
+              <div>
+                <p className="text-xs text-gray-400 font-semibold">{label}</p>
+                <p className={`text-lg font-extrabold ${color}`}>{value}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{sub}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs text-gray-400 font-semibold">{label}</p>
-              <p className={`text-lg font-extrabold ${color}`}>{value}</p>
-              <p className="text-xs text-gray-400 mt-0.5">{sub}</p>
-            </div>
-          </div>
-        ))}
+          ),
+        )}
       </div>
 
       {/* Skill breakdown */}
@@ -312,15 +323,51 @@ export function ProgressPage() {
                 <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-            <XAxis dataKey="week" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#9ca3af" }} />
-            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#9ca3af" }} unit=" ph" />
+            <CartesianGrid
+              strokeDasharray="3 3"
+              vertical={false}
+              stroke="#f0f0f0"
+            />
+            <XAxis
+              dataKey="week"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 12, fill: "#9ca3af" }}
+            />
+            <YAxis
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 12, fill: "#9ca3af" }}
+              unit=" ph"
+            />
             <Tooltip
-              contentStyle={{ borderRadius: "12px", border: "1px solid #f3f4f6", boxShadow: "0 4px 20px rgba(0,0,0,0.08)" }}
+              contentStyle={{
+                borderRadius: "12px",
+                border: "1px solid #f3f4f6",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+              }}
               labelStyle={{ fontWeight: "600", color: "#374151" }}
             />
-            <Area type="monotone" dataKey="soHoc" name="Số học" stroke="#3b82f6" strokeWidth={2} fill="url(#gradBlue)" isAnimationActive={areaCard.visible} animationDuration={900} />
-            <Area type="monotone" dataKey="hinhHoc" name="Hình học" stroke="#f97316" strokeWidth={2} fill="url(#gradOrange)" isAnimationActive={areaCard.visible} animationDuration={1100} />
+            <Area
+              type="monotone"
+              dataKey="soHoc"
+              name="Số học"
+              stroke="#3b82f6"
+              strokeWidth={2}
+              fill="url(#gradBlue)"
+              isAnimationActive={areaCard.visible}
+              animationDuration={900}
+            />
+            <Area
+              type="monotone"
+              dataKey="hinhHoc"
+              name="Hình học"
+              stroke="#f97316"
+              strokeWidth={2}
+              fill="url(#gradOrange)"
+              isAnimationActive={areaCard.visible}
+              animationDuration={1100}
+            />
           </AreaChart>
         </ResponsiveContainer>
       </div>
@@ -329,13 +376,22 @@ export function ProgressPage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { emoji: "🏆", label: "Top 10% học sinh", sub: "Tuần này" },
-          { emoji: "🔥", label: `${MOCK_DASHBOARD_STATS.streakDays} ngày liên tiếp`, sub: "Kỷ lục cá nhân" },
+          {
+            emoji: "🔥",
+            label: `${MOCK_DASHBOARD_STATS.streakDays} ngày liên tiếp`,
+            sub: "Kỷ lục cá nhân",
+          },
           { emoji: "⭐", label: "Hoàn hảo 100/100", sub: "26/02/2026" },
           { emoji: "🎯", label: "Đạt mục tiêu tuần", sub: "3 tuần liên tiếp" },
         ].map(({ emoji, label, sub }) => (
-          <div key={label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col items-center text-center gap-1.5">
+          <div
+            key={label}
+            className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col items-center text-center gap-1.5"
+          >
             <span className="text-2xl">{emoji}</span>
-            <p className="text-xs font-bold text-gray-700 leading-tight">{label}</p>
+            <p className="text-xs font-bold text-gray-700 leading-tight">
+              {label}
+            </p>
             <p className="text-[11px] text-gray-400">{sub}</p>
           </div>
         ))}
@@ -343,4 +399,3 @@ export function ProgressPage() {
     </div>
   );
 }
-

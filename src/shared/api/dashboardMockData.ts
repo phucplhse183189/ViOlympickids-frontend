@@ -245,3 +245,140 @@ export const SUBJECT_FILTER_OPTIONS = [
   "Đo lường",
   "Lời văn",
 ];
+
+// ── SkillRadarChart mock data ─────────────────────────────────
+
+export interface RadarSkill {
+  skill: string;
+  diem: number;
+  fullMark: number;
+}
+
+export const MOCK_RADAR_SKILLS: RadarSkill[] = [
+  { skill: "Phép cộng", diem: 82, fullMark: 100 },
+  { skill: "Phép trừ", diem: 54, fullMark: 100 },
+  { skill: "Hình học 3D", diem: 93, fullMark: 100 },
+  { skill: "Đo lường", diem: 70, fullMark: 100 },
+  { skill: "Tư duy logic", diem: 77, fullMark: 100 },
+];
+
+// ── StreakHeatmap mock data ───────────────────────────────────
+// 28 days from Feb 1 → Feb 28, 2026 (4 full weeks)
+// minutes: 0 = không học, 1-14 = < 15 phút, ≥ 15 = học tốt (15-29), ≥ 30 = học đạt
+
+export interface HeatmapDay {
+  date: string; // "DD/MM"
+  minutes: number;
+}
+
+export const MOCK_STREAK_DAYS: HeatmapDay[] = [
+  // Week 1: Feb 1-7
+  { date: "01/02", minutes: 0 },
+  { date: "02/02", minutes: 10 },
+  { date: "03/02", minutes: 35 },
+  { date: "04/02", minutes: 20 },
+  { date: "05/02", minutes: 0 },
+  { date: "06/02", minutes: 45 },
+  { date: "07/02", minutes: 30 },
+  // Week 2: Feb 8-14
+  { date: "08/02", minutes: 0 },
+  { date: "09/02", minutes: 12 },
+  { date: "10/02", minutes: 40 },
+  { date: "11/02", minutes: 0 },
+  { date: "12/02", minutes: 25 },
+  { date: "13/02", minutes: 50 },
+  { date: "14/02", minutes: 33 },
+  // Week 3: Feb 15-21
+  { date: "15/02", minutes: 18 },
+  { date: "16/02", minutes: 0 },
+  { date: "17/02", minutes: 22 },
+  { date: "18/02", minutes: 45 },
+  { date: "19/02", minutes: 30 },
+  { date: "20/02", minutes: 20 },
+  { date: "21/02", minutes: 0 },
+  // Week 4: Feb 22-28
+  { date: "22/02", minutes: 35 },
+  { date: "23/02", minutes: 18 },
+  { date: "24/02", minutes: 25 },
+  { date: "25/02", minutes: 40 },
+  { date: "26/02", minutes: 15 },
+  { date: "27/02", minutes: 22 },
+  { date: "28/02", minutes: 30 },
+];
+
+export const MOCK_STREAK_COUNT = 5; // days in current streak
+
+// ── Shared localStorage key for child profiles ───────────────
+export const CHILD_PROFILES_STORAGE_KEY = "vio_child_profiles";
+
+// ── BillingManagement mock data ──────────────────────────────
+
+export interface TrialInfo {
+  totalDays: number;
+  usedDays: number;
+}
+
+export interface PaymentTransaction {
+  id: string;
+  date: string;
+  amount: number;
+  method: string;
+  status: "Thành công" | "Thất bại";
+}
+
+export const MOCK_TRIAL: TrialInfo = {
+  totalDays: 7,
+  usedDays: 5, // → còn 2 ngày
+};
+
+export const MOCK_TRANSACTIONS: PaymentTransaction[] = [
+  {
+    id: "TXN-20260101",
+    date: "01/01/2026",
+    amount: 59000,
+    method: "Visa ••••4321",
+    status: "Thành công",
+  },
+  {
+    id: "TXN-20251201",
+    date: "01/12/2025",
+    amount: 59000,
+    method: "Visa ••••4321",
+    status: "Thất bại",
+  },
+];
+
+// ── SmartAlerts mock data ────────────────────────────────────
+
+export type AlertType = "success" | "warning";
+
+export interface SmartAlert {
+  id: string;
+  type: AlertType;
+  title: string;
+  message: string;
+  time: string;
+  actionLabel?: string;
+  actionLink?: string;
+}
+
+export const MOCK_ALERTS: SmartAlert[] = [
+  {
+    id: "alert-001",
+    type: "success",
+    title: "Xuất sắc!",
+    message:
+      "Tom vừa hoàn thành xuất sắc bài Nhận diện khối Lập phương với điểm 10/10",
+    time: "5 phút trước",
+  },
+  {
+    id: "alert-002",
+    type: "warning",
+    title: "Cần chú ý",
+    message:
+      "Bé đang gặp một chút khó khăn ở bài Phép trừ có nhớ. Ba mẹ hãy động viên bé nhé!",
+    time: "2 giờ trước",
+    actionLabel: "Xem chi tiết bài thi",
+    actionLink: "#",
+  },
+];

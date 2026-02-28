@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -10,7 +10,8 @@ import {
   Menu,
   X,
   ChevronRight,
-  User,
+  Settings,
+  UserCircle,
 } from "lucide-react";
 import { MOCK_PARENT_PROFILE } from "@/shared/api/dashboardMockData";
 import { ProfileSelector } from "./ProfileSelector";
@@ -34,18 +35,16 @@ const navItems = [
 
 // ─── Sidebar ──────────────────────────────────────────────────
 function Sidebar({ onClose }: { onClose?: () => void }) {
-  const navigate = useNavigate();
   return (
     <aside className="flex flex-col h-full w-[260px] bg-white border-r border-gray-100 shadow-sm animate-slide-in-left">
       {/* Logo */}
       <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
         <div className="flex items-center gap-2">
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center"
-            style={{ backgroundColor: "var(--brand-primary)" }}
-          >
-            <span className="text-white font-extrabold text-xs">VO</span>
-          </div>
+          <img
+            src="/robot-head.png"
+            alt="ViOlympicKids"
+            className="w-8 h-8 object-contain"
+          />
           <span
             className="text-lg font-extrabold tracking-tight"
             style={{ color: "var(--brand-primary)" }}
@@ -101,33 +100,93 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
           </NavLink>
         ))}
       </nav>
-
-      {/* Bottom: Profile + Logout */}
-      <div className="px-3 py-4 border-t border-gray-100 space-y-1">
-        <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl">
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0"
-            style={{ backgroundColor: "var(--brand-primary)" }}
-          >
-            {MOCK_PARENT_PROFILE.avatarInitials}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-bold text-gray-700 truncate">
-              {MOCK_PARENT_PROFILE.name}
-            </p>
-            <p className="text-[10px] text-gray-400">Phụ huynh</p>
-          </div>
-          <User size={14} className="text-gray-400 shrink-0" />
-        </div>
-        <button
-          onClick={() => navigate("/login")}
-          className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 transition-all"
-        >
-          <LogOut size={17} className="shrink-0" />
-          Đăng xuất
-        </button>
-      </div>
     </aside>
+  );
+}
+
+// ─── Topbar: avatar+name button (navigates to profile) ────────
+function AvatarButton() {
+  const navigate = useNavigate();
+  return (
+    <button
+      onClick={() => navigate("/dashboard/profile")}
+      className="flex items-center gap-2.5 px-2 py-1.5 rounded-xl hover:bg-gray-50 transition"
+    >
+      <div
+        className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0"
+        style={{ backgroundColor: "var(--brand-primary)" }}
+      >
+        {MOCK_PARENT_PROFILE.avatarInitials}
+      </div>
+      <div className="hidden sm:block text-left">
+        <p className="text-xs font-bold text-gray-700 leading-tight">
+          {MOCK_PARENT_PROFILE.name}
+        </p>
+        <p className="text-[10px] text-gray-400 leading-tight">Phụ huynh</p>
+      </div>
+    </button>
+  );
+}
+
+// ─── Topbar: settings gear dropdown ───────────────────────────
+function SettingsMenu() {
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className={`flex items-center justify-center w-8 h-8 rounded-xl border transition ${
+          open
+            ? "bg-gray-100 border-gray-200 text-gray-700"
+            : "border-gray-200 text-gray-400 hover:bg-gray-50 hover:text-gray-700"
+        }`}
+        title="Cài đặt"
+      >
+        <Settings
+          size={15}
+          className={`transition-transform duration-200 ${open ? "rotate-45" : ""}`}
+        />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full mt-2 w-44 bg-white rounded-2xl border border-gray-100 shadow-xl overflow-hidden z-[100]">
+          <div className="py-1.5">
+            <button
+              onClick={() => {
+                setOpen(false);
+                navigate("/dashboard/profile");
+              }}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+            >
+              <UserCircle size={15} className="text-gray-400 shrink-0" />
+              Hồ sơ của tôi
+            </button>
+          </div>
+          <div className="border-t border-gray-100" />
+          <div className="py-1.5">
+            <button
+              onClick={() => navigate("/login")}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-red-500 hover:bg-red-50 transition-colors"
+            >
+              <LogOut size={15} className="shrink-0" />
+              Đăng xuất
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -138,6 +197,7 @@ function usePageTitle(pathname: string) {
     "/dashboard/progress": "Tiến độ của con",
     "/dashboard/history": "Lịch sử học tập",
     "/dashboard/subscription": "Quản lý Gói cước",
+    "/dashboard/profile": "Hồ sơ của tôi",
   };
   return map[pathname] ?? "Dashboard";
 }
@@ -171,7 +231,7 @@ export function ParentDashboardLayout() {
       {/* Main content area */}
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         {/* Topbar */}
-        <header className="animate-fade-in-down flex items-center justify-between px-6 py-3.5 bg-white border-b border-gray-100 shadow-sm">
+        <header className="relative z-10 animate-fade-in-down flex items-center justify-between px-6 py-3.5 bg-white border-b border-gray-100 shadow-sm">
           <div className="flex items-center gap-3">
             <button
               className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition"
@@ -203,23 +263,9 @@ export function ParentDashboardLayout() {
             {/* Divider */}
             <div className="w-px h-6 bg-gray-100 mx-1" />
 
-            {/* Avatar + Name */}
-            <div className="flex items-center gap-2.5 cursor-pointer px-2 py-1.5 rounded-xl hover:bg-gray-50 transition">
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs"
-                style={{ backgroundColor: "var(--brand-primary)" }}
-              >
-                {MOCK_PARENT_PROFILE.avatarInitials}
-              </div>
-              <div className="hidden sm:block text-left">
-                <p className="text-xs font-bold text-gray-700 leading-tight">
-                  {MOCK_PARENT_PROFILE.name}
-                </p>
-                <p className="text-[10px] text-gray-400 leading-tight">
-                  Phụ huynh
-                </p>
-              </div>
-            </div>
+            {/* User menu dropdown */}
+            <AvatarButton />
+            <SettingsMenu />
           </div>
         </header>
 
