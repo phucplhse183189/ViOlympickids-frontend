@@ -308,8 +308,9 @@ export const MOCK_STREAK_DAYS: HeatmapDay[] = [
 
 export const MOCK_STREAK_COUNT = 5; // days in current streak
 
-// ── Shared localStorage key for child profiles ───────────────
+// ── Shared localStorage keys for child profiles ──────────────
 export const CHILD_PROFILES_STORAGE_KEY = "vio_child_profiles";
+export const ACTIVE_CHILD_ID_KEY = "vio_active_child_id";
 
 // ── BillingManagement mock data ──────────────────────────────
 

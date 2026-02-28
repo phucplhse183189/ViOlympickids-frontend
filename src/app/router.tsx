@@ -9,7 +9,13 @@ import {
   SubscriptionPage,
   ProfilePage,
 } from "@/pages/dashboard";
-import { LearningMapPage, InteractiveMathSpacePage } from "@/pages/student";
+import {
+  LearningMapPage,
+  InteractiveMathSpacePage,
+  LessonIntroPage,
+  ExercisePage,
+  ResultPage,
+} from "@/pages/student";
 import { AddChildPage } from "@/pages/add-child";
 import { ParentDashboardLayout } from "@/widgets/dashboard-layout";
 import { StudentLayout } from "@/widgets/student-layout";
@@ -35,7 +41,9 @@ export function RouterProvider() {
       <Route path="/student" element={<StudentLayout />}>
         <Route index element={<LearningMapPage />} />
         <Route path="lesson" element={<InteractiveMathSpacePage />} />
-        <Route path="lesson/:id" element={<InteractiveMathSpacePage />} />
+        <Route path="lesson/:id" element={<LessonIntroPage />} />
+        <Route path="exercise/:id" element={<ExercisePage />} />
+        <Route path="result/:id" element={<ResultPage />} />
       </Route>
     </Routes>
   );

@@ -1,7 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronDown, Plus, Check } from "lucide-react";
-import { CHILD_PROFILES_STORAGE_KEY } from "@/shared/api/dashboardMockData";
+import {
+  CHILD_PROFILES_STORAGE_KEY,
+  ACTIVE_CHILD_ID_KEY,
+} from "@/shared/api/dashboardMockData";
 
 // ─── Types ───────────────────────────────────────────────────
 interface ChildProfile {
@@ -78,7 +81,9 @@ export function ProfileSelector() {
   );
   const [activeId, setActiveId] = useState(() => {
     const loaded = loadProfilesFromStorage(INITIAL_PROFILES);
-    return loaded[0].id;
+    const saved = localStorage.getItem(ACTIVE_CHILD_ID_KEY);
+    const exists = loaded.find((p) => p.id === saved);
+    return exists ? saved! : loaded[0].id;
   });
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -153,6 +158,7 @@ export function ProfileSelector() {
                 key={profile.id}
                 onClick={() => {
                   setActiveId(profile.id);
+                  localStorage.setItem(ACTIVE_CHILD_ID_KEY, profile.id);
                   setDropdownOpen(false);
                 }}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 transition-colors ${
