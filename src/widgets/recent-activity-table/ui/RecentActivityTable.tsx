@@ -1,50 +1,20 @@
-type Status = "Hoàn thành" | "Đang dở";
-
-interface Activity {
-  datetime: string;
-  lesson: string;
-  score: string;
-  status: Status;
-}
-
 import { useEffect, useRef, useState } from "react";
+import { ArrowRight, CheckCircle2, Clock } from "lucide-react";
+import { MOCK_ACTIVITIES, type ActivityStatus } from "@/shared/api/dashboardMockData";
 
-const activities: Activity[] = [
-  {
-    datetime: "28/02 · 08:15",
-    lesson: "Nhận diện khối Lập phương",
-    score: "95/100",
-    status: "Hoàn thành",
-  },
-  {
-    datetime: "27/02 · 19:40",
-    lesson: "Phép cộng có nhớ",
-    score: "80/100",
-    status: "Hoàn thành",
-  },
-  {
-    datetime: "27/02 · 15:10",
-    lesson: "Bảng nhân số 6",
-    score: "—",
-    status: "Đang dở",
-  },
-  {
-    datetime: "26/02 · 20:00",
-    lesson: "So sánh các số có 3 chữ số",
-    score: "100/100",
-    status: "Hoàn thành",
-  },
-  {
-    datetime: "25/02 · 18:30",
-    lesson: "Đo độ dài – cm và m",
-    score: "70/100",
-    status: "Hoàn thành",
-  },
-];
+// Show only the 5 most recent entries in the overview widget
+const PREVIEW_COUNT = 5;
 
-const statusStyle: Record<Status, string> = {
+const statusStyle: Record<ActivityStatus, string> = {
   "Hoàn thành": "bg-green-100 text-green-700",
   "Đang dở": "bg-yellow-100 text-yellow-700",
+  "Chưa làm": "bg-gray-100 text-gray-500",
+};
+
+const statusIcon: Record<ActivityStatus, React.ReactNode> = {
+  "Hoàn thành": <CheckCircle2 size={11} className="shrink-0" />,
+  "Đang dở": <Clock size={11} className="shrink-0" />,
+  "Chưa làm": null,
 };
 
 export function RecentActivityTable() {
@@ -66,41 +36,57 @@ export function RecentActivityTable() {
     return () => obs.disconnect();
   }, []);
 
+  const activities = MOCK_ACTIVITIES.slice(0, PREVIEW_COUNT);
+
   return (
-    <div ref={ref} className="bg-white rounded-2xl shadow-sm p-6">
-      <h3 className="text-base font-bold text-gray-700 mb-5">
-        Hoạt động gần đây
-      </h3>
+    <div
+      ref={ref}
+      className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-6 transition-all duration-500 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="text-base font-bold text-gray-700">
+          Hoạt động gần đây
+        </h3>
+        <a
+          href="/dashboard/history"
+          className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:underline"
+        >
+          Xem tất cả <ArrowRight size={13} />
+        </a>
+      </div>
+
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-gray-400 border-b border-gray-100">
-              <th className="pb-3 pr-4 font-semibold">Ngày / Giờ</th>
+              <th className="pb-3 pr-4 font-semibold whitespace-nowrap">Ngày / Giờ</th>
               <th className="pb-3 pr-4 font-semibold">Tên bài học</th>
-              <th className="pb-3 pr-4 font-semibold">Điểm số</th>
-              <th className="pb-3 font-semibold">Trạng thái</th>
+              <th className="pb-3 pr-4 font-semibold whitespace-nowrap">Điểm số</th>
+              <th className="pb-3 font-semibold whitespace-nowrap">Trạng thái</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
             {activities.map((a, i) => (
               <tr
-                key={a.datetime + a.lesson}
-                className={`hover:bg-gray-50 transition-colors ${visible ? "animate-row-in" : "opacity-0"}`}
-                style={{ animationDelay: `${i * 70}ms` }}
+                key={a.id}
+                className={`hover:bg-gray-50/60 transition-colors ${visible ? "animate-row-in" : "opacity-0"}`}
+                style={{ animationDelay: `${i * 65}ms` }}
               >
-                <td className="py-3 pr-4 text-gray-400 whitespace-nowrap">
+                <td className="py-3.5 pr-4 text-gray-400 whitespace-nowrap font-medium text-xs">
                   {a.datetime}
                 </td>
-                <td className="py-3 pr-4 font-medium text-gray-700">
+                <td className="py-3.5 pr-4 font-semibold text-gray-700">
                   {a.lesson}
                 </td>
-                <td className="py-3 pr-4 text-gray-600 font-semibold">
-                  {a.score}
+                <td className="py-3.5 pr-4 text-gray-600 font-bold">
+                  {a.score ?? "—"}
                 </td>
-                <td className="py-3">
+                <td className="py-3.5">
                   <span
-                    className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${statusStyle[a.status]}`}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${statusStyle[a.status]}`}
                   >
+                    {statusIcon[a.status]}
                     {a.status}
                   </span>
                 </td>

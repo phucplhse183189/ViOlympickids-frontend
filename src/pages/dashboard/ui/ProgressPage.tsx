@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import {
   RadialBarChart,
   RadialBar,
@@ -8,31 +9,40 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  AreaChart,
+  Area,
 } from "recharts";
+import { TrendingUp, TrendingDown, Minus, Award, Target } from "lucide-react";
+import {
+  MOCK_SKILLS,
+  MOCK_WEEKLY_TREND,
+  MOCK_DASHBOARD_STATS,
+} from "@/shared/api/dashboardMockData";
 
-const skills = [
-  { label: "Số học", pct: 88, color: "bg-blue-500" },
-  { label: "Hình học không gian", pct: 94, color: "bg-orange-500" },
-  { label: "Đo lường", pct: 72, color: "bg-green-500" },
-  { label: "Bảng nhân / chia", pct: 65, color: "bg-purple-500" },
-  { label: "Giải toán có lời văn", pct: 80, color: "bg-pink-500" },
-];
-
-const weeklyTrend = [
-  { week: "T1", diem: 72 },
-  { week: "T2", diem: 78 },
-  { week: "T3", diem: 75 },
-  { week: "T4", diem: 82 },
-  { week: "T5", diem: 88 },
-  { week: "T6", diem: 85 },
-  { week: "T7", diem: 91 },
-];
+/* ── scroll-reveal ─────────────────────────────────── */
+function useReveal(threshold = 0.1) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) { setVisible(true); obs.disconnect(); }
+      },
+      { threshold },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [threshold]);
+  return { ref, visible };
+}
 
 const radialData = [
-  { name: "Tổng thể", value: 82, fill: "var(--brand-primary)" },
+  { name: "Tổng thể", value: MOCK_DASHBOARD_STATS.overallScore, fill: "var(--brand-primary)" },
 ];
 
-function CustomTooltip({
+function CustomLineTooltip({
   active,
   payload,
   label,
@@ -52,9 +62,51 @@ function CustomTooltip({
   return null;
 }
 
+/* ── Trend comparison cards ─────────────────────────── */
+const COMPARISON_CARDS = [
+  {
+    label: "Tuần này",
+    value: "91 điểm",
+    sub: "Cao nhất mọi thời đại 🎉",
+    icon: TrendingUp,
+    color: "text-green-600",
+    bg: "bg-green-50",
+    border: "border-green-200",
+  },
+  {
+    label: "Tuần trước",
+    value: "85 điểm",
+    sub: "-6 điểm so với hiện tại",
+    icon: TrendingDown,
+    color: "text-blue-600",
+    bg: "bg-blue-50",
+    border: "border-blue-200",
+  },
+  {
+    label: "Trung bình",
+    value: "81.6 điểm",
+    sub: "Trong 7 tuần gần nhất",
+    icon: Minus,
+    color: "text-gray-500",
+    bg: "bg-gray-50",
+    border: "border-gray-200",
+  },
+];
+
 export function ProgressPage() {
+  const scoreCard = useReveal();
+  const trendCard = useReveal();
+  const compCard = useReveal();
+  const skillCard = useReveal();
+  const areaCard = useReveal();
+
+  const skills = MOCK_SKILLS;
+  const weeklyTrend = MOCK_WEEKLY_TREND;
+  const stats = MOCK_DASHBOARD_STATS;
+
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div>
         <h2 className="text-xl font-bold text-gray-800">Tiến độ của con</h2>
         <p className="text-sm text-gray-400 mt-0.5">
@@ -62,10 +114,14 @@ export function ProgressPage() {
         </p>
       </div>
 
+      {/* Top row: radial score + weekly trend */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {/* Overall score radial */}
-        <div className="bg-white rounded-2xl shadow-sm p-6 flex flex-col items-center justify-center">
-          <p className="text-sm font-semibold text-gray-400 mb-2">
+        {/* Overall score */}
+        <div
+          ref={scoreCard.ref}
+          className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col items-center justify-center ${scoreCard.visible ? "animate-fade-in-up" : "opacity-0"}`}
+        >
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
             Điểm tổng thể
           </p>
           <div className="relative w-40 h-40">
@@ -76,7 +132,7 @@ export function ProgressPage() {
                 innerRadius="70%"
                 outerRadius="100%"
                 startAngle={90}
-                endAngle={90 - 360 * 0.82}
+                endAngle={90 - 360 * (stats.overallScore / 100)}
                 data={radialData}
               >
                 <RadialBar
@@ -87,21 +143,41 @@ export function ProgressPage() {
               </RadialBarChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-3xl font-extrabold text-gray-800">82</span>
+              <span className="text-3xl font-extrabold text-gray-800">
+                {stats.overallScore}
+              </span>
               <span className="text-xs text-gray-400 font-medium">/100</span>
             </div>
           </div>
           <span className="mt-3 text-xs font-bold px-3 py-1 rounded-full bg-green-100 text-green-700">
             ↑ Tốt hơn tuần trước
           </span>
+          <div className="mt-4 w-full grid grid-cols-2 gap-2 text-center">
+            <div className="bg-blue-50 rounded-xl py-2">
+              <p className="text-xs text-gray-400 font-medium">Bài đã làm</p>
+              <p className="text-base font-extrabold text-blue-600">
+                {MOCK_DASHBOARD_STATS.completedLessons}
+              </p>
+            </div>
+            <div className="bg-orange-50 rounded-xl py-2">
+              <p className="text-xs text-gray-400 font-medium">Chuỗi ngày</p>
+              <p className="text-base font-extrabold text-orange-500">
+                {MOCK_DASHBOARD_STATS.streakDays}🔥
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Weekly trend line */}
-        <div className="bg-white rounded-2xl shadow-sm p-6 md:col-span-2">
+        <div
+          ref={trendCard.ref}
+          className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:col-span-2 ${trendCard.visible ? "animate-fade-in-up" : "opacity-0"}`}
+          style={{ animationDelay: "80ms" }}
+        >
           <p className="text-sm font-bold text-gray-700 mb-4">
-            Xu hướng điểm số (7 tuần)
+            Xu hướng điểm số (7 tuần gần nhất)
           </p>
-          <ResponsiveContainer width="100%" height={160}>
+          <ResponsiveContainer width="100%" height={170}>
             <LineChart data={weeklyTrend}>
               <CartesianGrid
                 strokeDasharray="3 3"
@@ -120,7 +196,7 @@ export function ProgressPage() {
                 tickLine={false}
                 tick={{ fontSize: 12, fill: "#9ca3af" }}
               />
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip content={<CustomLineTooltip />} />
               <Line
                 type="monotone"
                 dataKey="diem"
@@ -128,18 +204,51 @@ export function ProgressPage() {
                 strokeWidth={2.5}
                 dot={{ r: 4, fill: "var(--brand-primary)", strokeWidth: 0 }}
                 activeDot={{ r: 6 }}
+                isAnimationActive={trendCard.visible}
+                animationDuration={900}
               />
             </LineChart>
           </ResponsiveContainer>
         </div>
       </div>
 
+      {/* Comparison cards */}
+      <div
+        ref={compCard.ref}
+        className={`grid grid-cols-1 sm:grid-cols-3 gap-4 ${compCard.visible ? "animate-fade-in-up" : "opacity-0"}`}
+        style={{ animationDelay: "60ms" }}
+      >
+        {COMPARISON_CARDS.map(({ label, value, sub, icon: Icon, color, bg, border }) => (
+          <div
+            key={label}
+            className={`bg-white rounded-2xl shadow-sm border ${border} p-5 flex items-center gap-4`}
+          >
+            <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center shrink-0`}>
+              <Icon size={18} className={color} />
+            </div>
+            <div>
+              <p className="text-xs text-gray-400 font-semibold">{label}</p>
+              <p className={`text-lg font-extrabold ${color}`}>{value}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{sub}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
       {/* Skill breakdown */}
-      <div className="bg-white rounded-2xl shadow-sm p-6">
-        <p className="text-sm font-bold text-gray-700 mb-5">
-          Phân tích kỹ năng
-        </p>
-        <div className="space-y-4">
+      <div
+        ref={skillCard.ref}
+        className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-6 ${skillCard.visible ? "animate-fade-in-up" : "opacity-0"}`}
+        style={{ animationDelay: "100ms" }}
+      >
+        <div className="flex items-center justify-between mb-5">
+          <p className="text-sm font-bold text-gray-700">Phân tích kỹ năng</p>
+          <div className="flex items-center gap-1.5 text-xs text-yellow-600 bg-yellow-50 px-3 py-1 rounded-full font-semibold border border-yellow-100">
+            <Award size={13} />
+            Kỹ năng nổi bật: {MOCK_DASHBOARD_STATS.bestSkill}
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
           {skills.map((s) => (
             <div key={s.label}>
               <div className="flex justify-between text-sm mb-1.5">
@@ -148,14 +257,90 @@ export function ProgressPage() {
               </div>
               <div className="h-2.5 w-full bg-gray-100 rounded-full overflow-hidden">
                 <div
-                  className={`h-full rounded-full ${s.color} transition-all duration-700`}
-                  style={{ width: `${s.pct}%` }}
+                  className={`h-full rounded-full ${s.colorClass} transition-all duration-700`}
+                  style={{
+                    width: skillCard.visible ? `${s.pct}%` : "0%",
+                    transitionDelay: "200ms",
+                  }}
                 />
               </div>
             </div>
           ))}
         </div>
       </div>
+
+      {/* Area chart – study time over weeks */}
+      <div
+        ref={areaCard.ref}
+        className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-6 ${areaCard.visible ? "animate-fade-in-up" : "opacity-0"}`}
+        style={{ animationDelay: "80ms" }}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-sm font-bold text-gray-700">
+            Phân bổ thời gian học theo kỹ năng
+          </p>
+          <div className="flex items-center gap-3 text-xs text-gray-400">
+            <span className="flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block" />
+              Số học
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded-full bg-orange-400 inline-block" />
+              Hình học
+            </span>
+          </div>
+        </div>
+        <ResponsiveContainer width="100%" height={160}>
+          <AreaChart
+            data={[
+              { week: "T1", soHoc: 30, hinhHoc: 20 },
+              { week: "T2", soHoc: 40, hinhHoc: 25 },
+              { week: "T3", soHoc: 28, hinhHoc: 32 },
+              { week: "T4", soHoc: 45, hinhHoc: 30 },
+              { week: "T5", soHoc: 38, hinhHoc: 42 },
+              { week: "T6", soHoc: 50, hinhHoc: 38 },
+              { week: "T7", soHoc: 42, hinhHoc: 48 },
+            ]}
+          >
+            <defs>
+              <linearGradient id="gradBlue" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15} />
+                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id="gradOrange" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#f97316" stopOpacity={0.15} />
+                <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+            <XAxis dataKey="week" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#9ca3af" }} />
+            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#9ca3af" }} unit=" ph" />
+            <Tooltip
+              contentStyle={{ borderRadius: "12px", border: "1px solid #f3f4f6", boxShadow: "0 4px 20px rgba(0,0,0,0.08)" }}
+              labelStyle={{ fontWeight: "600", color: "#374151" }}
+            />
+            <Area type="monotone" dataKey="soHoc" name="Số học" stroke="#3b82f6" strokeWidth={2} fill="url(#gradBlue)" isAnimationActive={areaCard.visible} animationDuration={900} />
+            <Area type="monotone" dataKey="hinhHoc" name="Hình học" stroke="#f97316" strokeWidth={2} fill="url(#gradOrange)" isAnimationActive={areaCard.visible} animationDuration={1100} />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Achievements row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { emoji: "🏆", label: "Top 10% học sinh", sub: "Tuần này" },
+          { emoji: "🔥", label: `${MOCK_DASHBOARD_STATS.streakDays} ngày liên tiếp`, sub: "Kỷ lục cá nhân" },
+          { emoji: "⭐", label: "Hoàn hảo 100/100", sub: "26/02/2026" },
+          { emoji: "🎯", label: "Đạt mục tiêu tuần", sub: "3 tuần liên tiếp" },
+        ].map(({ emoji, label, sub }) => (
+          <div key={label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col items-center text-center gap-1.5">
+            <span className="text-2xl">{emoji}</span>
+            <p className="text-xs font-bold text-gray-700 leading-tight">{label}</p>
+            <p className="text-[11px] text-gray-400">{sub}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
+

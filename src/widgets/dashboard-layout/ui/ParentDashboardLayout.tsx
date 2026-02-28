@@ -9,10 +9,22 @@ import {
   Bell,
   Menu,
   X,
+  ChevronRight,
+  User,
 } from "lucide-react";
+import {
+  MOCK_PARENT_PROFILE,
+  MOCK_CHILD_PROFILE,
+} from "@/shared/api/dashboardMockData";
 
+// ─── Nav items ────────────────────────────────────────────────
 const navItems = [
-  { to: "/dashboard", label: "Tổng quan", icon: LayoutDashboard, end: true },
+  {
+    to: "/dashboard",
+    label: "Tổng quan",
+    icon: LayoutDashboard,
+    end: true,
+  },
   { to: "/dashboard/progress", label: "Tiến độ của con", icon: TrendingUp },
   { to: "/dashboard/history", label: "Lịch sử học tập", icon: History },
   {
@@ -22,30 +34,61 @@ const navItems = [
   },
 ];
 
+// ─── Sidebar ──────────────────────────────────────────────────
 function Sidebar({ onClose }: { onClose?: () => void }) {
   const navigate = useNavigate();
   return (
-    <aside className="flex flex-col h-full w-[250px] bg-white shadow-md animate-slide-in-left">
+    <aside className="flex flex-col h-full w-[260px] bg-white border-r border-gray-100 shadow-sm animate-slide-in-left">
       {/* Logo */}
       <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
-        <span
-          className="text-xl font-extrabold"
-          style={{ color: "var(--brand-primary)" }}
-        >
-          ViOlympicKids
-        </span>
+        <div className="flex items-center gap-2">
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center"
+            style={{ backgroundColor: "var(--brand-primary)" }}
+          >
+            <span className="text-white font-extrabold text-xs">VO</span>
+          </div>
+          <span
+            className="text-lg font-extrabold tracking-tight"
+            style={{ color: "var(--brand-primary)" }}
+          >
+            ViOlympicKids
+          </span>
+        </div>
         {onClose && (
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 lg:hidden"
+            className="text-gray-400 hover:text-gray-600 lg:hidden p-1 rounded-lg hover:bg-gray-100 transition"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         )}
       </div>
 
+      {/* Child profile pill */}
+      <div className="mx-4 mt-4 mb-2 p-3 bg-orange-50 rounded-xl flex items-center gap-3 border border-orange-100">
+        <div
+          className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0"
+          style={{ backgroundColor: MOCK_CHILD_PROFILE.avatarColor }}
+        >
+          {MOCK_CHILD_PROFILE.avatarInitials}
+        </div>
+        <div className="min-w-0">
+          <p className="text-xs font-bold text-gray-800 truncate">
+            {MOCK_CHILD_PROFILE.name}
+          </p>
+          <p className="text-xs text-orange-500 font-semibold">
+            {MOCK_CHILD_PROFILE.grade}
+          </p>
+        </div>
+        <ChevronRight size={14} className="text-gray-400 shrink-0 ml-auto" />
+      </div>
+
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
+        <p className="text-[10px] uppercase font-bold text-gray-400 tracking-widest px-4 pt-2 pb-1.5">
+          Menu
+        </p>
         {navItems.map(({ to, label, icon: Icon, end }, i) => (
           <NavLink
             key={to}
@@ -54,26 +97,51 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
             onClick={onClose}
             style={{ animationDelay: `${i * 60 + 80}ms` }}
             className={({ isActive }) =>
-              `animate-fade-in-up flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+              `animate-fade-in-up flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all group ${
                 isActive
-                  ? "bg-blue-50 text-blue-600"
+                  ? "bg-blue-600 text-white shadow-sm shadow-blue-200"
                   : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
               }`
             }
           >
-            <Icon size={18} className="shrink-0" />
-            {label}
+            {({ isActive }) => (
+              <>
+                <Icon
+                  size={17}
+                  className={`shrink-0 ${isActive ? "text-white" : "text-gray-400 group-hover:text-gray-600"}`}
+                />
+                <span>{label}</span>
+                {isActive && (
+                  <ChevronRight size={14} className="ml-auto text-blue-300" />
+                )}
+              </>
+            )}
           </NavLink>
         ))}
       </nav>
 
-      {/* Logout */}
-      <div className="px-3 py-4 border-t border-gray-100">
+      {/* Bottom: Profile + Logout */}
+      <div className="px-3 py-4 border-t border-gray-100 space-y-1">
+        <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl">
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0"
+            style={{ backgroundColor: "var(--brand-primary)" }}
+          >
+            {MOCK_PARENT_PROFILE.avatarInitials}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-bold text-gray-700 truncate">
+              {MOCK_PARENT_PROFILE.name}
+            </p>
+            <p className="text-[10px] text-gray-400">Phụ huynh</p>
+          </div>
+          <User size={14} className="text-gray-400 shrink-0" />
+        </div>
         <button
           onClick={() => navigate("/login")}
-          className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 transition-all"
+          className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 transition-all"
         >
-          <LogOut size={18} />
+          <LogOut size={17} className="shrink-0" />
           Đăng xuất
         </button>
       </div>
@@ -81,9 +149,22 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
   );
 }
 
+// ─── Page title helper ────────────────────────────────────────
+function usePageTitle(pathname: string) {
+  const map: Record<string, string> = {
+    "/dashboard": "Tổng quan",
+    "/dashboard/progress": "Tiến độ của con",
+    "/dashboard/history": "Lịch sử học tập",
+    "/dashboard/subscription": "Quản lý Gói cước",
+  };
+  return map[pathname] ?? "Dashboard";
+}
+
+// ─── Layout ───────────────────────────────────────────────────
 export function ParentDashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const pageTitle = usePageTitle(location.pathname);
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
@@ -95,22 +176,20 @@ export function ParentDashboardLayout() {
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 flex lg:hidden">
-          {/* Backdrop */}
           <div
-            className="absolute inset-0 bg-black/40"
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setSidebarOpen(false)}
           />
-          {/* Drawer */}
           <div className="relative z-50">
             <Sidebar onClose={() => setSidebarOpen(false)} />
           </div>
         </div>
       )}
 
-      {/* Main */}
+      {/* Main content area */}
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         {/* Topbar */}
-        <header className="animate-fade-in-down flex items-center justify-between px-6 py-4 bg-white border-b border-gray-100 shadow-sm">
+        <header className="animate-fade-in-down flex items-center justify-between px-6 py-3.5 bg-white border-b border-gray-100 shadow-sm">
           <div className="flex items-center gap-3">
             <button
               className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition"
@@ -118,27 +197,46 @@ export function ParentDashboardLayout() {
             >
               <Menu size={20} className="text-gray-600" />
             </button>
-            <h1 className="text-base font-semibold text-gray-700 hidden sm:block">
-              Bảng điều khiển Phụ huynh
-            </h1>
+            {/* Breadcrumb */}
+            <div className="hidden sm:flex items-center gap-2 text-sm">
+              <span className="text-gray-400 font-medium">Dashboard</span>
+              <ChevronRight size={14} className="text-gray-300" />
+              <span className="font-semibold text-gray-700">{pageTitle}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-4">
-            {/* Bell */}
-            <button className="relative p-2 rounded-full hover:bg-gray-100 transition">
-              <Bell size={20} className="text-gray-500" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 animate-notification-pulse" />
+
+          <div className="flex items-center gap-2">
+            {/* Notification bell */}
+            <button className="relative p-2 rounded-xl hover:bg-gray-100 transition">
+              <Bell size={19} className="text-gray-500" />
+              {MOCK_PARENT_PROFILE.unreadNotifications > 0 && (
+                <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-red-500 animate-notification-pulse flex items-center justify-center">
+                  <span className="text-[9px] text-white font-bold">
+                    {MOCK_PARENT_PROFILE.unreadNotifications}
+                  </span>
+                </span>
+              )}
             </button>
-            {/* Avatar */}
-            <div className="flex items-center gap-2">
+
+            {/* Divider */}
+            <div className="w-px h-6 bg-gray-100 mx-1" />
+
+            {/* Avatar + Name */}
+            <div className="flex items-center gap-2.5 cursor-pointer px-2 py-1.5 rounded-xl hover:bg-gray-50 transition">
               <div
-                className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs"
                 style={{ backgroundColor: "var(--brand-primary)" }}
               >
-                PH
+                {MOCK_PARENT_PROFILE.avatarInitials}
               </div>
-              <span className="text-sm font-medium text-gray-700 hidden sm:block">
-                Phụ huynh
-              </span>
+              <div className="hidden sm:block text-left">
+                <p className="text-xs font-bold text-gray-700 leading-tight">
+                  {MOCK_PARENT_PROFILE.name}
+                </p>
+                <p className="text-[10px] text-gray-400 leading-tight">
+                  Phụ huynh
+                </p>
+              </div>
             </div>
           </div>
         </header>

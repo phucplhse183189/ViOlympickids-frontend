@@ -7,17 +7,11 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Cell,
 } from "recharts";
+import { MOCK_STUDY_DAYS } from "@/shared/api/dashboardMockData";
 
-const data = [
-  { day: "T2", phut: 20 },
-  { day: "T3", phut: 35 },
-  { day: "T4", phut: 15 },
-  { day: "T5", phut: 40 },
-  { day: "T6", phut: 30 },
-  { day: "T7", phut: 50 },
-  { day: "CN", phut: 25 },
-];
+const GOAL_MINUTES = 40; // minutes/day goal – swap with API value later
 
 function CustomTooltip({
   active,
@@ -29,10 +23,16 @@ function CustomTooltip({
   label?: string;
 }) {
   if (active && payload && payload.length) {
+    const val = payload[0].value;
     return (
-      <div className="bg-white border border-gray-100 shadow-lg rounded-xl px-4 py-2 text-sm">
-        <p className="font-semibold text-gray-700">{label}</p>
-        <p style={{ color: "var(--brand-primary)" }}>{payload[0].value} phút</p>
+      <div className="bg-white border border-gray-100 shadow-lg rounded-xl px-4 py-2.5 text-sm">
+        <p className="font-semibold text-gray-700 mb-0.5">{label}</p>
+        <p style={{ color: "var(--brand-primary)" }} className="font-bold">
+          {val} phút
+        </p>
+        <p className={`text-xs mt-0.5 ${val >= GOAL_MINUTES ? "text-green-600" : "text-orange-500"}`}>
+          {val >= GOAL_MINUTES ? "✓ Đạt mục tiêu" : `Còn ${GOAL_MINUTES - val} phút`}
+        </p>
       </div>
     );
   }
@@ -58,20 +58,51 @@ export function StudyProgressChart() {
     return () => obs.disconnect();
   }, []);
 
+  const data = MOCK_STUDY_DAYS;
+  const totalMinutes = data.reduce((s, d) => s + d.phut, 0);
+  const avgMinutes = Math.round(totalMinutes / data.length);
+  const goalDays = data.filter((d) => d.phut >= GOAL_MINUTES).length;
+
   return (
     <div
       ref={ref}
-      className={`bg-white rounded-2xl shadow-sm p-6 transition-all duration-500 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+      className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-6 transition-all duration-500 ${visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
     >
-      <h3 className="text-base font-bold text-gray-700 mb-6">
-        Nhịp độ học tập
-      </h3>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+        <div>
+          <h3 className="text-base font-bold text-gray-700">
+            Nhịp độ học tập tuần này
+          </h3>
+          <p className="text-xs text-gray-400 mt-0.5">
+            Mục tiêu: {GOAL_MINUTES} phút / ngày
+          </p>
+        </div>
+        {/* Mini stats */}
+        <div className="flex items-center gap-3">
+          <div className="text-center">
+            <p className="text-lg font-extrabold text-gray-800">{totalMinutes}</p>
+            <p className="text-[11px] text-gray-400 font-medium">Tổng phút</p>
+          </div>
+          <div className="w-px h-8 bg-gray-100" />
+          <div className="text-center">
+            <p className="text-lg font-extrabold text-gray-800">{avgMinutes}</p>
+            <p className="text-[11px] text-gray-400 font-medium">TB/ngày</p>
+          </div>
+          <div className="w-px h-8 bg-gray-100" />
+          <div className="text-center">
+            <p className="text-lg font-extrabold text-green-600">{goalDays}/7</p>
+            <p className="text-[11px] text-gray-400 font-medium">Đạt mục tiêu</p>
+          </div>
+        </div>
+      </div>
+
       <ResponsiveContainer width="100%" height={220}>
-        <BarChart data={data} barSize={28}>
+        <BarChart data={data} barSize={30}>
           <CartesianGrid
             strokeDasharray="3 3"
             vertical={false}
-            stroke="#f0f0f0"
+            stroke="#f3f4f6"
           />
           <XAxis
             dataKey="day"
@@ -85,17 +116,36 @@ export function StudyProgressChart() {
             tick={{ fontSize: 12, fill: "#9ca3af" }}
             unit=" ph"
           />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: "#f3f4f6" }} />
+          <Tooltip content={<CustomTooltip />} cursor={{ fill: "#f9fafb" }} />
           <Bar
             dataKey="phut"
-            fill="var(--brand-primary)"
             radius={[8, 8, 0, 0]}
             isAnimationActive={visible}
             animationDuration={800}
             animationEasing="ease-out"
-          />
+          >
+            {data.map((entry, index) => (
+              <Cell
+                key={`cell-${index}`}
+                fill={entry.phut >= GOAL_MINUTES ? "var(--brand-primary)" : "#e0e7ff"}
+              />
+            ))}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
+
+      {/* Goal legend */}
+      <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-50 text-xs text-gray-400">
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-sm inline-block" style={{ backgroundColor: "var(--brand-primary)" }} />
+          Đạt mục tiêu
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-sm bg-indigo-100 inline-block" />
+          Chưa đạt
+        </span>
+      </div>
     </div>
   );
+}
 }
