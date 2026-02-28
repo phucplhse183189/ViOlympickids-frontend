@@ -1,73 +1,128 @@
-# React + TypeScript + Vite
+# 🌟 ViOlympicKids — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Nền tảng học Toán 3D tương tác dành cho trẻ em, xây dựng bằng **React 19 + TypeScript + Vite**.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## ✨ Tính năng chính
 
-## React Compiler
+| Khu vực | Mô tả |
+|---|---|
+| 🏠 Landing Page | Hero section, tính năng nổi bật, bảng giá, CTA, thống kê, how-it-works |
+| 👨‍👩‍👧 Parent Dashboard | Overview, biểu đồ tiến độ học tập, lịch sử bài tập, quản lý gói cước |
+| 🧒 Student Portal | Bản đồ phiêu lưu, không gian Toán 3D tương tác, modal phần thưởng |
+| 🔐 Auth | Đăng nhập / Đăng ký, hỗ trợ đa tài khoản (học sinh, phụ huynh) |
+| 🌐 i18n | Hỗ trợ Tiếng Việt và Tiếng Anh |
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🛠️ Tech Stack
 
-## Expanding the ESLint configuration
+| Công nghệ | Phiên bản | Mục đích |
+|---|---|---|
+| React | 19 | UI framework |
+| TypeScript | 5 | Type safety |
+| Vite | 6 | Build tool / Dev server |
+| Tailwind CSS | 4 | Styling |
+| react-router-dom | 7 | Routing |
+| Recharts | 3 | Biểu đồ (Dashboard) |
+| lucide-react | 0.575 | Icons |
+| radix-ui | 1.4 | Headless UI primitives |
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 🚀 Cài đặt & Chạy
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+```bash
+# Cài dependencies
+npm install
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Chạy dev server
+npm run dev
+
+# Build production
+npm run build
+
+# Preview build
+npm run preview
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 🗂️ Cấu trúc thư mục (Feature-Sliced Design)
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+src/
+├── app/              # Providers, Router, App root
+├── pages/            # Trang theo route
+│   ├── home/         # Landing page
+│   ├── login/
+│   ├── register/
+│   ├── dashboard/    # Parent dashboard (Overview, Progress, History, Subscription)
+│   └── student/      # Student portal (LearningMap, InteractiveMathSpace, RewardModal)
+├── widgets/          # UI blocks lớn, tái sử dụng
+│   ├── header/
+│   ├── footer/
+│   ├── hero-section/
+│   ├── about-section/
+│   ├── courses-section/
+│   ├── stats-section/
+│   ├── how-it-works/
+│   ├── cta-section/
+│   ├── dashboard-layout/
+│   ├── kids-topbar/
+│   ├── student-layout/
+│   ├── study-progress-chart/
+│   └── recent-activity-table/
+├── features/         # Business logic theo tính năng
+│   └── auth/         # Login, Register forms + hooks
+├── shared/
+│   ├── lib/          # auth.tsx, i18n.tsx, utils.ts, useInView.ts
+│   └── ui/           # Button, SettingsDropdown
+└── assets/
+```
+
+---
+
+## 🔑 Tài khoản Demo
+
+| Vai trò | Email | Mật khẩu | Trang |
+|---|---|---|---|
+| Học sinh (demo) | `demo@violympickids.com` | `demo123` | `/` |
+| Phụ huynh | `parent@violympickids.com` | `parent123` | `/dashboard` |
+| Học sinh (portal) | `student@violympickids.com` | `student123` | `/student` |
+
+> Click nút gợi ý trong trang đăng nhập để tự điền nhanh.
+
+---
+
+## 🌐 Routes
+
+| Path | Trang |
+|---|---|
+| `/` | Landing Page |
+| `/login` | Đăng nhập |
+| `/register` | Đăng ký |
+| `/dashboard` | Parent Dashboard — Overview |
+| `/dashboard/progress` | Tiến độ học tập |
+| `/dashboard/history` | Lịch sử bài tập |
+| `/dashboard/subscription` | Quản lý gói cước |
+| `/student` | Student Portal — Bản đồ phiêu lưu |
+| `/student/lesson` | Không gian Toán 3D tương tác |
+
+---
+
+## 🌏 Đa ngôn ngữ (i18n)
+
+Toàn bộ nội dung UI được quản lý trong `src/shared/lib/i18n.tsx`.  
+Hỗ trợ **Tiếng Việt** (`vi`) và **Tiếng Anh** (`en`).  
+Chuyển ngôn ngữ thông qua `SettingsDropdown` ở Header.
+
+---
+
+## 📋 Nhánh Git
+
+| Nhánh | Mục đích |
+|---|---|
+| `master` | Production stable |
+| `dev` | Integration branch |
+| `feat/landing-page` | Landing page + Dashboard + Student Portal |
+| `feature/auth-login-register` | Auth flows |
