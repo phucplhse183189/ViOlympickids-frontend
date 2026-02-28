@@ -1,6 +1,8 @@
 import { useRegisterForm } from "../model/useRegisterForm";
+import { useLang } from "@/shared/lib/i18n";
 
 export function RegisterForm() {
+  const { t } = useLang();
   const {
     nickname,
     setNickname,
@@ -29,14 +31,14 @@ export function RegisterForm() {
       {/* Nickname */}
       <div>
         <label className="block text-gray-500 font-semibold mb-2 ml-1 text-sm">
-          Biệt danh của bạn
+          {t.registerForm.nicknameLabel}
         </label>
         <input
           type="text"
           value={nickname}
           onChange={(e) => setNickname(e.target.value)}
           onBlur={() => handleBlur("nickname")}
-          placeholder="Ví dụ: SieuAnhToanHoc"
+          placeholder={t.registerForm.nicknamePlaceholder}
           className={`${inputBase} ${
             touched.nickname && errors.nickname
               ? errorRing
@@ -53,14 +55,14 @@ export function RegisterForm() {
       {/* Email */}
       <div>
         <label className="block text-gray-500 font-semibold mb-2 ml-1 text-sm">
-          Tên đăng nhập hoặc Email phụ huynh
+          {t.registerForm.emailLabel}
         </label>
         <input
           type="text"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           onBlur={() => handleBlur("email")}
-          placeholder="ten@example.com"
+          placeholder={t.registerForm.emailPlaceholder}
           className={`${inputBase} ${
             touched.email && errors.email
               ? errorRing
@@ -78,14 +80,14 @@ export function RegisterForm() {
       <div className="flex gap-3">
         <div className="w-1/2">
           <label className="block text-gray-500 font-semibold mb-2 ml-1 text-sm">
-            Mật khẩu
+            {t.registerForm.passwordLabel}
           </label>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             onBlur={() => handleBlur("password")}
-            placeholder="••••••••"
+            placeholder={t.registerForm.passwordPlaceholder}
             className={`${inputBase} ${
               touched.password && errors.password
                 ? errorRing
@@ -100,14 +102,14 @@ export function RegisterForm() {
         </div>
         <div className="w-1/2">
           <label className="block text-gray-500 font-semibold mb-2 ml-1 text-sm">
-            Xác nhận mật khẩu
+            {t.registerForm.confirmPasswordLabel}
           </label>
           <input
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             onBlur={() => handleBlur("confirmPassword")}
-            placeholder="••••••••"
+            placeholder={t.registerForm.confirmPasswordPlaceholder}
             className={`${inputBase} ${
               touched.confirmPassword && errors.confirmPassword
                 ? errorRing
@@ -132,13 +134,13 @@ export function RegisterForm() {
           className="w-4 h-4 accent-blue-500 rounded"
         />
         <label htmlFor="terms" className="text-gray-400 text-xs font-semibold">
-          Tôi đồng ý với{" "}
+          {t.registerForm.agreeText}{" "}
           <a href="#" className="text-blue-500 underline hover:text-blue-600">
-            Điều khoản
-          </a>
-          {" và "}
+            {t.registerForm.termsText}
+          </a>{" "}
+          {t.registerForm.andText}{" "}
           <a href="#" className="text-blue-500 underline hover:text-blue-600">
-            Chính sách bảo mật
+            {t.registerForm.privacyText}
           </a>
         </label>
       </div>
@@ -161,10 +163,10 @@ export function RegisterForm() {
         {isLoading ? (
           <>
             <span className="animate-spin inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
-            Đang tạo tài khoản...
+            {t.registerForm.submitting}
           </>
         ) : (
-          <>Bắt đầu thôi nào! 🎉</>
+          <>{t.registerForm.submit}</>
         )}
       </button>
     </form>

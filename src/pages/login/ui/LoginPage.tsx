@@ -1,6 +1,8 @@
 import { LoginForm } from "@/features/auth/login";
+import { useLang } from "@/shared/lib/i18n";
 
 export function LoginPage() {
+  const { t } = useLang();
   return (
     <div className="bg-gradient-to-br from-blue-100 via-pink-50 to-yellow-100 min-h-screen w-full overflow-hidden relative flex items-center justify-center">
       {/* Decorative background elements */}
@@ -51,7 +53,7 @@ export function LoginPage() {
             {/* Speech bubble */}
             <div className="absolute -top-3 -right-6 bg-white px-4 py-2 rounded-2xl shadow-lg border-2 border-blue-200 rotate-6 animate-bounce z-10">
               <p className="text-blue-500 font-bold text-sm whitespace-nowrap">
-                Học thôi nào! 🎉
+                {t.loginPage.speechBubble}
               </p>
               {/* Bubble tail */}
               <div className="absolute -bottom-2 left-4 w-3 h-3 bg-white border-r-2 border-b-2 border-blue-200 rotate-45" />
@@ -71,19 +73,12 @@ export function LoginPage() {
             <h1 className="text-4xl font-bold mb-1 gradient-text drop-shadow-sm">
               ViOlympicKids
             </h1>
-            <p className="text-gray-400 text-base">Nơi học toán thật vui vẻ!</p>
+            <p className="text-gray-400 text-base">{t.loginPage.tagline}</p>
           </div>
 
           {/* Feature pills */}
           <div className="flex flex-wrap justify-center gap-2 mt-1">
-            {[
-              { icon: "🧮", label: "Toán học" },
-              { icon: "🎯", label: "Thử thách" },
-              { icon: "🏅", label: "Phần thưởng" },
-              { icon: "📈", label: "Tiến độ" },
-              { icon: "🏆", label: "Bảng xếp hạng" },
-              { icon: "⚡", label: "Thi trực tiếp" },
-            ].map(({ icon, label }) => (
+            {t.loginPage.pills.map(({ icon, label }) => (
               <span
                 key={label}
                 className="bg-white border border-blue-100 shadow-sm text-gray-500 text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1 cursor-pointer transition-all duration-200 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-500 hover:shadow-md hover:scale-105"
@@ -100,20 +95,20 @@ export function LoginPage() {
         {/* Right — Login Form */}
         <div className="w-full md:w-1/2">
           <h2 className="text-2xl font-bold text-gray-700 mb-6 text-center">
-            Chào mừng trở lại! 👋
+            {t.loginPage.welcomeBack}
           </h2>
 
           <LoginForm />
 
           <div className="mt-5 text-center">
             <span className="text-gray-400 font-semibold text-sm">
-              Chưa có tài khoản?{" "}
+              {t.loginPage.noAccount}{" "}
             </span>
             <a
               href="/register"
               className="text-pink-400 hover:text-pink-600 font-bold text-sm transition-colors border-b-2 border-transparent hover:border-pink-400"
             >
-              Đăng ký ngay
+              {t.loginPage.signupNow}
             </a>
           </div>
 
@@ -126,7 +121,7 @@ export function LoginPage() {
                 transition-all
               "
             >
-              Đăng nhập dành cho Giáo viên / Phụ huynh
+              {t.loginPage.teacherLogin}
             </a>
           </div>
         </div>
@@ -135,11 +130,11 @@ export function LoginPage() {
       {/* Footer */}
       <div className="absolute bottom-4 w-full text-center text-gray-400 text-xs">
         <span className="mx-2 cursor-pointer hover:text-gray-600 transition-colors">
-          Chính sách bảo mật
+          {t.loginPage.privacyPolicy}
         </span>
         {" • "}
         <span className="mx-2 cursor-pointer hover:text-gray-600 transition-colors">
-          Điều khoản sử dụng
+          {t.loginPage.termsOfUse}
         </span>
       </div>
     </div>

@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
 import { RegisterForm } from "@/features/auth/register";
+import { useLang } from "@/shared/lib/i18n";
 
 export function RegisterPage() {
+  const { t } = useLang();
   return (
     <div className="bg-gradient-to-br from-blue-100 via-pink-50 to-yellow-100 min-h-screen w-full overflow-hidden relative flex items-center justify-center">
       {/* Decorative background elements */}
@@ -42,20 +44,20 @@ export function RegisterPage() {
         {/* Left — Register Form */}
         <div className="w-full md:w-1/2 order-2 md:order-1">
           <h2 className="text-2xl font-bold text-gray-700 mb-6 text-center">
-            Tạo tài khoản 🚀
+            {t.registerPage.createAccount}
           </h2>
 
           <RegisterForm />
 
           <div className="mt-6 text-center">
             <span className="text-gray-400 text-sm font-semibold">
-              Đã có tài khoản?{" "}
+              {t.registerPage.hasAccount}{" "}
             </span>
             <Link
               to="/login"
               className="text-blue-400 hover:text-blue-600 font-bold text-sm transition-colors border-b-2 border-transparent hover:border-blue-400"
             >
-              Đăng nhập ngay
+              {t.registerPage.loginNow}
             </Link>
           </div>
         </div>
@@ -76,7 +78,7 @@ export function RegisterPage() {
             {/* Speech bubble */}
             <div className="absolute -top-3 -right-6 bg-white px-4 py-2 rounded-2xl shadow-lg border-2 border-green-200 rotate-6 animate-bounce z-10">
               <p className="text-green-500 font-bold text-sm whitespace-nowrap">
-                Tham gia cùng bạn bè! 🎉
+                {t.registerPage.speechBubble}
               </p>
               <div className="absolute -bottom-2 left-4 w-3 h-3 bg-white border-r-2 border-b-2 border-green-200 rotate-45" />
             </div>
@@ -95,19 +97,12 @@ export function RegisterPage() {
             <h1 className="text-4xl font-bold mb-1 gradient-text drop-shadow-sm">
               ViOlympicKids
             </h1>
-            <p className="text-gray-400 text-base">Nơi học toán thật vui vẻ!</p>
+            <p className="text-gray-400 text-base">{t.registerPage.tagline}</p>
           </div>
 
           {/* Feature pills */}
           <div className="flex flex-wrap justify-center gap-2 mt-1">
-            {[
-              { icon: "🧮", label: "Toán học" },
-              { icon: "🎯", label: "Thử thách" },
-              { icon: "🏅", label: "Phần thưởng" },
-              { icon: "📈", label: "Tiến độ" },
-              { icon: "🏆", label: "Bảng xếp hạng" },
-              { icon: "⚡", label: "Thi trực tiếp" },
-            ].map(({ icon, label }) => (
+            {t.registerPage.pills.map(({ icon, label }) => (
               <span
                 key={label}
                 className="bg-white border border-green-100 shadow-sm text-gray-500 text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1 cursor-pointer transition-all duration-200 hover:bg-green-50 hover:border-green-300 hover:text-green-600 hover:shadow-md hover:scale-105"
@@ -122,11 +117,11 @@ export function RegisterPage() {
       {/* Footer */}
       <div className="absolute bottom-4 w-full text-center text-gray-400 text-xs">
         <span className="mx-2 cursor-pointer hover:text-gray-600 transition-colors">
-          Chính sách bảo mật
+          {t.registerPage.privacyPolicy}
         </span>
         {" • "}
         <span className="mx-2 cursor-pointer hover:text-gray-600 transition-colors">
-          Điều khoản sử dụng
+          {t.registerPage.termsOfUse}
         </span>
       </div>
     </div>

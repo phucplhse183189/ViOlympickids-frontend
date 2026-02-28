@@ -1,8 +1,35 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/shared/lib/auth";
+
+// Mock accounts for testing
+const MOCK_ACCOUNT = {
+  email: "demo@violympickids.com",
+  password: "demo123",
+  nickname: "DemoKid",
+  avatarId: "fox",
+};
+
+const PARENT_ACCOUNT = {
+  email: "parent@violympickids.com",
+  password: "parent123",
+  nickname: "Phụ Huynh",
+  avatarId: "panda",
+  role: "parent",
+};
+
+const STUDENT_ACCOUNT = {
+  email: "student@violympickids.com",
+  password: "student123",
+  nickname: "Bé Cún",
+  avatarId: "fox",
+  role: "student",
+};
 
 interface LoginErrors {
   email?: string;
   password?: string;
+  general?: string;
 }
 
 function validateEmail(email: string): boolean {
@@ -10,6 +37,8 @@ function validateEmail(email: string): boolean {
 }
 
 export function useLoginForm() {
+  const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<LoginErrors>({});
@@ -43,8 +72,39 @@ export function useLoginForm() {
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
     setIsLoading(true);
-    // TODO: implement login API call
-    setTimeout(() => setIsLoading(false), 1500);
+    setTimeout(() => {
+      if (email === MOCK_ACCOUNT.email && password === MOCK_ACCOUNT.password) {
+        login({
+          nickname: MOCK_ACCOUNT.nickname,
+          email: MOCK_ACCOUNT.email,
+          avatarId: MOCK_ACCOUNT.avatarId,
+        });
+        navigate("/");
+      } else if (
+        email === PARENT_ACCOUNT.email &&
+        password === PARENT_ACCOUNT.password
+      ) {
+        login({
+          nickname: PARENT_ACCOUNT.nickname,
+          email: PARENT_ACCOUNT.email,
+          avatarId: PARENT_ACCOUNT.avatarId,
+        });
+        navigate("/dashboard");
+      } else if (
+        email === STUDENT_ACCOUNT.email &&
+        password === STUDENT_ACCOUNT.password
+      ) {
+        login({
+          nickname: STUDENT_ACCOUNT.nickname,
+          email: STUDENT_ACCOUNT.email,
+          avatarId: STUDENT_ACCOUNT.avatarId,
+        });
+        navigate("/student");
+      } else {
+        setErrors({ general: "Email hoặc mật khẩu không đúng." });
+        setIsLoading(false);
+      }
+    }, 1000);
   };
 
   return {

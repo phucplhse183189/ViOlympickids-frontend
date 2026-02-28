@@ -1,16 +1,25 @@
-import { Button } from "@/shared/ui/button";
+import { Header } from "@/widgets/header";
+import { HeroSection } from "@/widgets/hero-section";
+import { StatsSection } from "@/widgets/stats-section";
+import { AboutSection } from "@/widgets/about-section";
+import { CoursesSection } from "@/widgets/courses-section";
+import { HowItWorksSection } from "@/widgets/how-it-works";
+import { CtaSection } from "@/widgets/cta-section";
+import { Footer } from "@/widgets/footer";
 
 export function HomePage() {
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background text-foreground">
-      <h1 className="text-4xl font-bold">EXE101 🚀</h1>
-      <p className="text-muted-foreground">
-        React + TypeScript + Tailwind v4 + FSD + shadcn/ui
-      </p>
-      <div className="flex gap-2">
-        <Button>Get Started</Button>
-        <Button variant="outline">Learn More</Button>
-      </div>
-    </main>
+    <div className="min-h-screen bg-white text-gray-700">
+      <Header />
+      <main>
+        <HeroSection />
+        <StatsSection />
+        <AboutSection />
+        <CoursesSection />
+        <HowItWorksSection />
+        <CtaSection />
+      </main>
+      <Footer />
+    </div>
   );
 }
