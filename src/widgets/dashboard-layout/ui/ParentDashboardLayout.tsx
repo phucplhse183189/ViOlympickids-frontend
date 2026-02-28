@@ -12,10 +12,8 @@ import {
   ChevronRight,
   User,
 } from "lucide-react";
-import {
-  MOCK_PARENT_PROFILE,
-  MOCK_CHILD_PROFILE,
-} from "@/shared/api/dashboardMockData";
+import { MOCK_PARENT_PROFILE } from "@/shared/api/dashboardMockData";
+import { ProfileSelector } from "./ProfileSelector";
 
 // ─── Nav items ────────────────────────────────────────────────
 const navItems = [
@@ -65,24 +63,8 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
         )}
       </div>
 
-      {/* Child profile pill */}
-      <div className="mx-4 mt-4 mb-2 p-3 bg-orange-50 rounded-xl flex items-center gap-3 border border-orange-100">
-        <div
-          className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0"
-          style={{ backgroundColor: MOCK_CHILD_PROFILE.avatarColor }}
-        >
-          {MOCK_CHILD_PROFILE.avatarInitials}
-        </div>
-        <div className="min-w-0">
-          <p className="text-xs font-bold text-gray-800 truncate">
-            {MOCK_CHILD_PROFILE.name}
-          </p>
-          <p className="text-xs text-orange-500 font-semibold">
-            {MOCK_CHILD_PROFILE.grade}
-          </p>
-        </div>
-        <ChevronRight size={14} className="text-gray-400 shrink-0 ml-auto" />
-      </div>
+      {/* Profile selector – dropdown with multi-child support */}
+      <ProfileSelector />
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
