@@ -2,14 +2,86 @@
 
 export type LessonStatus = "done" | "active" | "locked";
 
-export interface QuizQuestion {
+export type Shape3DName = "cube" | "sphere" | "cylinder" | "cone" | "pyramid";
+export type QuestionType =
+  | "multiple-choice"
+  | "count-tap"
+  | "true-false"
+  | "drag-match";
+
+/** Stats shown in the explanation panel */
+export interface ExplanationStat {
+  label: string;
+  value: string | number;
+  icon: string;
+}
+
+/** Rich explanation data shown after answering */
+export interface ExplanationDetail {
+  funFact?: string;
+  stats?: ExplanationStat[];
+  shape3d?: Shape3DName;
+}
+
+// ── Question variants (discriminated union) ───────────────────────────────────
+
+interface BaseQuestion {
   id: number;
   text: string;
   emoji?: string;
-  options: string[];
-  correctIndex: number;
+  shape3d?: Shape3DName;
   hint: string;
   explanation: string;
+  explanationDetail?: ExplanationDetail;
+}
+
+export interface MCQuestion extends BaseQuestion {
+  type?: "multiple-choice";
+  options: string[];
+  correctIndex: number;
+}
+
+export interface CountTapQuestion extends BaseQuestion {
+  type: "count-tap";
+  countTap: {
+    targetCount: number;
+    label: string; // "mặt", "cạnh", "đỉnh"
+    maxCount?: number;
+  };
+}
+
+export interface TrueFalseQuestion extends BaseQuestion {
+  type: "true-false";
+  trueFalse: {
+    isTrue: boolean;
+  };
+}
+
+export interface DragMatchQuestion extends BaseQuestion {
+  type: "drag-match";
+  dragMatch: {
+    pairs: { left: string; right: string }[];
+  };
+}
+
+export type QuizQuestion =
+  | MCQuestion
+  | CountTapQuestion
+  | TrueFalseQuestion
+  | DragMatchQuestion;
+
+/** Type-guard helpers */
+export function isMCQ(q: QuizQuestion): q is MCQuestion {
+  return !q.type || q.type === "multiple-choice";
+}
+export function isCountTap(q: QuizQuestion): q is CountTapQuestion {
+  return q.type === "count-tap";
+}
+export function isTrueFalse(q: QuizQuestion): q is TrueFalseQuestion {
+  return q.type === "true-false";
+}
+export function isDragMatch(q: QuizQuestion): q is DragMatchQuestion {
+  return q.type === "drag-match";
 }
 
 export interface Lesson {
@@ -39,6 +111,27 @@ export interface Chapter {
 
 // ─── Chapter 1 – Hình học 3D ──────────────────────────────────────────────────
 
+const CUBE_STATS = [
+  { label: "Mặt", value: 6, icon: "🟦" },
+  { label: "Cạnh", value: 12, icon: "📏" },
+  { label: "Đỉnh", value: 8, icon: "⭐" },
+];
+const SPHERE_STATS = [
+  { label: "Mặt phẳng", value: 0, icon: "⭕" },
+  { label: "Cạnh", value: 0, icon: "📏" },
+  { label: "Đỉnh", value: 0, icon: "⭐" },
+];
+const CYLINDER_STATS = [
+  { label: "Mặt", value: 3, icon: "🟢" },
+  { label: "Cạnh", value: 2, icon: "📏" },
+  { label: "Đỉnh", value: 0, icon: "⭐" },
+];
+const PYRAMID_STATS = [
+  { label: "Mặt (tứ giác)", value: 5, icon: "🔺" },
+  { label: "Cạnh", value: 8, icon: "📏" },
+  { label: "Đỉnh", value: 5, icon: "⭐" },
+];
+
 const chapter1Lessons: Lesson[] = [
   {
     id: 101,
@@ -51,53 +144,93 @@ const chapter1Lessons: Lesson[] = [
     duration: 5,
     pos: [12, 72],
     questions: [
+      // ── Q1: count-tap (đếm mặt) ──
       {
         id: 1,
-        text: "Khối lập phương có bao nhiêu mặt?",
+        type: "count-tap",
+        text: "Hãy đếm: Khối lập phương có bao nhiêu mặt?",
         emoji: "📦",
-        options: ["4 mặt", "6 mặt", "8 mặt", "12 mặt"],
-        correctIndex: 1,
-        hint: "Hãy đếm từng mặt của hộp vuông bé nhé!",
+        shape3d: "cube",
+        countTap: { targetCount: 6, label: "mặt", maxCount: 12 },
+        hint: "Xoay hình 3D và đếm từng mặt: trên, dưới, trước, sau, trái, phải!",
         explanation:
           "Khối lập phương có 6 mặt, mỗi mặt là một hình vuông bằng nhau. 🎉",
+        explanationDetail: {
+          shape3d: "cube",
+          stats: CUBE_STATS,
+          funFact:
+            "Viên xúc xắc mà bé hay chơi chính là một khối lập phương! Tổng các mặt đối diện luôn bằng 7.",
+        },
       },
+      // ── Q2: MCQ ──
       {
         id: 2,
         text: "Mỗi mặt của khối lập phương là hình gì?",
         emoji: "🔷",
+        shape3d: "cube",
         options: ["Hình tròn", "Hình tam giác", "Hình vuông", "Hình chữ nhật"],
         correctIndex: 2,
         hint: "Nhìn vào các mặt của chiếc hộp — chúng đều như nhau!",
         explanation:
           "Mỗi mặt của khối lập phương là hình vuông — đẹp và đều nhau! ✨",
+        explanationDetail: {
+          shape3d: "cube",
+          stats: CUBE_STATS,
+          funFact:
+            'Chữ "lập phương" nghĩa là vuông đều mọi hướng. Tất cả 6 mặt đều là hình vuông giống hệt nhau!',
+        },
       },
+      // ── Q3: count-tap (đếm đỉnh) ──
       {
         id: 3,
-        text: "Khối lập phương có bao nhiêu đỉnh (góc)?",
+        type: "count-tap",
+        text: "Đếm xem: Khối lập phương có bao nhiêu đỉnh?",
         emoji: "🔢",
-        options: ["4 đỉnh", "6 đỉnh", "8 đỉnh", "10 đỉnh"],
-        correctIndex: 2,
-        hint: "Đếm các góc cạnh của hộp vuông nhé!",
+        shape3d: "cube",
+        countTap: { targetCount: 8, label: "đỉnh", maxCount: 12 },
+        hint: "Đỉnh là chỗ 3 cạnh gặp nhau. Xoay hình 3D và đếm các góc!",
         explanation:
           "Khối lập phương có 8 đỉnh — giống như 8 góc của chiếc hộp! 💡",
+        explanationDetail: {
+          shape3d: "cube",
+          stats: CUBE_STATS,
+          funFact:
+            "Mỗi đỉnh của khối lập phương là nơi 3 mặt và 3 cạnh gặp nhau!",
+        },
       },
+      // ── Q4: MCQ ──
       {
         id: 4,
         text: "Ví dụ nào dưới đây là khối lập phương?",
         emoji: "🌍",
+        shape3d: "cube",
         options: ["Quả bóng", "Hộp sữa vuông", "Lon nước ngọt", "Quả cam"],
         correctIndex: 1,
         hint: "Tìm vật có 6 mặt bằng nhau là hình vuông!",
         explanation: "Hộp sữa vuông là ví dụ điển hình của khối lập phương! 🥛",
+        explanationDetail: {
+          shape3d: "cube",
+          stats: CUBE_STATS,
+          funFact:
+            "Rubik's Cube cũng là một khối lập phương nổi tiếng. Nó có hơn 43 tỷ tỷ cách xoay khác nhau!",
+        },
       },
+      // ── Q5: count-tap (đếm cạnh) ──
       {
         id: 5,
-        text: "Khối lập phương có bao nhiêu cạnh?",
+        type: "count-tap",
+        text: "Đếm nào: Khối lập phương có bao nhiêu cạnh?",
         emoji: "📏",
-        options: ["8 cạnh", "10 cạnh", "12 cạnh", "16 cạnh"],
-        correctIndex: 2,
-        hint: "Đếm tất cả các đường viền của hộp!",
+        shape3d: "cube",
+        countTap: { targetCount: 12, label: "cạnh", maxCount: 16 },
+        hint: "Cạnh là đường nối 2 đỉnh. Mỗi mặt vuông có 4 cạnh, nhưng mỗi cạnh được chia sẻ!",
         explanation: "Khối lập phương có 12 cạnh, tất cả đều bằng nhau! 🏆",
+        explanationDetail: {
+          shape3d: "cube",
+          stats: CUBE_STATS,
+          funFact:
+            "Công thức Euler: Đỉnh − Cạnh + Mặt = 2. Thử kiểm tra: 8 − 12 + 6 = 2. Đúng rồi! 🧮",
+        },
       },
     ],
   },
@@ -112,52 +245,82 @@ const chapter1Lessons: Lesson[] = [
     duration: 5,
     pos: [35, 53],
     questions: [
+      // ── Q1: true-false ──
       {
         id: 1,
-        text: "Khối cầu có bao nhiêu mặt phẳng?",
+        type: "true-false",
+        text: "Đúng hay Sai: Khối cầu có ít nhất 1 mặt phẳng?",
         emoji: "⚽",
-        options: ["0 mặt", "1 mặt", "2 mặt", "6 mặt"],
-        correctIndex: 0,
+        shape3d: "sphere",
+        trueFalse: { isTrue: false },
         hint: "Cầm quả bóng lên — có mặt phẳng nào không?",
-        explanation: "Khối cầu không có mặt phẳng, toàn bộ bề mặt đều cong! 🌟",
+        explanation:
+          "SAI — Khối cầu không có mặt phẳng nào cả! Toàn bộ bề mặt đều cong. 🌟",
+        explanationDetail: {
+          shape3d: "sphere",
+          stats: SPHERE_STATS,
+          funFact:
+            "Trái đất cũng gần giống khối cầu! Nhưng nó hơi dẹt ở hai cực vì tự quay.",
+        },
       },
+      // ── Q2: true-false ──
       {
         id: 2,
-        text: "Khối cầu có thể lăn được không?",
+        type: "true-false",
+        text: "Đúng hay Sai: Khối cầu có thể lăn được mọi hướng?",
         emoji: "🏀",
-        options: [
-          "Được, vì bề mặt tròn",
-          "Không được",
-          "Chỉ lăn sang trái",
-          "Chỉ lăn xuống dốc",
-        ],
-        correctIndex: 0,
-        hint: "Hãy nghĩ về quả bóng đá!",
+        shape3d: "sphere",
+        trueFalse: { isTrue: true },
+        hint: "Hãy nghĩ về quả bóng đá khi sút!",
         explanation:
-          "Khối cầu lăn được vì bề mặt hoàn toàn cong, không có góc cạnh! ⚽",
+          "ĐÚNG — Khối cầu lăn được mọi hướng vì bề mặt hoàn toàn cong, không có góc cạnh! ⚽",
+        explanationDetail: {
+          shape3d: "sphere",
+          stats: SPHERE_STATS,
+          funFact:
+            "Bong bóng xà phòng tạo hình cầu vì đó là hình dạng có diện tích bề mặt nhỏ nhất cho cùng thể tích!",
+        },
       },
+      // ── Q3: MCQ ──
       {
         id: 3,
         text: "Ví dụ nào dưới đây là khối cầu?",
         emoji: "🌍",
+        shape3d: "sphere",
         options: ["Hộp sữa", "Quả dưa hấu tròn", "Quyển sách", "Chiếc bàn"],
         correctIndex: 1,
         hint: "Tìm vật tròn hoàn toàn!",
         explanation: "Quả dưa hấu tròn là ví dụ của khối cầu! 🍉",
+        explanationDetail: {
+          shape3d: "sphere",
+          stats: SPHERE_STATS,
+          funFact:
+            "Quả bóng đá, viên bi, quả địa cầu — tất cả đều có dạng khối cầu!",
+        },
       },
+      // ── Q4: count-tap (đếm đỉnh = 0) ──
       {
         id: 4,
-        text: "Khối cầu có bao nhiêu đỉnh?",
+        type: "count-tap",
+        text: "Đếm xem: Khối cầu có bao nhiêu đỉnh?",
         emoji: "🔢",
-        options: ["0 đỉnh", "1 đỉnh", "4 đỉnh", "8 đỉnh"],
-        correctIndex: 0,
-        hint: "Khối cầu tròn, có góc không?",
-        explanation: "Khối cầu không có đỉnh vì bề mặt hoàn toàn cong! 💫",
+        shape3d: "sphere",
+        countTap: { targetCount: 0, label: "đỉnh", maxCount: 10 },
+        hint: "Khối cầu tròn trơn, có góc nhọn nào không?",
+        explanation: "Khối cầu có 0 đỉnh vì bề mặt hoàn toàn cong! 💫",
+        explanationDetail: {
+          shape3d: "sphere",
+          stats: SPHERE_STATS,
+          funFact:
+            "Khối cầu là hình duy nhất mà nhìn từ hướng nào cũng giống hệt nhau!",
+        },
       },
+      // ── Q5: MCQ ──
       {
         id: 5,
         text: "So với khối lập phương, khối cầu có gì khác?",
         emoji: "🤔",
+        shape3d: "sphere",
         options: [
           "Khối cầu có mặt phẳng",
           "Khối cầu không có mặt phẳng và đỉnh",
@@ -168,6 +331,12 @@ const chapter1Lessons: Lesson[] = [
         hint: "Nhớ lại: khối lập phương có 6 mặt phẳng!",
         explanation:
           "Khối cầu không có mặt phẳng và đỉnh, khác hoàn toàn với khối lập phương! 🎯",
+        explanationDetail: {
+          shape3d: "sphere",
+          stats: SPHERE_STATS,
+          funFact:
+            "Khối lập phương có 6 mặt, 12 cạnh, 8 đỉnh. Khối cầu có 0-0-0. Hai hình hoàn toàn trái ngược!",
+        },
       },
     ],
   },
@@ -182,57 +351,93 @@ const chapter1Lessons: Lesson[] = [
     duration: 6,
     pos: [60, 35],
     questions: [
+      // ── Q1: count-tap (đếm mặt) ──
       {
         id: 1,
-        text: "Hình trụ có bao nhiêu mặt?",
+        type: "count-tap",
+        text: "Đếm nào: Hình trụ có bao nhiêu mặt?",
         emoji: "🥤",
-        options: ["1 mặt", "2 mặt", "3 mặt", "4 mặt"],
-        correctIndex: 2,
-        hint: "Nhìn vào lon nước ngọt: trên, dưới và xung quanh!",
+        shape3d: "cylinder",
+        countTap: { targetCount: 3, label: "mặt", maxCount: 8 },
+        hint: "Nhìn vào lon nước ngọt: trên, dưới và mặt cong xung quanh!",
         explanation:
           "Hình trụ có 3 mặt: 2 mặt tròn (trên và dưới) + 1 mặt cong xung quanh! 🥤",
+        explanationDetail: {
+          shape3d: "cylinder",
+          stats: CYLINDER_STATS,
+          funFact:
+            "Nếu cắt mặt cong hình trụ và trải ra, ta sẽ được một hình chữ nhật!",
+        },
       },
+      // ── Q2: MCQ ──
       {
         id: 2,
         text: "Hai mặt phẳng của hình trụ có hình gì?",
         emoji: "⭕",
+        shape3d: "cylinder",
         options: ["Hình vuông", "Hình tròn", "Hình tam giác", "Hình chữ nhật"],
         correctIndex: 1,
         hint: "Nhìn từ trên xuống lon nước ngọt!",
         explanation:
           "Hai mặt phẳng của hình trụ là hai hình tròn bằng nhau! ⭕",
+        explanationDetail: {
+          shape3d: "cylinder",
+          stats: CYLINDER_STATS,
+          funFact:
+            "Hai hình tròn ở hai đầu hình trụ luôn song song và có cùng kích thước!",
+        },
       },
+      // ── Q3: true-false ──
       {
         id: 3,
-        text: "Hình trụ có thể lăn được không?",
+        type: "true-false",
+        text: "Đúng hay Sai: Hình trụ có thể lăn sang hai bên?",
         emoji: "🏗️",
-        options: [
-          "Không lăn được",
-          "Lăn sang bên được",
-          "Chỉ lăn thẳng đứng",
-          "Lăn về mọi hướng",
-        ],
-        correctIndex: 1,
+        shape3d: "cylinder",
+        trueFalse: { isTrue: true },
         hint: "Đặt lon nước ngọt nằm ngang và đẩy nhẹ!",
-        explanation: "Hình trụ lăn được sang hai bên vì mặt cong bên ngoài! 🎡",
+        explanation:
+          "ĐÚNG — Hình trụ lăn được sang hai bên nhờ mặt cong bên ngoài! 🎡",
+        explanationDetail: {
+          shape3d: "cylinder",
+          stats: CYLINDER_STATS,
+          funFact:
+            "Hình trụ chỉ lăn theo một hướng (sang bên), khác với khối cầu lăn mọi hướng!",
+        },
       },
+      // ── Q4: MCQ ──
       {
         id: 4,
         text: "Vật nào sau đây có dạng hình trụ?",
         emoji: "🌍",
+        shape3d: "cylinder",
         options: ["Quả bóng", "Hộp bánh vuông", "Lon nước ngọt", "Quyển vở"],
         correctIndex: 2,
         hint: "Tìm vật có 2 đáy tròn và thân hình ống!",
         explanation: "Lon nước ngọt có dạng hình trụ! 🥤",
+        explanationDetail: {
+          shape3d: "cylinder",
+          stats: CYLINDER_STATS,
+          funFact:
+            "Ống nước, cục pin, cây nến — tất cả đều có dạng hình trụ trong cuộc sống!",
+        },
       },
+      // ── Q5: count-tap (đếm đỉnh) ──
       {
         id: 5,
-        text: "Hình trụ có bao nhiêu đỉnh?",
+        type: "count-tap",
+        text: "Đếm nào: Hình trụ có bao nhiêu đỉnh?",
         emoji: "🔢",
-        options: ["0 đỉnh", "2 đỉnh", "4 đỉnh", "8 đỉnh"],
-        correctIndex: 0,
+        shape3d: "cylinder",
+        countTap: { targetCount: 0, label: "đỉnh", maxCount: 8 },
         hint: "Nhìn lon nước ngọt — có góc nhọn không?",
-        explanation: "Hình trụ không có đỉnh! Các cạnh đều tròn và cong. 💡",
+        explanation: "Hình trụ có 0 đỉnh! Các cạnh đều tròn và cong. 💡",
+        explanationDetail: {
+          shape3d: "cylinder",
+          stats: CYLINDER_STATS,
+          funFact:
+            "Hình trụ có 2 cạnh (tròn) nhưng 0 đỉnh — vì không có chỗ nào nhọn cả!",
+        },
       },
     ],
   },
@@ -247,10 +452,12 @@ const chapter1Lessons: Lesson[] = [
     duration: 7,
     pos: [76, 56],
     questions: [
+      // ── Q1: MCQ ──
       {
         id: 1,
         text: "Kim tự tháp Ai Cập là ví dụ của hình gì?",
         emoji: "🏛️",
+        shape3d: "pyramid",
         options: [
           "Khối lập phương",
           "Khối cầu",
@@ -260,41 +467,77 @@ const chapter1Lessons: Lesson[] = [
         correctIndex: 2,
         hint: "Kim tự tháp có đáy vuông và 4 mặt tam giác!",
         explanation: "Kim tự tháp là ví dụ điển hình của khối chóp tứ giác! 🏛️",
+        explanationDetail: {
+          shape3d: "pyramid",
+          stats: PYRAMID_STATS,
+          funFact:
+            "Kim tự tháp Giza được xây cách đây hơn 4.500 năm và là 1 trong 7 kỳ quan thế giới cổ đại!",
+        },
       },
+      // ── Q2: count-tap (đếm mặt chóp tam giác) ──
       {
         id: 2,
-        text: "Khối chóp tam giác có bao nhiêu mặt?",
+        type: "count-tap",
+        text: "Đếm xem: Khối chóp tam giác có bao nhiêu mặt?",
         emoji: "🔺",
-        options: ["3 mặt", "4 mặt", "5 mặt", "6 mặt"],
-        correctIndex: 1,
-        hint: "Đếm cả đáy và các mặt bên!",
+        shape3d: "pyramid",
+        countTap: { targetCount: 4, label: "mặt", maxCount: 8 },
+        hint: "Đếm cả đáy và các mặt bên! Đáy là tam giác + 3 mặt bên.",
         explanation:
           "Khối chóp tam giác có 4 mặt: 1 đáy tam giác + 3 mặt bên tam giác! 🎯",
+        explanationDetail: {
+          shape3d: "pyramid",
+          stats: [
+            { label: "Mặt", value: 4, icon: "🔺" },
+            { label: "Cạnh", value: 6, icon: "📏" },
+            { label: "Đỉnh", value: 4, icon: "⭐" },
+          ],
+          funFact:
+            "Khối chóp tam giác còn gọi là tứ diện. Tất cả mặt đều là tam giác!",
+        },
       },
+      // ── Q3: count-tap (đếm đỉnh chóp tứ giác) ──
       {
         id: 3,
-        text: "Khối chóp tứ giác có bao nhiêu đỉnh?",
+        type: "count-tap",
+        text: "Đếm xem: Khối chóp tứ giác có bao nhiêu đỉnh?",
         emoji: "⛰️",
-        options: ["3 đỉnh", "4 đỉnh", "5 đỉnh", "8 đỉnh"],
-        correctIndex: 2,
+        shape3d: "pyramid",
+        countTap: { targetCount: 5, label: "đỉnh", maxCount: 10 },
         hint: "Đếm 4 góc đáy + 1 đỉnh trên cùng!",
         explanation:
           "Khối chóp tứ giác có 5 đỉnh: 4 đỉnh ở đáy + 1 đỉnh nhọn trên cùng! 🏔️",
+        explanationDetail: {
+          shape3d: "pyramid",
+          stats: PYRAMID_STATS,
+          funFact:
+            "Đỉnh nhọn trên cùng gọi là 'đỉnh chóp' — nơi tất cả các mặt bên gặp nhau!",
+        },
       },
+      // ── Q4: count-tap (đếm mặt chóp tứ giác) ──
       {
         id: 4,
-        text: "Khối chóp tứ giác có bao nhiêu mặt?",
+        type: "count-tap",
+        text: "Đếm nào: Khối chóp tứ giác có bao nhiêu mặt?",
         emoji: "📐",
-        options: ["4 mặt", "5 mặt", "6 mặt", "8 mặt"],
-        correctIndex: 1,
-        hint: "1 đáy hình vuông + các mặt bên tam giác!",
+        shape3d: "pyramid",
+        countTap: { targetCount: 5, label: "mặt", maxCount: 8 },
+        hint: "1 đáy hình vuông + các mặt bên tam giác bao quanh!",
         explanation:
           "Khối chóp tứ giác có 5 mặt: 1 đáy hình vuông + 4 mặt tam giác! 🌟",
+        explanationDetail: {
+          shape3d: "pyramid",
+          stats: PYRAMID_STATS,
+          funFact:
+            "Khối chóp tứ giác rất vững chãi — đó là lý do người Ai Cập cổ đại chọn hình này để xây kim tự tháp!",
+        },
       },
+      // ── Q5: MCQ ──
       {
         id: 5,
         text: "Đặc điểm nào giúp nhận biết khối chóp?",
         emoji: "🤔",
+        shape3d: "cone",
         options: [
           "Có tất cả mặt là hình vuông",
           "Có một đỉnh nhọn ở trên cùng",
@@ -305,6 +548,12 @@ const chapter1Lessons: Lesson[] = [
         hint: "Nghĩ về hình kim tự tháp!",
         explanation:
           "Khối chóp luôn có một đỉnh nhọn ở trên — đó là đặc điểm nổi bật! ⛰️",
+        explanationDetail: {
+          shape3d: "cone",
+          stats: PYRAMID_STATS,
+          funFact:
+            "Cái nón lá Việt Nam cũng có dạng hình chóp! Đỉnh nhọn ở trên giúp nước mưa chảy xuống.",
+        },
       },
     ],
   },
@@ -319,19 +568,30 @@ const chapter1Lessons: Lesson[] = [
     duration: 8,
     pos: [88, 76],
     questions: [
+      // ── Q1: true-false ──
       {
         id: 1,
-        text: "Hình nào KHÔNG có mặt phẳng?",
+        type: "true-false",
+        text: "Đúng hay Sai: Khối cầu không có mặt phẳng nào?",
         emoji: "🤔",
-        options: ["Khối lập phương", "Khối cầu", "Hình trụ", "Khối chóp"],
-        correctIndex: 1,
-        hint: "Hình nào tròn hoàn toàn?",
-        explanation: "Khối cầu không có mặt phẳng. Tất cả bề mặt đều cong! ⚽",
+        shape3d: "sphere",
+        trueFalse: { isTrue: true },
+        hint: "Hình nào tròn hoàn toàn, không có mặt phẳng?",
+        explanation:
+          "ĐÚNG — Khối cầu không có mặt phẳng. Tất cả bề mặt đều cong! ⚽",
+        explanationDetail: {
+          shape3d: "sphere",
+          stats: SPHERE_STATS,
+          funFact:
+            "Trong tất cả các hình 3D đã học, chỉ có khối cầu là không có mặt phẳng nào!",
+        },
       },
+      // ── Q2: MCQ ──
       {
         id: 2,
         text: "Hình nào có nhiều mặt nhất trong 4 hình đã học?",
         emoji: "📊",
+        shape3d: "cube",
         options: [
           "Khối lập phương (6)",
           "Khối cầu (0)",
@@ -342,21 +602,37 @@ const chapter1Lessons: Lesson[] = [
         hint: "Đếm mặt của từng hình!",
         explanation:
           "Khối lập phương có 6 mặt phẳng — nhiều nhất trong các hình đã học! 📦",
+        explanationDetail: {
+          shape3d: "cube",
+          stats: CUBE_STATS,
+          funFact:
+            "Xếp hạng: Lập phương (6) > Chóp tứ giác (5) > Chóp tam giác (4) > Hình trụ (3) > Cầu (0).",
+        },
       },
+      // ── Q3: true-false ──
       {
         id: 3,
-        text: "Hình nào có thể lăn tự do mọi hướng?",
+        type: "true-false",
+        text: "Đúng hay Sai: Hình trụ lăn được mọi hướng giống khối cầu?",
         emoji: "🎲",
-        options: ["Khối lập phương", "Khối cầu", "Hình trụ", "Khối chóp"],
-        correctIndex: 1,
-        hint: "Hình nào không có cạnh hay mặt phẳng?",
+        shape3d: "cylinder",
+        trueFalse: { isTrue: false },
+        hint: "Khối cầu lăn mọi hướng, hình trụ thì sao?",
         explanation:
-          "Khối cầu lăn tự do mọi hướng vì bề mặt hoàn toàn cong! 🌍",
+          "SAI — Hình trụ chỉ lăn sang hai bên, không lăn được mọi hướng như khối cầu! 🌍",
+        explanationDetail: {
+          shape3d: "cylinder",
+          stats: CYLINDER_STATS,
+          funFact:
+            "Khối cầu lăn 360° mọi hướng. Hình trụ chỉ lăn theo 1 trục. Lập phương không lăn được!",
+        },
       },
+      // ── Q4: MCQ ──
       {
         id: 4,
         text: "Vật nào CÓ CÙNG hình dạng với khối lập phương?",
         emoji: "🌍",
+        shape3d: "cube",
         options: [
           "Quả bóng tennis",
           "Hộp quà vuông",
@@ -367,15 +643,35 @@ const chapter1Lessons: Lesson[] = [
         hint: "Tìm vật có 6 mặt bằng nhau!",
         explanation:
           "Hộp quà vuông có 6 mặt hình vuông bằng nhau — đó là khối lập phương! 🎁",
+        explanationDetail: {
+          shape3d: "cube",
+          stats: CUBE_STATS,
+          funFact:
+            "Bóng tennis = cầu, Ống hút = trụ, Mũ sinh nhật = chóp. Mỗi vật có hình 3D riêng!",
+        },
       },
+      // ── Q5: drag-match ──
       {
         id: 5,
-        text: "Ghép đúng: Mũ sinh nhật nhọn ↔ ?",
-        emoji: "🎂",
-        options: ["Khối lập phương", "Khối cầu", "Hình trụ", "Khối chóp"],
-        correctIndex: 3,
-        hint: "Mũ sinh nhật có đỉnh nhọn trên cùng!",
-        explanation: "Mũ sinh nhật nhọn là ví dụ của khối chóp tam giác! 🎉",
+        type: "drag-match",
+        text: "Ghép mỗi khối hình với vật thật tương ứng!",
+        emoji: "🧩",
+        shape3d: "cube",
+        dragMatch: {
+          pairs: [
+            { left: "📦 Khối lập phương", right: "🎁 Hộp quà vuông" },
+            { left: "⚽ Khối cầu", right: "🏀 Quả bóng rổ" },
+            { left: "🥤 Hình trụ", right: "🧃 Lon nước ngọt" },
+            { left: "🔺 Khối chóp", right: "🎉 Mũ sinh nhật" },
+          ],
+        },
+        hint: "Nhớ lại đặc điểm của mỗi hình: mặt phẳng, mặt cong, đỉnh nhọn!",
+        explanation:
+          "Mỗi hình 3D đều có vật thật tương ứng trong cuộc sống hàng ngày! 🎉",
+        explanationDetail: {
+          funFact:
+            "Hãy nhìn quanh phòng bé — sẽ tìm thấy rất nhiều hình 3D: hộp đồ chơi (lập phương), quả bóng (cầu), cốc nước (trụ)!",
+        },
       },
     ],
   },

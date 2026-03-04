@@ -4,22 +4,51 @@ import { Lightbulb, X } from "lucide-react";
 import {
   getLessonById,
   getChapterByLessonId,
+  isMCQ,
+  isCountTap,
+  isTrueFalse,
+  isDragMatch,
   type QuizQuestion,
 } from "@/shared/api/studentMockData";
+import { Shape3DViewer } from "@/shared/ui/Shape3DViewer";
+import { CountTapExercise } from "@/shared/ui/CountTapExercise";
+import { TrueFalseExercise } from "@/shared/ui/TrueFalseExercise";
+import { DragMatchExercise } from "@/shared/ui/DragMatchExercise";
+import { ExplanationPanel } from "@/shared/ui/ExplanationPanel";
 
 type AnswerState = "idle" | "correct" | "wrong";
 
 // ── Card colour themes for each option ────────────────────────────────────────
 const CARD_THEMES = [
-  { bg: "bg-sky-400",    border: "border-sky-500",    shadow: "shadow-sky-600",    glow: "#38bdf8" },
-  { bg: "bg-violet-400", border: "border-violet-500", shadow: "shadow-violet-600", glow: "#a78bfa" },
-  { bg: "bg-green-400",  border: "border-green-500",  shadow: "shadow-green-600",  glow: "#4ade80" },
-  { bg: "bg-orange-400", border: "border-orange-500", shadow: "shadow-orange-600", glow: "#fb923c" },
+  {
+    bg: "bg-sky-400",
+    border: "border-sky-500",
+    shadow: "shadow-sky-600",
+    glow: "#38bdf8",
+  },
+  {
+    bg: "bg-violet-400",
+    border: "border-violet-500",
+    shadow: "shadow-violet-600",
+    glow: "#a78bfa",
+  },
+  {
+    bg: "bg-green-400",
+    border: "border-green-500",
+    shadow: "shadow-green-600",
+    glow: "#4ade80",
+  },
+  {
+    bg: "bg-orange-400",
+    border: "border-orange-500",
+    shadow: "shadow-orange-600",
+    glow: "#fb923c",
+  },
 ];
 
 // ── Decorative emojis next to option text ─────────────────────────────────────
 const OPTION_ICONS = ["🔵", "🟣", "🟢", "🟠"];
-const LETTERS      = ["A", "B", "C", "D"];
+const LETTERS = ["A", "B", "C", "D"];
 
 // ── Mini confetti burst (CSS-only) ────────────────────────────────────────────
 const CONFETTI_EMOJI = ["⭐", "🎉", "✨", "💫", "🌟", "🎊"];
@@ -29,8 +58,8 @@ function ConfettiBurst({ show }: { show: boolean }) {
     emoji: CONFETTI_EMOJI[i % CONFETTI_EMOJI.length],
     left: `${Math.random() * 100}%`,
     delay: `${Math.random() * 0.5}s`,
-    dur:   `${0.8 + Math.random() * 0.7}s`,
-    size:  `${0.9 + Math.random() * 0.7}rem`,
+    dur: `${0.8 + Math.random() * 0.7}s`,
+    size: `${0.9 + Math.random() * 0.7}rem`,
   }));
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-20 rounded-3xl">
@@ -62,7 +91,15 @@ interface CardProps {
   onClick: () => void;
 }
 
-function AnswerCard({ text, index, selected, answerState, correctIndex, disabled, onClick }: CardProps) {
+function AnswerCard({
+  text,
+  index,
+  selected,
+  answerState,
+  correctIndex,
+  disabled,
+  onClick,
+}: CardProps) {
   const theme = CARD_THEMES[index % 4];
   const isCorrectCard = index === correctIndex;
   const isWrongSelected = selected && answerState === "wrong";
@@ -75,7 +112,8 @@ function AnswerCard({ text, index, selected, answerState, correctIndex, disabled
     // Idle state
     cardCls = `${theme.bg} border-4 ${theme.border} shadow-[0_6px_0_var(--card-shadow)] hover:scale-[1.04] hover:-translate-y-1 active:translate-y-1 active:shadow-none cursor-pointer`;
   } else if (isCorrectCard) {
-    cardCls = "bg-green-400 border-4 border-green-300 shadow-[0_6px_0_#15803d] scale-[1.06]";
+    cardCls =
+      "bg-green-400 border-4 border-green-300 shadow-[0_6px_0_#15803d] scale-[1.06]";
     overlayEmoji = "✅";
   } else if (isWrongSelected) {
     cardCls = "bg-red-400 border-4 border-red-300 shadow-none opacity-95";
@@ -118,14 +156,37 @@ function AnswerCard({ text, index, selected, answerState, correctIndex, disabled
 }
 
 // ── Robot mood ────────────────────────────────────────────────────────────────
-const ROBOT_MOOD: Record<AnswerState, { face: string; bubble: string; bg: string }> = {
-  idle:    { face: "🤔", bubble: "Hãy chọn đáp án bé cho là đúng nhé!",         bg: "from-orange-300 to-orange-500" },
-  correct: { face: "🥳", bubble: "Xuất sắc! Bé làm đúng rồi! Tiếp tục nào! 🚀", bg: "from-green-300 to-green-500"   },
-  wrong:   { face: "😢", bubble: "Không sao! Xem đáp án đúng và cố lên nhé! 💪", bg: "from-red-300 to-red-400"       },
+const ROBOT_MOOD: Record<
+  AnswerState,
+  { face: string; bubble: string; bg: string }
+> = {
+  idle: {
+    face: "🤔",
+    bubble: "Hãy chọn đáp án bé cho là đúng nhé!",
+    bg: "from-orange-300 to-orange-500",
+  },
+  correct: {
+    face: "🥳",
+    bubble: "Xuất sắc! Bé làm đúng rồi! Tiếp tục nào! 🚀",
+    bg: "from-green-300 to-green-500",
+  },
+  wrong: {
+    face: "😢",
+    bubble: "Không sao! Xem đáp án đúng và cố lên nhé! 💪",
+    bg: "from-red-300 to-red-400",
+  },
 };
 
 // ── Star progress dots ────────────────────────────────────────────────────────
-function StarProgress({ current, total, correct }: { current: number; total: number; correct: number }) {
+function StarProgress({
+  current,
+  total,
+  correct,
+}: {
+  current: number;
+  total: number;
+  correct: number;
+}) {
   return (
     <div className="flex items-center gap-1.5">
       {Array.from({ length: total }, (_, i) => (
@@ -134,8 +195,13 @@ function StarProgress({ current, total, correct }: { current: number; total: num
           className="text-xl transition-all duration-300"
           style={{
             transform: i < current ? "scale(1)" : "scale(0.7)",
-            filter:    i < current ? (i < correct ? "none" : "grayscale(0.6)") : "grayscale(1)",
-            opacity:   i < current ? 1 : 0.35,
+            filter:
+              i < current
+                ? i < correct
+                  ? "none"
+                  : "grayscale(0.6)"
+                : "grayscale(1)",
+            opacity: i < current ? 1 : 0.35,
           }}
         >
           {i < current ? (i < correct ? "⭐" : "💔") : "☆"}
@@ -151,18 +217,19 @@ export function ExercisePage() {
   const navigate = useNavigate();
 
   const lessonId = Number(id);
-  const lesson  = getLessonById(lessonId);
+  const lesson = getLessonById(lessonId);
   const chapter = getChapterByLessonId(lessonId);
 
-  const [currentIdx,      setCurrentIdx]      = useState(0);
-  const [selectedOption,  setSelectedOption]  = useState<number | null>(null);
-  const [answerState,     setAnswerState]      = useState<AnswerState>("idle");
-  const [showHint,        setShowHint]         = useState(false);
-  const [correctCount,    setCorrectCount]     = useState(0);
-  const [answeredCount,   setAnsweredCount]    = useState(0); // for star progress
-  const [showConfetti,    setShowConfetti]     = useState(false);
-  const [animating,       setAnimating]        = useState(false);
-  const [hearts,          setHearts]           = useState(3);
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [answerState, setAnswerState] = useState<AnswerState>("idle");
+  const [showHint, setShowHint] = useState(false);
+  const [correctCount, setCorrectCount] = useState(0);
+  const [answeredCount, setAnsweredCount] = useState(0); // for star progress
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [animating, setAnimating] = useState(false);
+  const [hearts, setHearts] = useState(3);
+  const [showExplanation, setShowExplanation] = useState(false);
 
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -171,28 +238,34 @@ export function ExercisePage() {
     setAnswerState("idle");
     setShowHint(false);
     setShowConfetti(false);
+    setShowExplanation(false);
   }, [currentIdx]);
 
   if (!lesson || !chapter) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-5rem)] gap-4">
         <span className="text-6xl">😕</span>
-        <p className="text-xl font-extrabold text-gray-600">Không tìm thấy bài học!</p>
-        <button onClick={() => navigate("/student")} className="px-6 py-3 bg-orange-400 text-white font-extrabold rounded-2xl">← Quay lại</button>
+        <p className="text-xl font-extrabold text-gray-600">
+          Không tìm thấy bài học!
+        </p>
+        <button
+          onClick={() => navigate("/student")}
+          className="px-6 py-3 bg-orange-400 text-white font-extrabold rounded-2xl"
+        >
+          ← Quay lại
+        </button>
       </div>
     );
   }
 
   const questions = lesson.questions as QuizQuestion[];
-  const q         = questions[currentIdx];
-  const mood      = ROBOT_MOOD[answerState];
+  const q = questions[currentIdx];
+  const mood = ROBOT_MOOD[answerState];
 
-  const handleSelect = (idx: number) => {
+  // ── Unified answer handler (works for all question types) ──
+  const handleAnswer = (isCorrect: boolean) => {
     if (answerState !== "idle" || animating) return;
-    setSelectedOption(idx);
     setAnsweredCount((c) => c + 1);
-
-    const isCorrect = idx === q.correctIndex;
     setAnswerState(isCorrect ? "correct" : "wrong");
     if (isCorrect) {
       setCorrectCount((c) => c + 1);
@@ -201,6 +274,16 @@ export function ExercisePage() {
     } else {
       setHearts((h) => Math.max(0, h - 1));
     }
+    // Show explanation panel after brief delay
+    setTimeout(() => setShowExplanation(true), 900);
+  };
+
+  // MCQ selection handler
+  const handleSelect = (idx: number) => {
+    if (answerState !== "idle" || animating) return;
+    setSelectedOption(idx);
+    const correct = isMCQ(q) && idx === q.correctIndex;
+    handleAnswer(correct);
   };
 
   const handleNext = () => {
@@ -209,7 +292,10 @@ export function ExercisePage() {
     setTimeout(() => {
       if (currentIdx + 1 >= questions.length) {
         navigate(`/student/result/${lessonId}`, {
-          state: { correct: correctCount + (answerState === "correct" ? 1 : 0), total: questions.length },
+          state: {
+            correct: correctCount + (answerState === "correct" ? 1 : 0),
+            total: questions.length,
+          },
         });
       } else {
         setCurrentIdx((i) => i + 1);
@@ -223,13 +309,21 @@ export function ExercisePage() {
       {/* Playful animated background */}
       <div className="absolute inset-0 bg-gradient-to-br from-sky-100 via-indigo-50 to-purple-100" />
       {[
-        { top: "8%",  left: "6%",  s: "text-4xl", d: "0s"   },
+        { top: "8%", left: "6%", s: "text-4xl", d: "0s" },
         { top: "15%", left: "88%", s: "text-3xl", d: "1.2s" },
-        { top: "70%", left: "4%",  s: "text-3xl", d: "2s"   },
+        { top: "70%", left: "4%", s: "text-3xl", d: "2s" },
         { top: "75%", left: "90%", s: "text-4xl", d: "0.7s" },
       ].map((c, i) => (
-        <span key={i} className="absolute pointer-events-none animate-float-slow opacity-40"
-          style={{ top: c.top, left: c.left, fontSize: c.s, animationDelay: c.d }}>
+        <span
+          key={i}
+          className="absolute pointer-events-none animate-float-slow opacity-40"
+          style={{
+            top: c.top,
+            left: c.left,
+            fontSize: c.s,
+            animationDelay: c.d,
+          }}
+        >
           {["☁️", "🌟", "✨", "💫"][i]}
         </span>
       ))}
@@ -251,14 +345,24 @@ export function ExercisePage() {
 
           {/* Star progress (replaces thin bar) */}
           <div className="flex-1 flex justify-center">
-            <StarProgress current={answeredCount} total={questions.length} correct={correctCount} />
+            <StarProgress
+              current={answeredCount}
+              total={questions.length}
+              correct={correctCount}
+            />
           </div>
 
           {/* Hearts */}
           <div className="flex gap-0.5 shrink-0">
             {[1, 2, 3].map((n) => (
-              <span key={n} className="text-xl transition-all duration-300"
-                style={{ opacity: n <= hearts ? 1 : 0.2, transform: n <= hearts ? "scale(1)" : "scale(0.75)" }}>
+              <span
+                key={n}
+                className="text-xl transition-all duration-300"
+                style={{
+                  opacity: n <= hearts ? 1 : 0.2,
+                  transform: n <= hearts ? "scale(1)" : "scale(0.75)",
+                }}
+              >
                 ❤️
               </span>
             ))}
@@ -266,18 +370,22 @@ export function ExercisePage() {
         </div>
 
         {/* ── BODY ── */}
-        <div className="flex-1 flex flex-col items-center px-4 pb-6 gap-4 max-w-xl mx-auto w-full">
-
+        <div className="flex-1 flex flex-col items-center px-4 pb-6 gap-4 max-w-3xl mx-auto w-full">
           {/* Chapter chip */}
-          <div className={`${chapter.color} text-white text-xs font-extrabold px-4 py-1.5 rounded-full shadow-sm mt-1`}>
-            {chapter.emoji} {chapter.title} · Câu {currentIdx + 1}/{questions.length}
+          <div
+            className={`${chapter.color} text-white text-xs font-extrabold px-4 py-1.5 rounded-full shadow-sm mt-1`}
+          >
+            {chapter.emoji} {chapter.title} · Câu {currentIdx + 1}/
+            {questions.length}
           </div>
 
           {/* ── ROBOT + QUESTION bubble ── */}
           <div className="w-full flex items-end gap-3">
             {/* Robot avatar */}
             <div className="relative shrink-0">
-              <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${mood.bg} flex items-center justify-center text-3xl shadow-lg border-4 border-white transition-all duration-300`}>
+              <div
+                className={`w-16 h-16 rounded-full bg-gradient-to-br ${mood.bg} flex items-center justify-center text-3xl shadow-lg border-4 border-white transition-all duration-300`}
+              >
                 {mood.face}
               </div>
               {/* bouncing indicator */}
@@ -289,24 +397,39 @@ export function ExercisePage() {
             {/* Speech bubble */}
             <div className="relative flex-1 bg-white rounded-3xl rounded-bl-none shadow-xl px-5 py-4">
               {/* Bubble tail */}
-              <div className="absolute -left-3 bottom-5 w-4 h-4 bg-white"
-                style={{ clipPath: "polygon(100% 0, 100% 100%, 0 100%)" }} />
+              <div
+                className="absolute -left-3 bottom-5 w-4 h-4 bg-white"
+                style={{ clipPath: "polygon(100% 0, 100% 100%, 0 100%)" }}
+              />
 
-              {/* Hint text OR question */}
+              {/* Hint text OR answer bubble */}
               {showHint ? (
                 <div className="flex items-start gap-2">
-                  <Lightbulb size={18} className="text-yellow-500 shrink-0 mt-0.5" />
+                  <Lightbulb
+                    size={18}
+                    className="text-yellow-500 shrink-0 mt-0.5"
+                  />
                   <p className="text-sm font-bold text-yellow-700">{q.hint}</p>
                 </div>
               ) : answerState !== "idle" ? (
                 <div className="flex items-start gap-2">
-                  <span className="text-xl shrink-0">{answerState === "correct" ? "🎉" : "💡"}</span>
-                  <p className={`text-sm font-bold leading-snug ${answerState === "correct" ? "text-green-700" : "text-gray-700"}`}>
-                    {answerState === "correct" ? q.explanation : `Đáp án đúng: ${q.options[q.correctIndex]}`}
+                  <span className="text-xl shrink-0">
+                    {answerState === "correct" ? "🎉" : "💡"}
+                  </span>
+                  <p
+                    className={`text-sm font-bold leading-snug ${answerState === "correct" ? "text-green-700" : "text-gray-700"}`}
+                  >
+                    {answerState === "correct"
+                      ? mood.bubble
+                      : isMCQ(q)
+                        ? `Đáp án đúng: ${q.options[q.correctIndex]}`
+                        : mood.bubble}
                   </p>
                 </div>
               ) : (
-                <p className="text-sm font-bold text-gray-600 leading-snug">{mood.bubble}</p>
+                <p className="text-sm font-bold text-gray-600 leading-snug">
+                  {mood.bubble}
+                </p>
               )}
             </div>
           </div>
@@ -314,32 +437,94 @@ export function ExercisePage() {
           {/* ── QUESTION CARD ── */}
           <div className="relative w-full bg-white rounded-3xl shadow-2xl border-2 border-indigo-100 px-6 py-5 text-center overflow-hidden">
             <ConfettiBurst show={showConfetti} />
-            {q.emoji && (
+            {q.shape3d && !showExplanation ? (
+              <div
+                className="mb-3 transition-transform duration-300"
+                style={{
+                  transform:
+                    answerState === "correct" ? "scale(1.1)" : "scale(1)",
+                }}
+              >
+                <Shape3DViewer shape={q.shape3d} />
+              </div>
+            ) : q.emoji && !q.shape3d ? (
               <div
                 className="text-6xl mb-3 transition-transform duration-300"
-                style={{ transform: answerState === "correct" ? "scale(1.2)" : "scale(1)" }}
+                style={{
+                  transform:
+                    answerState === "correct" ? "scale(1.2)" : "scale(1)",
+                }}
               >
                 {q.emoji}
               </div>
-            )}
-            <p className="text-xl font-extrabold text-gray-800 leading-snug">{q.text}</p>
+            ) : null}
+            <p className="text-xl font-extrabold text-gray-800 leading-snug">
+              {q.text}
+            </p>
           </div>
 
-          {/* ── ANSWER CARDS 2×2 ── */}
-          <div className="w-full grid grid-cols-2 gap-3">
-            {q.options.map((opt, i) => (
-              <AnswerCard
-                key={i}
-                text={opt}
-                index={i}
-                selected={selectedOption === i}
-                answerState={answerState}
-                correctIndex={q.correctIndex}
-                disabled={answerState !== "idle"}
-                onClick={() => handleSelect(i)}
-              />
-            ))}
-          </div>
+          {/* ── INTERACTIVE ANSWER AREA ── */}
+          {!showExplanation && (
+            <>
+              {/* Multiple choice 2×2 */}
+              {isMCQ(q) && (
+                <div className="w-full grid grid-cols-2 gap-3">
+                  {q.options.map((opt, i) => (
+                    <AnswerCard
+                      key={i}
+                      text={opt}
+                      index={i}
+                      selected={selectedOption === i}
+                      answerState={answerState}
+                      correctIndex={q.correctIndex}
+                      disabled={answerState !== "idle"}
+                      onClick={() => handleSelect(i)}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Count-tap exercise */}
+              {isCountTap(q) && (
+                <CountTapExercise
+                  label={q.countTap.label}
+                  targetCount={q.countTap.targetCount}
+                  maxCount={q.countTap.maxCount ?? 20}
+                  disabled={answerState !== "idle"}
+                  onSubmit={(_count, isCorrect) => handleAnswer(isCorrect)}
+                />
+              )}
+
+              {/* True-false exercise */}
+              {isTrueFalse(q) && (
+                <TrueFalseExercise
+                  isTrue={q.trueFalse.isTrue}
+                  disabled={answerState !== "idle"}
+                  onAnswer={(_selected, isCorrect) => handleAnswer(isCorrect)}
+                />
+              )}
+
+              {/* Drag-match exercise */}
+              {isDragMatch(q) && (
+                <DragMatchExercise
+                  pairs={q.dragMatch.pairs}
+                  disabled={answerState !== "idle"}
+                  onComplete={(allCorrect) => handleAnswer(allCorrect)}
+                />
+              )}
+            </>
+          )}
+
+          {/* ── EXPLANATION PANEL (slides in after answering) ── */}
+          {showExplanation && (
+            <ExplanationPanel
+              explanation={q.explanation}
+              isCorrect={answerState === "correct"}
+              shape3d={q.explanationDetail?.shape3d ?? q.shape3d}
+              funFact={q.explanationDetail?.funFact}
+              stats={q.explanationDetail?.stats}
+            />
+          )}
 
           {/* ── BOTTOM ACTIONS ── */}
           {answerState === "idle" ? (
@@ -354,7 +539,7 @@ export function ExercisePage() {
               <Lightbulb size={18} />
               {showHint ? "Ẩn gợi ý" : "💡 Xem gợi ý"}
             </button>
-          ) : (
+          ) : showExplanation ? (
             <button
               onClick={handleNext}
               className={`w-full py-4 font-extrabold text-lg rounded-2xl text-white transition-all active:scale-[0.97] shadow-[0_5px_0_rgba(0,0,0,0.2)] ${
@@ -363,11 +548,26 @@ export function ExercisePage() {
                   : "bg-gradient-to-r from-orange-400 to-orange-500"
               }`}
             >
-              {currentIdx + 1 < questions.length ? "Câu tiếp theo →" : "🎯 Xem kết quả!"}
+              {currentIdx + 1 < questions.length
+                ? "Câu tiếp theo →"
+                : "🎯 Xem kết quả!"}
             </button>
+          ) : (
+            /* Brief pause before explanation appears */
+            <div className="w-full flex items-center justify-center py-4">
+              <div className="flex gap-1.5">
+                {[0, 1, 2].map((i) => (
+                  <span
+                    key={i}
+                    className="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-bounce"
+                    style={{ animationDelay: `${i * 0.15}s` }}
+                  />
+                ))}
+              </div>
+            </div>
           )}
         </div>
       </div>
     </div>
   );
-}
+}

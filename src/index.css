@@ -422,13 +422,28 @@
 }
 
 @keyframes shake {
-  0%, 100% { transform: translateX(0);     }
-  15%       { transform: translateX(-8px);  }
-  30%       { transform: translateX(8px);   }
-  45%       { transform: translateX(-6px);  }
-  60%       { transform: translateX(6px);   }
-  75%       { transform: translateX(-3px);  }
-  90%       { transform: translateX(3px);   }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  15% {
+    transform: translateX(-8px);
+  }
+  30% {
+    transform: translateX(8px);
+  }
+  45% {
+    transform: translateX(-6px);
+  }
+  60% {
+    transform: translateX(6px);
+  }
+  75% {
+    transform: translateX(-3px);
+  }
+  90% {
+    transform: translateX(3px);
+  }
 }
 
 @keyframes kids-bounce-in {
@@ -496,4 +511,34 @@
 .kids-path-draw {
   stroke-dasharray: 5 4;
   animation: none;
+}
+
+@keyframes slideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes countPop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s ease-out both;
+}
+.animate-count-pop {
+  animation: countPop 0.25s ease-out;
 }

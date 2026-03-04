@@ -77,7 +77,6 @@ export function KidsTopbar({ backTo = "/student" }: KidsTopbarProps) {
       {/* Gradient bar */}
       <div className="bg-gradient-to-r from-sky-500 via-sky-400 to-indigo-500 shadow-lg shadow-sky-300/40">
         <div className="flex items-center justify-between px-4 py-2.5 max-w-4xl mx-auto gap-3">
-
           {/* ── LEFT: Back button (hidden on map page) ── */}
           {isOnMap ? (
             <div className="shrink-0 w-10" />
@@ -113,11 +112,12 @@ export function KidsTopbar({ backTo = "/student" }: KidsTopbarProps) {
 
           {/* ── RIGHT: XP pill + Avatar ── */}
           <div className="flex items-center gap-2.5 shrink-0">
-
             {/* XP pill (mobile only) */}
             <div className="sm:hidden flex items-center gap-1.5 bg-yellow-400 rounded-2xl px-3.5 py-2 shadow-[0_3px_0_#b45309] select-none">
               <span className="text-lg leading-none">⭐</span>
-              <span className="text-white font-extrabold text-base leading-none tabular-nums">{xp}</span>
+              <span className="text-white font-extrabold text-base leading-none tabular-nums">
+                {xp}
+              </span>
             </div>
 
             {/* Avatar card */}
@@ -133,8 +133,12 @@ export function KidsTopbar({ backTo = "/student" }: KidsTopbarProps) {
 
               {/* Name + level */}
               <div className="hidden sm:flex flex-col leading-none gap-0.5">
-                <span className="text-white font-extrabold text-sm leading-none">{profile.name}</span>
-                <span className="text-white/70 text-[10px] font-bold">Cấp độ {level}</span>
+                <span className="text-white font-extrabold text-sm leading-none">
+                  {profile.name}
+                </span>
+                <span className="text-white/70 text-[10px] font-bold">
+                  Cấp độ {level}
+                </span>
               </div>
 
               {/* Level badge */}
@@ -143,7 +147,6 @@ export function KidsTopbar({ backTo = "/student" }: KidsTopbarProps) {
               </span>
             </div>
           </div>
-
         </div>
       </div>
     </header>
