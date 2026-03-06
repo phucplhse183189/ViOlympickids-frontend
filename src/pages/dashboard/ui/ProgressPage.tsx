@@ -12,7 +12,7 @@ import {
   AreaChart,
   Area,
 } from "recharts";
-import { TrendingUp, TrendingDown, Minus, Award, Target } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Award } from "lucide-react";
 import {
   MOCK_SKILLS,
   MOCK_WEEKLY_TREND,
