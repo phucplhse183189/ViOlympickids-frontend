@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { useLoginForm } from "../model/useLoginForm";
 import { useLang } from "@/shared/lib/i18n";
+import { Eye, EyeOff } from "lucide-react";
 
 export function LoginForm() {
   const { t } = useLang();
@@ -14,6 +16,8 @@ export function LoginForm() {
     isLoading,
     handleSubmit,
   } = useLoginForm();
+
+  const [showPassword, setShowPassword] = useState(false);
 
   const inputBase =
     "w-full rounded-2xl px-5 py-4 font-medium transition-all focus:outline-none";
@@ -57,18 +61,28 @@ export function LoginForm() {
         <label className="block text-gray-500 font-semibold mb-2 ml-1">
           {t.loginForm.passwordLabel}
         </label>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          onBlur={() => handleBlur("password")}
-          placeholder={t.loginForm.passwordPlaceholder}
-          className={`${inputBase} ${
-            touched.password && errors.password
-              ? errorRing
-              : "border-2 border-pink-100 bg-pink-50 placeholder-pink-300 focus:border-pink-300 focus:shadow-[0_0_0_4px_rgba(244,194,194,0.4)]"
-          }`}
-        />
+        <div className="relative">
+          <input
+            type={showPassword ? "text" : "password"}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onBlur={() => handleBlur("password")}
+            placeholder={t.loginForm.passwordPlaceholder}
+            className={`${inputBase} pr-12 ${
+              touched.password && errors.password
+                ? errorRing
+                : "border-2 border-pink-100 bg-pink-50 placeholder-pink-300 focus:border-pink-300 focus:shadow-[0_0_0_4px_rgba(244,194,194,0.4)]"
+            }`}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((v) => !v)}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+          >
+            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+          </button>
+        </div>
         {touched.password && errors.password && (
           <p className="mt-1.5 ml-1 text-xs text-red-500 font-semibold flex items-center gap-1">
             <span>⚠️</span> {errors.password}
@@ -84,60 +98,6 @@ export function LoginForm() {
         >
           {t.loginForm.forgotPassword}
         </a>
-      </div>
-
-      {/* Demo account hint */}
-      <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs space-y-2">
-        <p className="font-bold text-blue-500 mb-1">
-          🧪 Tài khoản demo — click để tự điền:
-        </p>
-        <button
-          type="button"
-          onClick={() => {
-            setEmail("demo@violympickids.com");
-            setPassword("demo123");
-          }}
-          className="w-full text-left px-3 py-2 rounded-xl bg-white border border-blue-100 hover:border-blue-300 hover:bg-blue-50 transition-all"
-        >
-          <span className="font-semibold text-gray-600">🧒 Học sinh: </span>
-          <span className="text-blue-600 font-mono">
-            demo@violympickids.com
-          </span>
-          <span className="text-gray-400"> / </span>
-          <span className="text-blue-600 font-mono">demo123</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setEmail("parent@violympickids.com");
-            setPassword("parent123");
-          }}
-          className="w-full text-left px-3 py-2 rounded-xl bg-white border border-orange-100 hover:border-orange-300 hover:bg-orange-50 transition-all"
-        >
-          <span className="font-semibold text-gray-600">👨‍👩‍👧 Phụ huynh: </span>
-          <span className="text-orange-600 font-mono">
-            parent@violympickids.com
-          </span>
-          <span className="text-gray-400"> / </span>
-          <span className="text-orange-600 font-mono">parent123</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setEmail("student@violympickids.com");
-            setPassword("student123");
-          }}
-          className="w-full text-left px-3 py-2 rounded-xl bg-white border border-green-100 hover:border-green-300 hover:bg-green-50 transition-all"
-        >
-          <span className="font-semibold text-gray-600">
-            🧒 Học sinh (portal):{" "}
-          </span>
-          <span className="text-green-600 font-mono">
-            student@violympickids.com
-          </span>
-          <span className="text-gray-400"> / </span>
-          <span className="text-green-600 font-mono">student123</span>
-        </button>
       </div>
 
       {/* Submit button */}

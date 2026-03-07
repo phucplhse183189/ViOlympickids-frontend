@@ -1,8 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  MOCK_STREAK_DAYS,
-  MOCK_STREAK_COUNT,
-} from "@/shared/api/dashboardMockData";
+import { useActiveChild } from "@/shared/lib/activeChild";
 
 const DAY_LABELS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
 
@@ -33,6 +30,9 @@ export function StreakHeatmap() {
     x: number;
     y: number;
   } | null>(null);
+  const { dashboardData } = useActiveChild();
+  const streakDays = dashboardData.streakDays;
+  const streakCount = dashboardData.streakCount;
 
   useEffect(() => {
     const el = ref.current;
@@ -50,7 +50,7 @@ export function StreakHeatmap() {
     return () => observer.disconnect();
   }, []);
 
-  const weeks = chunkWeeks(MOCK_STREAK_DAYS, 7);
+  const weeks = chunkWeeks(streakDays, 7);
 
   return (
     <div
@@ -157,7 +157,7 @@ export function StreakHeatmap() {
         <span className="text-sm text-gray-600">
           Đang giữ chuỗi:{" "}
           <span className="font-bold text-orange-500">
-            {MOCK_STREAK_COUNT} ngày học liên tiếp
+            {streakCount} ngày học liên tiếp
           </span>
         </span>
       </div>

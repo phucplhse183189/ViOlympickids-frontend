@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, Map } from "lucide-react";
+import { ArrowLeft, Map, ShieldCheck } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   CHILD_PROFILES_STORAGE_KEY,
   ACTIVE_CHILD_ID_KEY,
 } from "@/shared/api/dashboardMockData";
 import { getTotalXP } from "@/shared/api/studentMockData";
+import { useAuth } from "@/shared/lib/auth";
+import { ParentGate } from "@/shared/ui/ParentGate";
 
 interface ChildProfile {
   id: string;
@@ -53,8 +55,10 @@ function getLevelInfo(xp: number) {
 export function KidsTopbar({ backTo = "/student" }: KidsTopbarProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { setActiveRole } = useAuth();
   const [profile, setProfile] = useState(() => getActiveProfile());
   const [xp, setXp] = useState(() => getTotalXP());
+  const [showPinGate, setShowPinGate] = useState(false);
 
   // Hide the back button when already on the map page
   const isOnMap = location.pathname === "/student";
@@ -86,8 +90,7 @@ export function KidsTopbar({ backTo = "/student" }: KidsTopbarProps) {
               className="flex items-center gap-2 bg-white/20 hover:bg-white/30 active:bg-white/40 backdrop-blur-sm border border-white/40 text-white font-extrabold text-sm rounded-2xl px-4 py-2.5 transition-all active:scale-95 select-none shrink-0"
             >
               <ArrowLeft size={18} strokeWidth={3} />
-              <Map size={16} strokeWidth={2.5} className="hidden xs:block" />
-              <span className="hidden sm:inline">Bản đồ</span>
+              <span className="hidden sm:inline">Trang chủ</span>
             </button>
           )}
 
@@ -110,7 +113,7 @@ export function KidsTopbar({ backTo = "/student" }: KidsTopbarProps) {
             </div>
           </div>
 
-          {/* ── RIGHT: XP pill + Avatar ── */}
+          {/* ── RIGHT: XP pill + Avatar + Parent corner ── */}
           <div className="flex items-center gap-2.5 shrink-0">
             {/* XP pill (mobile only) */}
             <div className="sm:hidden flex items-center gap-1.5 bg-yellow-400 rounded-2xl px-3.5 py-2 shadow-[0_3px_0_#b45309] select-none">
@@ -146,9 +149,31 @@ export function KidsTopbar({ backTo = "/student" }: KidsTopbarProps) {
                 {level}
               </span>
             </div>
+
+            {/* Góc Phụ Huynh button */}
+            <button
+              onClick={() => setShowPinGate(true)}
+              className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 active:bg-white/40 backdrop-blur-sm border border-white/40 text-white font-bold text-xs rounded-2xl px-3 py-2.5 transition-all active:scale-95 select-none"
+              title="Góc Phụ Huynh"
+            >
+              <ShieldCheck size={16} strokeWidth={2.5} />
+              <span className="hidden sm:inline">Phụ Huynh</span>
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Parent Gate modal */}
+      {showPinGate && (
+        <ParentGate
+          onSuccess={() => {
+            setShowPinGate(false);
+            setActiveRole("parent");
+            navigate("/dashboard");
+          }}
+          onClose={() => setShowPinGate(false)}
+        />
+      )}
     </header>
   );
 }

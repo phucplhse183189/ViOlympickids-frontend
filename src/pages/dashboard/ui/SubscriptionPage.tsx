@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Check,
   Zap,
@@ -7,31 +8,46 @@ import {
   AlertCircle,
   ArrowRight,
   Gift,
+  Crown,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import {
-  MOCK_BILLING,
   FREE_PLAN_FEATURES,
   PRO_PLAN_FEATURES,
+  VIP_PLAN_FEATURES,
 } from "@/shared/api/dashboardMockData";
+import { useActiveChild } from "@/shared/lib/activeChild";
 
 // ── helpers ────────────────────────────────────────
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("vi-VN").format(amount) + "đ";
 }
 
-// ── Renewal countdown (mock) ───────────────────────
-const DAYS_UNTIL_RENEWAL = 31;
-
 export function SubscriptionPage() {
-  const billing = MOCK_BILLING;
+  const { activeChild, dashboardData, updateChildPlan } = useActiveChild();
+  const navigate = useNavigate();
+  const billing = dashboardData.billing;
+  const plan = activeChild.plan;
+  const daysLeft = activeChild.planDaysLeft ?? 0;
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancelDone, setCancelDone] = useState(false);
+
+  function handleCancel() {
+    updateChildPlan(activeChild.id, "FREE");
+    setShowCancelConfirm(false);
+    setCancelDone(true);
+    setTimeout(() => setCancelDone(false), 3000);
+  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-bold text-gray-800">Quản lý Gói cước</h2>
+        <h2 className="text-xl font-bold text-gray-800">
+          Gói cước của {activeChild.avatarEmoji} {activeChild.name}
+        </h2>
         <p className="text-sm text-gray-400 mt-0.5">
-          Xem và nâng cấp gói của bạn
+          Xem và nâng cấp gói học tập
         </p>
       </div>
 
@@ -40,7 +56,11 @@ export function SubscriptionPage() {
         className="rounded-2xl p-6 text-white relative overflow-hidden"
         style={{
           background:
-            "linear-gradient(135deg, var(--brand-primary) 0%, #f97316 100%)",
+            plan === "VIP"
+              ? "linear-gradient(135deg, #d97706 0%, #f59e0b 50%, #eab308 100%)"
+              : plan === "PRO"
+                ? "linear-gradient(135deg, var(--brand-primary) 0%, #f97316 100%)"
+                : "linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)",
         }}
       >
         {/* Decorative blobs */}
@@ -50,102 +70,118 @@ export function SubscriptionPage() {
         <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0">
-              <Zap size={24} className="text-white" />
+              {plan === "VIP" ? (
+                <Crown size={24} className="text-white" />
+              ) : (
+                <Zap size={24} className="text-white" />
+              )}
             </div>
             <div>
               <p className="text-xs font-semibold text-white/70 uppercase tracking-widest mb-0.5">
-                Gói đang dùng
+                Gói đang dùng — {activeChild.name}
               </p>
               <p className="text-2xl font-extrabold leading-tight">
                 {billing.planName}
               </p>
-              <p className="text-sm text-white/70 mt-0.5">
-                Gia hạn ngày {billing.renewalDate} · còn {DAYS_UNTIL_RENEWAL}{" "}
-                ngày
-              </p>
+              {plan !== "FREE" && (
+                <p className="text-sm text-white/70 mt-0.5">
+                  Gia hạn ngày {billing.renewalDate} · còn {daysLeft} ngày
+                </p>
+              )}
             </div>
           </div>
           <div className="text-left sm:text-right shrink-0">
             <p className="text-3xl font-extrabold">
-              {formatCurrency(billing.pricePerMonth)}
+              {plan === "FREE" ? "0đ" : formatCurrency(billing.pricePerMonth)}
             </p>
-            <p className="text-sm text-white/70">/ tháng</p>
-            <span className="inline-flex items-center gap-1 mt-2 bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full">
-              <span className="w-2 h-2 rounded-full bg-green-400 inline-block" />
-              Đang hoạt động
+            {plan !== "FREE" && (
+              <p className="text-sm text-white/70">/ tháng</p>
+            )}
+            <span
+              className={`inline-flex items-center gap-1 mt-2 bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full`}
+            >
+              <span
+                className={`w-2 h-2 rounded-full ${plan === "FREE" ? "bg-gray-300" : "bg-green-400"} inline-block`}
+              />
+              {plan === "FREE" ? "Gói cơ bản" : "Đang hoạt động"}
             </span>
           </div>
         </div>
       </div>
 
       {/* Renewal warning */}
-      {DAYS_UNTIL_RENEWAL <= 7 && (
+      {plan !== "FREE" && daysLeft <= 7 && (
         <div className="flex items-center gap-3 bg-orange-50 border border-orange-200 rounded-2xl p-4">
           <AlertCircle size={18} className="text-orange-500 shrink-0" />
           <p className="text-sm text-orange-700 font-medium">
-            Gói của bạn sắp hết hạn trong{" "}
-            <strong>{DAYS_UNTIL_RENEWAL} ngày</strong>. Vui lòng gia hạn để
-            không gián đoạn việc học.
+            Gói của {activeChild.name} sắp hết hạn trong{" "}
+            <strong>{daysLeft} ngày</strong>. Vui lòng gia hạn để không gián
+            đoạn việc học.
           </p>
-          <button className="ml-auto shrink-0 px-4 py-2 bg-orange-500 text-white text-xs font-bold rounded-xl hover:bg-orange-600 transition">
+          <button
+            onClick={() => navigate(`/dashboard/payment?plan=${plan}`)}
+            className="ml-auto shrink-0 px-4 py-2 bg-orange-500 text-white text-xs font-bold rounded-xl hover:bg-orange-600 transition"
+          >
             Gia hạn ngay
           </button>
         </div>
       )}
 
-      {/* Billing info cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {[
-          {
-            icon: <Shield size={18} className="text-green-500" />,
-            bg: "bg-green-50",
-            border: "border-green-100",
-            label: "Phương thức thanh toán",
-            val: billing.paymentMethod,
-            action: "Thay đổi",
-          },
-          {
-            icon: <RefreshCw size={18} className="text-blue-500" />,
-            bg: "bg-blue-50",
-            border: "border-blue-100",
-            label: "Chu kỳ gia hạn",
-            val: billing.cycle,
-            action: "Đổi sang năm",
-          },
-          {
-            icon: <CreditCard size={18} className="text-purple-500" />,
-            bg: "bg-purple-50",
-            border: "border-purple-100",
-            label: "Lần thanh toán tiếp",
-            val: `${formatCurrency(billing.pricePerMonth)} · ${billing.renewalDate}`,
-            action: "Xem hóa đơn",
-          },
-        ].map((item) => (
-          <div
-            key={item.label}
-            className={`bg-white rounded-2xl shadow-sm border ${item.border} p-5`}
-          >
-            <div className="flex items-start gap-3 mb-3">
-              <div
-                className={`w-9 h-9 rounded-xl ${item.bg} flex items-center justify-center shrink-0`}
-              >
-                {item.icon}
+      {/* Billing info cards – only for paid plans */}
+      {plan !== "FREE" && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[
+            {
+              icon: <Shield size={18} className="text-green-500" />,
+              bg: "bg-green-50",
+              border: "border-green-100",
+              label: "Phương thức thanh toán",
+              val: billing.paymentMethod,
+              action: "Thay đổi",
+            },
+            {
+              icon: <RefreshCw size={18} className="text-blue-500" />,
+              bg: "bg-blue-50",
+              border: "border-blue-100",
+              label: "Chu kỳ gia hạn",
+              val: billing.cycle,
+              action: "Đổi sang năm",
+            },
+            {
+              icon: <CreditCard size={18} className="text-purple-500" />,
+              bg: "bg-purple-50",
+              border: "border-purple-100",
+              label: "Lần thanh toán tiếp",
+              val: `${formatCurrency(billing.pricePerMonth)} · ${billing.renewalDate}`,
+              action: "Xem hóa đơn",
+            },
+          ].map((item) => (
+            <div
+              key={item.label}
+              className={`bg-white rounded-2xl shadow-sm border ${item.border} p-5`}
+            >
+              <div className="flex items-start gap-3 mb-3">
+                <div
+                  className={`w-9 h-9 rounded-xl ${item.bg} flex items-center justify-center shrink-0`}
+                >
+                  {item.icon}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs text-gray-400 font-semibold leading-tight">
+                    {item.label}
+                  </p>
+                  <p className="text-sm font-bold text-gray-700 mt-0.5 truncate">
+                    {item.val}
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="text-xs text-gray-400 font-semibold leading-tight">
-                  {item.label}
-                </p>
-                <p className="text-sm font-bold text-gray-700 mt-0.5 truncate">
-                  {item.val}
-                </p>
-              </div>
+              <button className="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1">
+                {item.action} <ArrowRight size={11} />
+              </button>
             </div>
-            <button className="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1">
-              {item.action} <ArrowRight size={11} />
-            </button>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Referral banner */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
@@ -169,82 +205,258 @@ export function SubscriptionPage() {
       {/* Plan comparison */}
       <div>
         <p className="text-sm font-bold text-gray-700 mb-4">So sánh gói cước</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {/* Free plan */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-1">
-              <p className="text-base font-bold text-gray-500">Gói Miễn phí</p>
-            </div>
-            <p className="text-2xl font-extrabold text-gray-400 mb-6">
-              0đ
-              <span className="text-sm font-medium text-gray-400">/tháng</span>
-            </p>
-            <ul className="space-y-3 mb-6">
-              {FREE_PLAN_FEATURES.map((p) => (
-                <li
-                  key={p}
-                  className="flex items-center gap-2.5 text-sm text-gray-500"
-                >
-                  <Check size={15} className="text-gray-300 shrink-0" />
-                  {p}
-                </li>
-              ))}
-            </ul>
-            <div className="bg-gray-50 rounded-xl px-4 py-2.5 text-xs text-gray-400 font-medium text-center border border-dashed border-gray-200">
-              Gói hiện tại của con
-            </div>
-          </div>
-
-          {/* Pro plan – highlighted */}
-          <div className="bg-white rounded-2xl border-2 border-orange-400 shadow-xl relative p-6">
-            <span className="absolute -top-3.5 left-6 text-xs font-bold bg-orange-400 text-white px-3 py-1 rounded-full flex items-center gap-1">
-              <Zap size={11} />
-              Gói hiện tại của bạn
-            </span>
-            <div className="flex items-center justify-between mb-1 mt-2">
-              <p className="text-base font-bold text-gray-800">
-                ViOlympicKids Pro
-              </p>
-              <span className="text-xs font-bold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                Đang dùng
-              </span>
-            </div>
-            <p
-              className="text-2xl font-extrabold mb-6"
-              style={{ color: "var(--brand-primary)" }}
-            >
-              {formatCurrency(billing.pricePerMonth)}
-              <span className="text-sm font-medium text-gray-400">/tháng</span>
-            </p>
-            <ul className="space-y-3 mb-6">
-              {PRO_PLAN_FEATURES.map((p) => (
-                <li
-                  key={p}
-                  className="flex items-center gap-2.5 text-sm text-gray-700 font-medium"
-                >
-                  <Check size={15} className="text-green-500 shrink-0" />
-                  {p}
-                </li>
-              ))}
-            </ul>
-            <div className="flex gap-3">
-              <button
-                className="flex-1 py-3 rounded-xl text-sm font-bold transition-all"
-                style={{
-                  background:
-                    "linear-gradient(135deg, var(--brand-primary), #f97316)",
-                  color: "white",
-                }}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {/* FREE plan */}
+          {(() => {
+            const isCurrent = plan === "FREE";
+            return (
+              <div
+                className={`bg-white rounded-2xl p-6 relative ${isCurrent ? "border-2 border-gray-400 shadow-lg" : "border border-gray-200"}`}
               >
-                Nâng cấp gói năm (tiết kiệm 2 tháng)
-              </button>
-            </div>
-            <button className="mt-3 w-full py-2.5 rounded-xl border border-red-200 text-red-500 text-xs font-bold hover:bg-red-50 transition-all">
-              Hủy đăng ký
-            </button>
-          </div>
+                {isCurrent && (
+                  <span className="absolute -top-3.5 left-6 text-xs font-bold bg-gray-500 text-white px-3 py-1 rounded-full">
+                    Gói hiện tại
+                  </span>
+                )}
+                <div
+                  className={`flex items-center justify-between mb-1 ${isCurrent ? "mt-2" : ""}`}
+                >
+                  <p className="text-base font-bold text-gray-500">Miễn phí</p>
+                </div>
+                <p className="text-2xl font-extrabold text-gray-400 mb-6">
+                  0đ
+                  <span className="text-sm font-medium text-gray-400">
+                    {" "}
+                    /tháng
+                  </span>
+                </p>
+                <ul className="space-y-3 mb-6">
+                  {FREE_PLAN_FEATURES.map((f) => (
+                    <li
+                      key={f}
+                      className="flex items-center gap-2.5 text-sm text-gray-500"
+                    >
+                      <Check size={15} className="text-gray-300 shrink-0" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                {isCurrent ? (
+                  <div className="bg-gray-50 rounded-xl px-4 py-2.5 text-xs text-gray-400 font-medium text-center border border-dashed border-gray-200">
+                    Đang dùng
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 rounded-xl px-4 py-2.5 text-xs text-gray-400 font-medium text-center">
+                    Gói cơ bản
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* PRO plan */}
+          {(() => {
+            const isCurrent = plan === "PRO";
+            return (
+              <div
+                className={`bg-white rounded-2xl p-6 relative ${isCurrent ? "border-2 border-orange-400 shadow-xl" : "border border-gray-200"}`}
+              >
+                {isCurrent && (
+                  <span className="absolute -top-3.5 left-6 text-xs font-bold bg-orange-400 text-white px-3 py-1 rounded-full flex items-center gap-1">
+                    <Zap size={11} /> Gói hiện tại
+                  </span>
+                )}
+                <div
+                  className={`flex items-center justify-between mb-1 ${isCurrent ? "mt-2" : ""}`}
+                >
+                  <p className="text-base font-bold text-gray-800">Pro</p>
+                  {isCurrent && (
+                    <span className="text-xs font-bold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                      Đang dùng
+                    </span>
+                  )}
+                </div>
+                <p
+                  className="text-2xl font-extrabold mb-6"
+                  style={{ color: "var(--brand-primary)" }}
+                >
+                  55.000đ
+                  <span className="text-sm font-medium text-gray-400">
+                    {" "}
+                    /tháng
+                  </span>
+                </p>
+                <ul className="space-y-3 mb-6">
+                  {PRO_PLAN_FEATURES.map((f) => (
+                    <li
+                      key={f}
+                      className="flex items-center gap-2.5 text-sm text-gray-700 font-medium"
+                    >
+                      <Check size={15} className="text-green-500 shrink-0" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                {isCurrent ? (
+                  <>
+                    <button
+                      onClick={() => navigate("/dashboard/payment?plan=PRO")}
+                      className="w-full py-3 rounded-xl text-sm font-bold transition-all"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, var(--brand-primary), #f97316)",
+                        color: "white",
+                      }}
+                    >
+                      Nâng cấp gói năm (tiết kiệm 2 tháng)
+                    </button>
+                    <button
+                      onClick={() => setShowCancelConfirm(true)}
+                      className="mt-3 w-full py-2.5 rounded-xl border border-red-200 text-red-500 text-xs font-bold hover:bg-red-50 transition-all"
+                    >
+                      Hủy đăng ký
+                    </button>
+                  </>
+                ) : plan === "FREE" ? (
+                  <button
+                    onClick={() => navigate("/dashboard/payment?plan=PRO")}
+                    className="w-full py-3 rounded-xl text-sm font-bold transition-all"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, var(--brand-primary), #f97316)",
+                      color: "white",
+                    }}
+                  >
+                    Nâng cấp lên Pro
+                  </button>
+                ) : (
+                  <div className="bg-gray-50 rounded-xl px-4 py-2.5 text-xs text-gray-400 font-medium text-center border border-dashed border-gray-200">
+                    Gói thấp hơn
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* VIP plan */}
+          {(() => {
+            const isCurrent = plan === "VIP";
+            return (
+              <div
+                className={`rounded-2xl p-6 relative ${isCurrent ? "border-2 border-amber-400 shadow-xl bg-amber-50/30" : "bg-white border border-gray-200"}`}
+              >
+                {isCurrent && (
+                  <span className="absolute -top-3.5 left-6 text-xs font-bold bg-gradient-to-r from-amber-500 to-yellow-400 text-white px-3 py-1 rounded-full flex items-center gap-1">
+                    <Crown size={11} /> Gói hiện tại
+                  </span>
+                )}
+                {!isCurrent && (
+                  <span className="absolute -top-3.5 right-6 text-xs font-bold bg-gradient-to-r from-amber-500 to-yellow-400 text-white px-3 py-1 rounded-full">
+                    Phổ biến nhất
+                  </span>
+                )}
+                <div
+                  className={`flex items-center justify-between mb-1 ${isCurrent || !isCurrent ? "mt-2" : ""}`}
+                >
+                  <p className="text-base font-bold text-amber-700 flex items-center gap-1.5">
+                    <Crown size={16} className="text-amber-500" /> VIP
+                  </p>
+                  {isCurrent && (
+                    <span className="text-xs font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">
+                      Đang dùng
+                    </span>
+                  )}
+                </div>
+                <p className="text-2xl font-extrabold text-amber-600 mb-6">
+                  89.000đ
+                  <span className="text-sm font-medium text-gray-400">
+                    {" "}
+                    /tháng
+                  </span>
+                </p>
+                <ul className="space-y-3 mb-6">
+                  {VIP_PLAN_FEATURES.map((f) => (
+                    <li
+                      key={f}
+                      className="flex items-center gap-2.5 text-sm text-gray-700 font-medium"
+                    >
+                      <Check size={15} className="text-amber-500 shrink-0" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                {isCurrent ? (
+                  <>
+                    <button
+                      onClick={() => navigate("/dashboard/payment?plan=VIP")}
+                      className="w-full py-3 rounded-xl text-sm font-bold transition-all bg-gradient-to-r from-amber-500 to-yellow-400 text-white"
+                    >
+                      Nâng cấp gói năm (tiết kiệm 2 tháng)
+                    </button>
+                    <button
+                      onClick={() => setShowCancelConfirm(true)}
+                      className="mt-3 w-full py-2.5 rounded-xl border border-red-200 text-red-500 text-xs font-bold hover:bg-red-50 transition-all"
+                    >
+                      Hủy đăng ký
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => navigate("/dashboard/payment?plan=VIP")}
+                    className="w-full py-3 rounded-xl text-sm font-bold transition-all bg-gradient-to-r from-amber-500 to-yellow-400 text-white hover:shadow-lg hover:shadow-amber-200"
+                  >
+                    Nâng cấp lên VIP
+                  </button>
+                )}
+              </div>
+            );
+          })()}
         </div>
       </div>
+
+      {/* Cancel confirmation modal */}
+      {showCancelConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm mx-4 animate-fade-in-up">
+            <div className="text-center">
+              <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
+                <AlertCircle size={28} className="text-red-500" />
+              </div>
+              <h3 className="text-lg font-extrabold text-gray-800 mb-2">
+                Hủy đăng ký?
+              </h3>
+              <p className="text-sm text-gray-500 mb-6 leading-relaxed">
+                {activeChild.name} sẽ mất quyền truy cập các tính năng{" "}
+                <strong>{plan}</strong> và chuyển về gói Miễn phí. Bạn có chắc chắn?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowCancelConfirm(false)}
+                  className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition"
+                >
+                  Giữ gói
+                </button>
+                <button
+                  onClick={handleCancel}
+                  className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-sm font-bold hover:bg-red-600 transition"
+                >
+                  Xác nhận hủy
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel success toast */}
+      {cancelDone && (
+        <div className="fixed bottom-6 right-6 z-50 bg-white border border-green-200 shadow-lg rounded-2xl px-5 py-4 flex items-center gap-3 animate-fade-in-up">
+          <Check size={18} className="text-green-500" />
+          <p className="text-sm font-semibold text-gray-700">
+            Đã hủy gói thành công. {activeChild.name} đang dùng gói Miễn phí.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

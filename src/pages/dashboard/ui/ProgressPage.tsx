@@ -12,12 +12,8 @@ import {
   AreaChart,
   Area,
 } from "recharts";
-import { TrendingUp, TrendingDown, Minus, Award } from "lucide-react";
-import {
-  MOCK_SKILLS,
-  MOCK_WEEKLY_TREND,
-  MOCK_DASHBOARD_STATS,
-} from "@/shared/api/dashboardMockData";
+import { TrendingUp, TrendingDown, Minus, Award, Lock } from "lucide-react";
+import { useActiveChild } from "@/shared/lib/activeChild";
 
 /* ── scroll-reveal ─────────────────────────────────── */
 function useReveal(threshold = 0.1) {
@@ -40,14 +36,6 @@ function useReveal(threshold = 0.1) {
   }, [threshold]);
   return { ref, visible };
 }
-
-const radialData = [
-  {
-    name: "Tổng thể",
-    value: MOCK_DASHBOARD_STATS.overallScore,
-    fill: "var(--brand-primary)",
-  },
-];
 
 function CustomLineTooltip({
   active,
@@ -101,26 +89,50 @@ const COMPARISON_CARDS = [
 ];
 
 export function ProgressPage() {
+  const { activeChild, dashboardData } = useActiveChild();
+  const plan = activeChild.plan;
+  const isLocked = plan === "FREE";
+
   const scoreCard = useReveal();
   const trendCard = useReveal();
   const compCard = useReveal();
   const skillCard = useReveal();
   const areaCard = useReveal();
 
-  const skills = MOCK_SKILLS;
-  const weeklyTrend = MOCK_WEEKLY_TREND;
-  const stats = MOCK_DASHBOARD_STATS;
+  const skills = dashboardData.skills;
+  const weeklyTrend = dashboardData.weeklyTrend;
+  const stats = dashboardData.stats;
+
+  const radialData = [
+    {
+      name: "Tổng thể",
+      value: stats.overallScore,
+      fill: "var(--brand-primary)",
+    },
+  ];
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-bold text-gray-800">Tiến độ của con</h2>
+        <h2 className="text-xl font-bold text-gray-800">
+          Tiến độ của {activeChild.name}
+          {activeChild.plan !== "FREE" && (
+            <span
+              className={`ml-2 text-xs font-bold px-2 py-0.5 rounded-full ${
+                activeChild.plan === "VIP"
+                  ? "bg-yellow-100 text-yellow-700"
+                  : "bg-orange-100 text-orange-700"
+              }`}
+            >
+              {activeChild.plan}
+            </span>
+          )}
+        </h2>
         <p className="text-sm text-gray-400 mt-0.5">
           Cập nhật lần cuối: hôm nay
         </p>
       </div>
-
       {/* Top row: radial score + weekly trend */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* Overall score */}
@@ -163,13 +175,13 @@ export function ProgressPage() {
             <div className="bg-blue-50 rounded-xl py-2">
               <p className="text-xs text-gray-400 font-medium">Bài đã làm</p>
               <p className="text-base font-extrabold text-blue-600">
-                {MOCK_DASHBOARD_STATS.completedLessons}
+                {stats.completedLessons}
               </p>
             </div>
             <div className="bg-orange-50 rounded-xl py-2">
               <p className="text-xs text-gray-400 font-medium">Chuỗi ngày</p>
               <p className="text-base font-extrabold text-orange-500">
-                {MOCK_DASHBOARD_STATS.streakDays}🔥
+                {stats.streakDays}🔥
               </p>
             </div>
           </div>
@@ -218,7 +230,6 @@ export function ProgressPage() {
           </ResponsiveContainer>
         </div>
       </div>
-
       {/* Comparison cards */}
       <div
         ref={compCard.ref}
@@ -245,140 +256,177 @@ export function ProgressPage() {
           ),
         )}
       </div>
-
       {/* Skill breakdown */}
-      <div
-        ref={skillCard.ref}
-        className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-6 ${skillCard.visible ? "animate-fade-in-up" : "opacity-0"}`}
-        style={{ animationDelay: "100ms" }}
-      >
-        <div className="flex items-center justify-between mb-5">
-          <p className="text-sm font-bold text-gray-700">Phân tích kỹ năng</p>
-          <div className="flex items-center gap-1.5 text-xs text-yellow-600 bg-yellow-50 px-3 py-1 rounded-full font-semibold border border-yellow-100">
-            <Award size={13} />
-            Kỹ năng nổi bật: {MOCK_DASHBOARD_STATS.bestSkill}
+      <div className="relative">
+        {isLocked && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/60 backdrop-blur-[2px] rounded-2xl">
+            <Lock size={32} className="text-gray-400 mb-2" />
+            <p className="text-sm font-bold text-gray-700 mb-1">
+              Phân tích AI bị khóa
+            </p>
+            <p className="text-xs text-gray-400 mb-3">
+              Nâng cấp PRO để xem phân tích kỹ năng chi tiết
+            </p>
+            <button className="px-5 py-2 bg-gradient-to-r from-orange-400 to-pink-500 text-white text-sm font-bold rounded-xl hover:brightness-110 transition">
+              Nâng cấp PRO cho {activeChild.name} (55k/tháng)
+            </button>
           </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
-          {skills.map((s) => (
-            <div key={s.label}>
-              <div className="flex justify-between text-sm mb-1.5">
-                <span className="font-medium text-gray-700">{s.label}</span>
-                <span className="font-bold text-gray-500">{s.pct}%</span>
-              </div>
-              <div className="h-2.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full ${s.colorClass} transition-all duration-700`}
-                  style={{
-                    width: skillCard.visible ? `${s.pct}%` : "0%",
-                    transitionDelay: "200ms",
-                  }}
-                />
+        )}
+        <div
+          className={isLocked ? "blur-sm pointer-events-none select-none" : ""}
+        >
+          <div
+            ref={skillCard.ref}
+            className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-6 ${skillCard.visible ? "animate-fade-in-up" : "opacity-0"}`}
+            style={{ animationDelay: "100ms" }}
+          >
+            <div className="flex items-center justify-between mb-5">
+              <p className="text-sm font-bold text-gray-700">
+                Phân tích kỹ năng
+              </p>
+              <div className="flex items-center gap-1.5 text-xs text-yellow-600 bg-yellow-50 px-3 py-1 rounded-full font-semibold border border-yellow-100">
+                <Award size={13} />
+                Kỹ năng nổi bật: {stats.bestSkill}
               </div>
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Area chart – study time over weeks */}
-      <div
-        ref={areaCard.ref}
-        className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-6 ${areaCard.visible ? "animate-fade-in-up" : "opacity-0"}`}
-        style={{ animationDelay: "80ms" }}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <p className="text-sm font-bold text-gray-700">
-            Phân bổ thời gian học theo kỹ năng
-          </p>
-          <div className="flex items-center gap-3 text-xs text-gray-400">
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block" />
-              Số học
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-orange-400 inline-block" />
-              Hình học
-            </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
+              {skills.map((s) => (
+                <div key={s.label}>
+                  <div className="flex justify-between text-sm mb-1.5">
+                    <span className="font-medium text-gray-700">{s.label}</span>
+                    <span className="font-bold text-gray-500">{s.pct}%</span>
+                  </div>
+                  <div className="h-2.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${s.colorClass} transition-all duration-700`}
+                      style={{
+                        width: skillCard.visible ? `${s.pct}%` : "0%",
+                        transitionDelay: "200ms",
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-        <ResponsiveContainer width="100%" height={160}>
-          <AreaChart
-            data={[
-              { week: "T1", soHoc: 30, hinhHoc: 20 },
-              { week: "T2", soHoc: 40, hinhHoc: 25 },
-              { week: "T3", soHoc: 28, hinhHoc: 32 },
-              { week: "T4", soHoc: 45, hinhHoc: 30 },
-              { week: "T5", soHoc: 38, hinhHoc: 42 },
-              { week: "T6", soHoc: 50, hinhHoc: 38 },
-              { week: "T7", soHoc: 42, hinhHoc: 48 },
-            ]}
+        </div>{" "}
+        {/* close blur wrapper */}
+      </div>{" "}
+      {/* close relative wrapper */}
+      {/* Area chart – study time over weeks */}
+      <div className="relative">
+        {isLocked && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/60 backdrop-blur-[2px] rounded-2xl">
+            <Lock size={32} className="text-gray-400 mb-2" />
+            <p className="text-sm font-bold text-gray-700">
+              Chỉ dành cho PRO / VIP
+            </p>
+          </div>
+        )}
+        <div
+          className={isLocked ? "blur-sm pointer-events-none select-none" : ""}
+        >
+          <div
+            ref={areaCard.ref}
+            className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-6 ${areaCard.visible ? "animate-fade-in-up" : "opacity-0"}`}
+            style={{ animationDelay: "80ms" }}
           >
-            <defs>
-              <linearGradient id="gradBlue" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15} />
-                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="gradOrange" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#f97316" stopOpacity={0.15} />
-                <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              vertical={false}
-              stroke="#f0f0f0"
-            />
-            <XAxis
-              dataKey="week"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fontSize: 12, fill: "#9ca3af" }}
-            />
-            <YAxis
-              axisLine={false}
-              tickLine={false}
-              tick={{ fontSize: 12, fill: "#9ca3af" }}
-              unit=" ph"
-            />
-            <Tooltip
-              contentStyle={{
-                borderRadius: "12px",
-                border: "1px solid #f3f4f6",
-                boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-              }}
-              labelStyle={{ fontWeight: "600", color: "#374151" }}
-            />
-            <Area
-              type="monotone"
-              dataKey="soHoc"
-              name="Số học"
-              stroke="#3b82f6"
-              strokeWidth={2}
-              fill="url(#gradBlue)"
-              isAnimationActive={areaCard.visible}
-              animationDuration={900}
-            />
-            <Area
-              type="monotone"
-              dataKey="hinhHoc"
-              name="Hình học"
-              stroke="#f97316"
-              strokeWidth={2}
-              fill="url(#gradOrange)"
-              isAnimationActive={areaCard.visible}
-              animationDuration={1100}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm font-bold text-gray-700">
+                Phân bổ thời gian học theo kỹ năng
+              </p>
+              <div className="flex items-center gap-3 text-xs text-gray-400">
+                <span className="flex items-center gap-1">
+                  <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block" />
+                  Số học
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2.5 h-2.5 rounded-full bg-orange-400 inline-block" />
+                  Hình học
+                </span>
+              </div>
+            </div>
+            <ResponsiveContainer width="100%" height={160}>
+              <AreaChart
+                data={[
+                  { week: "T1", soHoc: 30, hinhHoc: 20 },
+                  { week: "T2", soHoc: 40, hinhHoc: 25 },
+                  { week: "T3", soHoc: 28, hinhHoc: 32 },
+                  { week: "T4", soHoc: 45, hinhHoc: 30 },
+                  { week: "T5", soHoc: 38, hinhHoc: 42 },
+                  { week: "T6", soHoc: 50, hinhHoc: 38 },
+                  { week: "T7", soHoc: 42, hinhHoc: 48 },
+                ]}
+              >
+                <defs>
+                  <linearGradient id="gradBlue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15} />
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="gradOrange" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#f97316" stopOpacity={0.15} />
+                    <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  vertical={false}
+                  stroke="#f0f0f0"
+                />
+                <XAxis
+                  dataKey="week"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12, fill: "#9ca3af" }}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12, fill: "#9ca3af" }}
+                  unit=" ph"
+                />
+                <Tooltip
+                  contentStyle={{
+                    borderRadius: "12px",
+                    border: "1px solid #f3f4f6",
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+                  }}
+                  labelStyle={{ fontWeight: "600", color: "#374151" }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="soHoc"
+                  name="Số học"
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                  fill="url(#gradBlue)"
+                  isAnimationActive={areaCard.visible}
+                  animationDuration={900}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="hinhHoc"
+                  name="Hình học"
+                  stroke="#f97316"
+                  strokeWidth={2}
+                  fill="url(#gradOrange)"
+                  isAnimationActive={areaCard.visible}
+                  animationDuration={1100}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>{" "}
+        {/* close blur wrapper */}
+      </div>{" "}
+      {/* close relative wrapper */}
       {/* Achievements row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { emoji: "🏆", label: "Top 10% học sinh", sub: "Tuần này" },
           {
             emoji: "🔥",
-            label: `${MOCK_DASHBOARD_STATS.streakDays} ngày liên tiếp`,
+            label: `${stats.streakDays} ngày liên tiếp`,
             sub: "Kỷ lục cá nhân",
           },
           { emoji: "⭐", label: "Hoàn hảo 100/100", sub: "26/02/2026" },

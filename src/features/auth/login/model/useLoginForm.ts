@@ -2,28 +2,12 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/shared/lib/auth";
 
-// Mock accounts for testing
+// Single parent account – all roles handled via profile picker
 const MOCK_ACCOUNT = {
   email: "demo@violympickids.com",
   password: "demo123",
-  nickname: "DemoKid",
-  avatarId: "fox",
-};
-
-const PARENT_ACCOUNT = {
-  email: "parent@violympickids.com",
-  password: "parent123",
   nickname: "Phụ Huynh",
   avatarId: "panda",
-  role: "parent",
-};
-
-const STUDENT_ACCOUNT = {
-  email: "student@violympickids.com",
-  password: "student123",
-  nickname: "Bé Cún",
-  avatarId: "fox",
-  role: "student",
 };
 
 interface LoginErrors {
@@ -79,27 +63,8 @@ export function useLoginForm() {
           email: MOCK_ACCOUNT.email,
           avatarId: MOCK_ACCOUNT.avatarId,
         });
-        navigate("/");
-      } else if (
-        email === PARENT_ACCOUNT.email &&
-        password === PARENT_ACCOUNT.password
-      ) {
-        login({
-          nickname: PARENT_ACCOUNT.nickname,
-          email: PARENT_ACCOUNT.email,
-          avatarId: PARENT_ACCOUNT.avatarId,
-        });
-        navigate("/dashboard");
-      } else if (
-        email === STUDENT_ACCOUNT.email &&
-        password === STUDENT_ACCOUNT.password
-      ) {
-        login({
-          nickname: STUDENT_ACCOUNT.nickname,
-          email: STUDENT_ACCOUNT.email,
-          avatarId: STUDENT_ACCOUNT.avatarId,
-        });
-        navigate("/student");
+        // Single account → profile picker ("Ai đang sử dụng?")
+        navigate("/profile-picker");
       } else {
         setErrors({ general: "Email hoặc mật khẩu không đúng." });
         setIsLoading(false);

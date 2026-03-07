@@ -8,10 +8,10 @@ import {
   XCircle,
 } from "lucide-react";
 import {
-  MOCK_ACTIVITIES,
   SUBJECT_FILTER_OPTIONS,
   type ActivityStatus,
 } from "@/shared/api/dashboardMockData";
+import { useActiveChild } from "@/shared/lib/activeChild";
 
 const statusStyle: Record<ActivityStatus, string> = {
   "Hoàn thành": "bg-green-100 text-green-700",
@@ -28,6 +28,8 @@ const statusIcon: Record<ActivityStatus, React.ReactNode> = {
 const PAGE_SIZE = 7;
 
 export function HistoryPage() {
+  const { activeChild, dashboardData } = useActiveChild();
+  const activities = dashboardData.activities;
   const [search, setSearch] = useState("");
   const [subjectFilter, setSubjectFilter] = useState("Tất cả");
   const [statusFilter, setStatusFilter] = useState<"Tất cả" | ActivityStatus>(
@@ -36,7 +38,7 @@ export function HistoryPage() {
   const [page, setPage] = useState(1);
 
   const filtered = useMemo(() => {
-    return MOCK_ACTIVITIES.filter((a) => {
+    return activities.filter((a) => {
       const matchSearch = a.lesson.toLowerCase().includes(search.toLowerCase());
       const matchSubject =
         subjectFilter === "Tất cả" || a.subject === subjectFilter;
@@ -44,7 +46,7 @@ export function HistoryPage() {
         statusFilter === "Tất cả" || a.status === statusFilter;
       return matchSearch && matchSubject && matchStatus;
     });
-  }, [search, subjectFilter, statusFilter]);
+  }, [search, subjectFilter, statusFilter, activities]);
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -64,9 +66,9 @@ export function HistoryPage() {
   };
 
   // Stats summary
-  const total = MOCK_ACTIVITIES.length;
-  const done = MOCK_ACTIVITIES.filter((a) => a.status === "Hoàn thành").length;
-  const inProgress = MOCK_ACTIVITIES.filter(
+  const total = activities.length;
+  const done = activities.filter((a) => a.status === "Hoàn thành").length;
+  const inProgress = activities.filter(
     (a) => a.status === "Đang dở",
   ).length;
 

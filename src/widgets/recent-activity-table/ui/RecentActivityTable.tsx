@@ -1,9 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, CheckCircle2, Clock } from "lucide-react";
-import {
-  MOCK_ACTIVITIES,
-  type ActivityStatus,
-} from "@/shared/api/dashboardMockData";
+import { type ActivityStatus } from "@/shared/api/dashboardMockData";
+import { useActiveChild } from "@/shared/lib/activeChild";
 
 // Show only the 5 most recent entries in the overview widget
 const PREVIEW_COUNT = 5;
@@ -39,7 +37,8 @@ export function RecentActivityTable() {
     return () => obs.disconnect();
   }, []);
 
-  const activities = MOCK_ACTIVITIES.slice(0, PREVIEW_COUNT);
+  const { dashboardData } = useActiveChild();
+  const activities = dashboardData.activities.slice(0, PREVIEW_COUNT);
 
   return (
     <div

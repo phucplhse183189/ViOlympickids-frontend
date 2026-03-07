@@ -35,6 +35,7 @@ export function AddChildPage() {
       grade: "Lớp 2",
       avatarEmoji: chosen.emoji,
       avatarBg: chosen.bg,
+      plan: "FREE" as const,
     };
 
     // Persist to localStorage so ProfileSelector can read it
@@ -51,7 +52,7 @@ export function AddChildPage() {
     }
 
     setDone(true);
-    setTimeout(() => navigate("/dashboard"), 1200);
+    setTimeout(() => navigate("/profile-picker"), 1200);
   }
 
   return (
@@ -65,11 +66,11 @@ export function AddChildPage() {
       {/* Top bar */}
       <div className="flex items-center justify-between px-6 py-4">
         <button
-          onClick={() => navigate("/dashboard")}
+          onClick={() => navigate("/profile-picker")}
           className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors font-medium"
         >
           <ArrowLeft size={16} />
-          Quay lại Dashboard
+          Quay lại
         </button>
 
         <div className="flex items-center gap-2">

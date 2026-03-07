@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-import { MOCK_STUDY_DAYS } from "@/shared/api/dashboardMockData";
+import { useActiveChild } from "@/shared/lib/activeChild";
 
 const GOAL_MINUTES = 40; // minutes/day goal – swap with API value later
 
@@ -62,7 +62,8 @@ export function StudyProgressChart() {
     return () => obs.disconnect();
   }, []);
 
-  const data = MOCK_STUDY_DAYS;
+  const { dashboardData } = useActiveChild();
+  const data = dashboardData.studyDays;
   const totalMinutes = data.reduce((s, d) => s + d.phut, 0);
   const avgMinutes = Math.round(totalMinutes / data.length);
   const goalDays = data.filter((d) => d.phut >= GOAL_MINUTES).length;

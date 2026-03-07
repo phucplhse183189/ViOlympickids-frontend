@@ -6,11 +6,13 @@ import {
   PolarAngleAxis,
   ResponsiveContainer,
 } from "recharts";
-import { MOCK_RADAR_SKILLS } from "@/shared/api/dashboardMockData";
+import { useActiveChild } from "@/shared/lib/activeChild";
 
 export function SkillRadarChart() {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
+  const { dashboardData } = useActiveChild();
+  const radarSkills = dashboardData.radarSkills;
 
   useEffect(() => {
     const el = ref.current;
@@ -28,8 +30,8 @@ export function SkillRadarChart() {
     return () => observer.disconnect();
   }, []);
 
-  const strongSkill = [...MOCK_RADAR_SKILLS].sort((a, b) => b.diem - a.diem)[0];
-  const weakSkill = [...MOCK_RADAR_SKILLS].sort((a, b) => a.diem - b.diem)[0];
+  const strongSkill = [...radarSkills].sort((a, b) => b.diem - a.diem)[0];
+  const weakSkill = [...radarSkills].sort((a, b) => a.diem - b.diem)[0];
 
   return (
     <div
@@ -47,7 +49,7 @@ export function SkillRadarChart() {
         {/* Radar Chart */}
         <div className="flex-1 min-w-0" style={{ height: 220 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <RadarChart data={MOCK_RADAR_SKILLS} outerRadius={80}>
+            <RadarChart data={radarSkills} outerRadius={80}>
               <PolarGrid stroke="#f0e8e0" />
               <PolarAngleAxis
                 dataKey="skill"
@@ -112,7 +114,7 @@ export function SkillRadarChart() {
 
           {/* All skills mini score list */}
           <div className="flex flex-col gap-1">
-            {MOCK_RADAR_SKILLS.map((s) => (
+            {radarSkills.map((s) => (
               <div
                 key={s.skill}
                 className="flex items-center justify-between gap-2"

@@ -1,11 +1,11 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   MOCK_TRIAL,
-  MOCK_TRANSACTIONS,
+  getTransactions,
   type PaymentTransaction,
 } from "@/shared/api/dashboardMockData";
-
-const PRICE_LABEL = "59.000đ/tháng";
+import { useActiveChild } from "@/shared/lib/activeChild";
 
 function StatusBadge({ status }: { status: PaymentTransaction["status"] }) {
   const isOk = status === "Thành công";
@@ -30,14 +30,24 @@ function formatVnd(amount: number) {
 }
 
 export function BillingManagement() {
-  const [upgrading, setUpgrading] = useState(false);
+  const navigate = useNavigate();
+  const [upgrading] = useState(false);
+  const { activeChild, dashboardData } = useActiveChild();
+  const plan = activeChild.plan;
+  const billing = dashboardData.billing;
   const remaining = MOCK_TRIAL.totalDays - MOCK_TRIAL.usedDays;
   const progressPct = (MOCK_TRIAL.usedDays / MOCK_TRIAL.totalDays) * 100;
+  const transactions = getTransactions();
+
+  const priceLabel =
+    plan === "VIP"
+      ? `${formatVnd(billing.pricePerMonth)}/tháng`
+      : plan === "PRO"
+        ? `${formatVnd(billing.pricePerMonth)}/tháng`
+        : "Miễn phí";
 
   function handleUpgrade() {
-    setUpgrading(true);
-    // Replace with real payment flow
-    setTimeout(() => setUpgrading(false), 2000);
+    navigate("/dashboard/payment?plan=PRO");
   }
 
   return (
@@ -107,7 +117,7 @@ export function BillingManagement() {
                   d="M5 3l14 9-14 9V3z"
                 />
               </svg>
-              Nâng cấp lên ViOlympicKids Pro ({PRICE_LABEL})
+              Nâng cấp lên ViOlympicKids Pro ({priceLabel})
             </>
           )}
         </button>
@@ -156,11 +166,11 @@ export function BillingManagement() {
               </tr>
             </thead>
             <tbody>
-              {MOCK_TRANSACTIONS.map((tx, i) => (
+              {transactions.map((tx, i) => (
                 <tr
                   key={tx.id}
                   className={`border-b border-gray-50 hover:bg-gray-50/60 transition-colors ${
-                    i === MOCK_TRANSACTIONS.length - 1 ? "border-b-0" : ""
+                    i === transactions.length - 1 ? "border-b-0" : ""
                   }`}
                 >
                   <td className="px-6 py-3 font-mono text-xs text-gray-600">
@@ -179,7 +189,7 @@ export function BillingManagement() {
           </table>
         </div>
 
-        {MOCK_TRANSACTIONS.length === 0 && (
+        {transactions.length === 0 && (
           <p className="text-sm text-gray-400 text-center py-8">
             Chưa có giao dịch nào.
           </p>

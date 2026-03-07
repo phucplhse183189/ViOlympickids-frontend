@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { MOCK_ALERTS, type SmartAlert } from "@/shared/api/dashboardMockData";
+import { Link } from "react-router-dom";
+import { type SmartAlert } from "@/shared/api/dashboardMockData";
+import { useActiveChild } from "@/shared/lib/activeChild";
 
 // ── Icons ──────────────────────────────────────────────────────
 
@@ -83,12 +85,12 @@ function AlertCard({
         {/* Action + dismiss row */}
         <div className="flex items-center gap-3 mt-2">
           {alert.actionLabel && alert.actionLink && (
-            <a
-              href={alert.actionLink}
+            <Link
+              to={alert.actionLink}
               className="text-xs font-semibold text-blue-600 hover:text-blue-700 underline underline-offset-2 transition-colors"
             >
               {alert.actionLabel} →
-            </a>
+            </Link>
           )}
           <button
             onClick={() => onDismiss(alert.id)}
@@ -105,7 +107,8 @@ function AlertCard({
 // ── Main component ──────────────────────────────────────────────
 
 export function SmartAlerts() {
-  const [alerts, setAlerts] = useState(MOCK_ALERTS);
+  const { dashboardData } = useActiveChild();
+  const [alerts, setAlerts] = useState(dashboardData.alerts);
 
   function dismiss(id: string) {
     setAlerts((prev) => prev.filter((a) => a.id !== id));

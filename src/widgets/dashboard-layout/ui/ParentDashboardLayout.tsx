@@ -12,9 +12,12 @@ import {
   ChevronRight,
   Settings,
   UserCircle,
+  Users,
 } from "lucide-react";
 import { MOCK_PARENT_PROFILE } from "@/shared/api/dashboardMockData";
+import { ActiveChildProvider } from "@/shared/lib/activeChild";
 import { ProfileSelector } from "./ProfileSelector";
+import { ChildAvatarBar } from "./ChildAvatarBar";
 
 // ─── Nav items ────────────────────────────────────────────────
 const navItems = [
@@ -161,7 +164,7 @@ function SettingsMenu() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-44 bg-white rounded-2xl border border-gray-100 shadow-xl overflow-hidden z-[100]">
+        <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl border border-gray-100 shadow-xl overflow-hidden z-[100]">
           <div className="py-1.5">
             <button
               onClick={() => {
@@ -172,6 +175,16 @@ function SettingsMenu() {
             >
               <UserCircle size={15} className="text-gray-400 shrink-0" />
               Hồ sơ của tôi
+            </button>
+            <button
+              onClick={() => {
+                setOpen(false);
+                navigate("/profile-picker");
+              }}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+            >
+              <Users size={15} className="text-gray-400 shrink-0" />
+              Đổi hồ sơ
             </button>
           </div>
           <div className="border-t border-gray-100" />
@@ -209,73 +222,80 @@ export function ParentDashboardLayout() {
   const pageTitle = usePageTitle(location.pathname);
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
-      {/* Desktop sidebar */}
-      <div className="hidden lg:flex flex-col h-full">
-        <Sidebar />
-      </div>
-
-      {/* Mobile sidebar overlay */}
-      {sidebarOpen && (
-        <div className="fixed inset-0 z-40 flex lg:hidden">
-          <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            onClick={() => setSidebarOpen(false)}
-          />
-          <div className="relative z-50">
-            <Sidebar onClose={() => setSidebarOpen(false)} />
-          </div>
+    <ActiveChildProvider>
+      <div className="flex h-screen bg-gray-50 overflow-hidden">
+        {/* Desktop sidebar */}
+        <div className="hidden lg:flex flex-col h-full">
+          <Sidebar />
         </div>
-      )}
 
-      {/* Main content area */}
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        {/* Topbar */}
-        <header className="relative z-10 animate-fade-in-down flex items-center justify-between px-6 py-3.5 bg-white border-b border-gray-100 shadow-sm">
-          <div className="flex items-center gap-3">
-            <button
-              className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Menu size={20} className="text-gray-600" />
-            </button>
-            {/* Breadcrumb */}
-            <div className="hidden sm:flex items-center gap-2 text-sm">
-              <span className="text-gray-400 font-medium">Dashboard</span>
-              <ChevronRight size={14} className="text-gray-300" />
-              <span className="font-semibold text-gray-700">{pageTitle}</span>
+        {/* Mobile sidebar overlay */}
+        {sidebarOpen && (
+          <div className="fixed inset-0 z-40 flex lg:hidden">
+            <div
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              onClick={() => setSidebarOpen(false)}
+            />
+            <div className="relative z-50">
+              <Sidebar onClose={() => setSidebarOpen(false)} />
             </div>
           </div>
+        )}
 
-          <div className="flex items-center gap-2">
-            {/* Notification bell */}
-            <button className="relative p-2 rounded-xl hover:bg-gray-100 transition">
-              <Bell size={19} className="text-gray-500" />
-              {MOCK_PARENT_PROFILE.unreadNotifications > 0 && (
-                <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-red-500 animate-notification-pulse flex items-center justify-center">
-                  <span className="text-[9px] text-white font-bold">
-                    {MOCK_PARENT_PROFILE.unreadNotifications}
+        {/* Main content area */}
+        <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+          {/* Topbar */}
+          <header className="relative z-10 animate-fade-in-down flex items-center justify-between px-6 py-3.5 bg-white border-b border-gray-100 shadow-sm">
+            <div className="flex items-center gap-3">
+              <button
+                className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition"
+                onClick={() => setSidebarOpen(true)}
+              >
+                <Menu size={20} className="text-gray-600" />
+              </button>
+              {/* Breadcrumb */}
+              <div className="hidden sm:flex items-center gap-2 text-sm">
+                <span className="text-gray-400 font-medium">Dashboard</span>
+                <ChevronRight size={14} className="text-gray-300" />
+                <span className="font-semibold text-gray-700">{pageTitle}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {/* Notification bell */}
+              <button className="relative p-2 rounded-xl hover:bg-gray-100 transition">
+                <Bell size={19} className="text-gray-500" />
+                {MOCK_PARENT_PROFILE.unreadNotifications > 0 && (
+                  <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-red-500 animate-notification-pulse flex items-center justify-center">
+                    <span className="text-[9px] text-white font-bold">
+                      {MOCK_PARENT_PROFILE.unreadNotifications}
+                    </span>
                   </span>
-                </span>
-              )}
-            </button>
+                )}
+              </button>
 
-            {/* Divider */}
-            <div className="w-px h-6 bg-gray-100 mx-1" />
+              {/* Divider */}
+              <div className="w-px h-6 bg-gray-100 mx-1" />
 
-            {/* User menu dropdown */}
-            <AvatarButton />
-            <SettingsMenu />
+              {/* User menu dropdown */}
+              <AvatarButton />
+              <SettingsMenu />
+            </div>
+          </header>
+
+          {/* Netflix-style child avatar bar */}
+          <div className="px-6 pt-4 pb-0">
+            <ChildAvatarBar />
           </div>
-        </header>
 
-        {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-6">
-          <div key={location.pathname} className="animate-fade-in-up">
-            <Outlet />
-          </div>
-        </main>
+          {/* Page content */}
+          <main className="flex-1 overflow-y-auto p-6">
+            <div key={location.pathname} className="animate-fade-in-up">
+              <Outlet />
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+    </ActiveChildProvider>
   );
 }

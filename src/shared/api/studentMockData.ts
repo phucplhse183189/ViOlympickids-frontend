@@ -84,6 +84,85 @@ export function isDragMatch(q: QuizQuestion): q is DragMatchQuestion {
   return q.type === "drag-match";
 }
 
+// ── Game Activity Types (interactive learning, separate from quiz) ───────────
+
+export type GameType =
+  | "number-line"
+  | "object-count"
+  | "fill-blank"
+  | "shape-explore";
+
+interface BaseGameActivity {
+  id: number;
+  type: GameType;
+  instruction: string;
+  emoji: string;
+  xpReward: number;
+}
+
+export interface NumberLineGame extends BaseGameActivity {
+  type: "number-line";
+  numberLine: {
+    start: number;
+    end: number;
+    /** Positions (values) that the student must fill in */
+    missing: number[];
+  };
+}
+
+export interface ObjectCountGame extends BaseGameActivity {
+  type: "object-count";
+  objectCount: {
+    objectEmoji: string;
+    /** Grid of objects – student counts them */
+    count: number;
+    /** Distractor counts shown as options */
+    options: number[];
+  };
+}
+
+export interface FillBlankGame extends BaseGameActivity {
+  type: "fill-blank";
+  fillBlank: {
+    /** e.g. "Số liền trước của 7 là ___" */
+    question: string;
+    answer: number;
+    options: number[];
+  };
+}
+
+export interface ShapeExploreGame extends BaseGameActivity {
+  type: "shape-explore";
+  shapeExplore: {
+    shape: Shape3DName;
+    /** Facts the student discovers by interacting */
+    facts: { label: string; value: string; icon: string }[];
+    /** Challenge question after exploring */
+    challengeText: string;
+    challengeAnswer: string;
+    challengeOptions: string[];
+  };
+}
+
+export type GameActivity =
+  | NumberLineGame
+  | ObjectCountGame
+  | FillBlankGame
+  | ShapeExploreGame;
+
+export function isNumberLine(g: GameActivity): g is NumberLineGame {
+  return g.type === "number-line";
+}
+export function isObjectCount(g: GameActivity): g is ObjectCountGame {
+  return g.type === "object-count";
+}
+export function isFillBlank(g: GameActivity): g is FillBlankGame {
+  return g.type === "fill-blank";
+}
+export function isShapeExplore(g: GameActivity): g is ShapeExploreGame {
+  return g.type === "shape-explore";
+}
+
 export interface Lesson {
   id: number;
   chapterId: number;
@@ -94,6 +173,8 @@ export interface Lesson {
   xpReward: number;
   duration: number; // minutes
   questions: QuizQuestion[];
+  /** Interactive game activities (separate from quiz) */
+  games: GameActivity[];
   /** position on winding path [left%, top%] */
   pos: [number, number];
 }
@@ -143,8 +224,44 @@ const chapter1Lessons: Lesson[] = [
     xpReward: 10,
     duration: 5,
     pos: [12, 72],
+    games: [
+      {
+        id: 1,
+        type: "shape-explore",
+        instruction: "Xoay khối lập phương và khám phá các mặt của nó!",
+        emoji: "📦",
+        xpReward: 3,
+        shapeExplore: {
+          shape: "cube",
+          facts: [
+            { label: "Mặt", value: "6 mặt vuông", icon: "🟦" },
+            { label: "Cạnh", value: "12 cạnh bằng nhau", icon: "📏" },
+            { label: "Đỉnh", value: "8 đỉnh", icon: "⭐" },
+          ],
+          challengeText: "Vật nào giống khối lập phương?",
+          challengeAnswer: "Hộp sữa vuông",
+          challengeOptions: [
+            "Quả bóng",
+            "Hộp sữa vuông",
+            "Lon nước",
+            "Cái nón",
+          ],
+        },
+      },
+      {
+        id: 2,
+        type: "object-count",
+        instruction: "Đếm số mặt của khối lập phương!",
+        emoji: "🔢",
+        xpReward: 2,
+        objectCount: {
+          objectEmoji: "🟦",
+          count: 6,
+          options: [4, 6, 8, 10],
+        },
+      },
+    ],
     questions: [
-      // ── Q1: count-tap (đếm mặt) ──
       {
         id: 1,
         type: "count-tap",
@@ -244,12 +361,43 @@ const chapter1Lessons: Lesson[] = [
     xpReward: 10,
     duration: 5,
     pos: [35, 53],
+    games: [
+      {
+        id: 1,
+        type: "shape-explore",
+        instruction: "Khám phá khối cầu — xoay và quan sát!",
+        emoji: "⚽",
+        xpReward: 3,
+        shapeExplore: {
+          shape: "sphere",
+          facts: [
+            { label: "Mặt phẳng", value: "0 (toàn cong)", icon: "⭕" },
+            { label: "Cạnh", value: "0", icon: "📏" },
+            { label: "Đỉnh", value: "0", icon: "⭐" },
+          ],
+          challengeText: "Khối cầu có bao nhiêu mặt phẳng?",
+          challengeAnswer: "0",
+          challengeOptions: ["0", "1", "2", "6"],
+        },
+      },
+      {
+        id: 2,
+        type: "fill-blank",
+        instruction: "Điền vào chỗ trống!",
+        emoji: "✍️",
+        xpReward: 2,
+        fillBlank: {
+          question: "Khối cầu có thể lăn được ___ hướng",
+          answer: 0,
+          options: [0, 1, 2, 3],
+        },
+      },
+    ],
     questions: [
-      // ── Q1: true-false ──
       {
         id: 1,
         type: "true-false",
-        text: "Đúng hay Sai: Khối cầu có ít nhất 1 mặt phẳng?",
+        text: "Đúng hay Sai: Khối cầu có 2 mặt phẳng?",
         emoji: "⚽",
         shape3d: "sphere",
         trueFalse: { isTrue: false },
@@ -350,12 +498,43 @@ const chapter1Lessons: Lesson[] = [
     xpReward: 15,
     duration: 6,
     pos: [60, 35],
+    games: [
+      {
+        id: 1,
+        type: "shape-explore",
+        instruction: "Xoay hình trụ và tìm hiểu cấu tạo!",
+        emoji: "🧃",
+        xpReward: 3,
+        shapeExplore: {
+          shape: "cylinder",
+          facts: [
+            { label: "Mặt", value: "3 (2 tròn + 1 cong)", icon: "🟢" },
+            { label: "Cạnh", value: "2 cạnh tròn", icon: "📏" },
+            { label: "Đỉnh", value: "0", icon: "⭐" },
+          ],
+          challengeText: "Vật nào có dạng hình trụ?",
+          challengeAnswer: "Lon nước ngọt",
+          challengeOptions: ["Quả bóng", "Lon nước ngọt", "Hộp quà", "Mũ nhọn"],
+        },
+      },
+      {
+        id: 2,
+        type: "object-count",
+        instruction: "Đếm số mặt của hình trụ!",
+        emoji: "🔢",
+        xpReward: 2,
+        objectCount: {
+          objectEmoji: "🟢",
+          count: 3,
+          options: [2, 3, 4, 6],
+        },
+      },
+    ],
     questions: [
-      // ── Q1: count-tap (đếm mặt) ──
       {
         id: 1,
         type: "count-tap",
-        text: "Đếm nào: Hình trụ có bao nhiêu mặt?",
+        text: "Hình trụ có bao nhiêu mặt?",
         emoji: "🥤",
         shape3d: "cylinder",
         countTap: { targetCount: 3, label: "mặt", maxCount: 8 },
@@ -451,11 +630,35 @@ const chapter1Lessons: Lesson[] = [
     xpReward: 15,
     duration: 7,
     pos: [76, 56],
-    questions: [
-      // ── Q1: MCQ ──
+    games: [
       {
         id: 1,
-        text: "Kim tự tháp Ai Cập là ví dụ của hình gì?",
+        type: "shape-explore",
+        instruction: "Khám phá khối chóp — xoay và đếm!",
+        emoji: "🔺",
+        xpReward: 3,
+        shapeExplore: {
+          shape: "pyramid",
+          facts: [
+            { label: "Mặt", value: "5 (1 đáy + 4 bên)", icon: "🔺" },
+            { label: "Cạnh", value: "8", icon: "📏" },
+            { label: "Đỉnh", value: "5", icon: "⭐" },
+          ],
+          challengeText: "Kim tự tháp Ai Cập là hình gì?",
+          challengeAnswer: "Khối chóp tứ giác",
+          challengeOptions: [
+            "Khối lập phương",
+            "Khối chóp tứ giác",
+            "Hình trụ",
+            "Khối cầu",
+          ],
+        },
+      },
+    ],
+    questions: [
+      {
+        id: 1,
+        text: "Kim tự tháp thuộc loại hình nào?",
         emoji: "🏛️",
         shape3d: "pyramid",
         options: [
@@ -567,12 +770,37 @@ const chapter1Lessons: Lesson[] = [
     xpReward: 20,
     duration: 8,
     pos: [88, 76],
+    games: [
+      {
+        id: 1,
+        type: "fill-blank",
+        instruction: "Ghép hình với vật thật!",
+        emoji: "🧩",
+        xpReward: 3,
+        fillBlank: {
+          question: "Khối lập phương có ___ mặt",
+          answer: 6,
+          options: [4, 5, 6, 8],
+        },
+      },
+      {
+        id: 2,
+        type: "object-count",
+        instruction: "Trong 4 hình đã học, hình nào có nhiều mặt nhất?",
+        emoji: "📊",
+        xpReward: 3,
+        objectCount: {
+          objectEmoji: "📦",
+          count: 6,
+          options: [3, 4, 5, 6],
+        },
+      },
+    ],
     questions: [
-      // ── Q1: true-false ──
       {
         id: 1,
         type: "true-false",
-        text: "Đúng hay Sai: Khối cầu không có mặt phẳng nào?",
+        text: "Đúng hay Sai: Khối cầu không có mặt phẳng?",
         emoji: "🤔",
         shape3d: "sphere",
         trueFalse: { isTrue: true },
@@ -690,6 +918,36 @@ const chapter2Lessons: Lesson[] = [
     xpReward: 10,
     duration: 5,
     pos: [12, 72],
+    games: [
+      {
+        id: 1,
+        type: "number-line",
+        instruction: "Điền số còn thiếu trên tia số!",
+        emoji: "📏",
+        xpReward: 3,
+        numberLine: { start: 0, end: 10, missing: [3, 5, 7] },
+      },
+      {
+        id: 2,
+        type: "object-count",
+        instruction: "Đếm số quả táo!",
+        emoji: "🍎",
+        xpReward: 2,
+        objectCount: { objectEmoji: "🍎", count: 7, options: [5, 6, 7, 8] },
+      },
+      {
+        id: 3,
+        type: "fill-blank",
+        instruction: "Tìm kết quả phép cộng!",
+        emoji: "✍️",
+        xpReward: 2,
+        fillBlank: {
+          question: "3 + 4 = ___",
+          answer: 7,
+          options: [6, 7, 8, 9],
+        },
+      },
+    ],
     questions: [
       {
         id: 1,
@@ -748,6 +1006,28 @@ const chapter2Lessons: Lesson[] = [
     xpReward: 15,
     duration: 6,
     pos: [35, 53],
+    games: [
+      {
+        id: 1,
+        type: "number-line",
+        instruction: "Điền số còn thiếu trên tia số từ 10 đến 20!",
+        emoji: "📏",
+        xpReward: 3,
+        numberLine: { start: 10, end: 20, missing: [12, 15, 18] },
+      },
+      {
+        id: 2,
+        type: "fill-blank",
+        instruction: "Tìm kết quả!",
+        emoji: "✍️",
+        xpReward: 2,
+        fillBlank: {
+          question: "8 + 7 = ___",
+          answer: 15,
+          options: [13, 14, 15, 16],
+        },
+      },
+    ],
     questions: [
       {
         id: 1,
@@ -806,6 +1086,28 @@ const chapter2Lessons: Lesson[] = [
     xpReward: 20,
     duration: 8,
     pos: [60, 35],
+    games: [
+      {
+        id: 1,
+        type: "number-line",
+        instruction: "Nhảy trên tia số để tìm kết quả!",
+        emoji: "📏",
+        xpReward: 3,
+        numberLine: { start: 10, end: 25, missing: [16, 21, 23] },
+      },
+      {
+        id: 2,
+        type: "fill-blank",
+        instruction: "Tìm kết quả cộng có nhớ!",
+        emoji: "✍️",
+        xpReward: 2,
+        fillBlank: {
+          question: "16 + 5 = ___",
+          answer: 21,
+          options: [19, 20, 21, 22],
+        },
+      },
+    ],
     questions: [
       {
         id: 1,
@@ -864,6 +1166,32 @@ const chapter2Lessons: Lesson[] = [
     xpReward: 20,
     duration: 8,
     pos: [76, 56],
+    games: [
+      {
+        id: 1,
+        type: "fill-blank",
+        instruction: "Tìm tổng của 3 số!",
+        emoji: "✍️",
+        xpReward: 3,
+        fillBlank: {
+          question: "2 + 3 + 4 = ___",
+          answer: 9,
+          options: [7, 8, 9, 10],
+        },
+      },
+      {
+        id: 2,
+        type: "object-count",
+        instruction: "Đếm tổng số bóng bay!",
+        emoji: "🎈",
+        xpReward: 2,
+        objectCount: {
+          objectEmoji: "🎈",
+          count: 15,
+          options: [12, 13, 14, 15],
+        },
+      },
+    ],
     questions: [
       {
         id: 1,
@@ -922,6 +1250,16 @@ const chapter2Lessons: Lesson[] = [
     xpReward: 25,
     duration: 10,
     pos: [88, 76],
+    games: [
+      {
+        id: 1,
+        type: "number-line",
+        instruction: "Tia số tổng hợp — điền số còn thiếu!",
+        emoji: "📏",
+        xpReward: 3,
+        numberLine: { start: 0, end: 20, missing: [4, 9, 13, 17] },
+      },
+    ],
     questions: [
       {
         id: 1,
@@ -985,6 +1323,28 @@ const chapter3Lessons: Lesson[] = [
     xpReward: 10,
     duration: 5,
     pos: [12, 72],
+    games: [
+      {
+        id: 1,
+        type: "number-line",
+        instruction: "Dùng tia số để trừ! Lùi lại từ số lớn.",
+        emoji: "📏",
+        xpReward: 3,
+        numberLine: { start: 0, end: 10, missing: [2, 5, 8] },
+      },
+      {
+        id: 2,
+        type: "fill-blank",
+        instruction: "Tìm kết quả phép trừ!",
+        emoji: "✍️",
+        xpReward: 2,
+        fillBlank: {
+          question: "9 - 3 = ___",
+          answer: 6,
+          options: [5, 6, 7, 8],
+        },
+      },
+    ],
     questions: [
       {
         id: 1,
@@ -1043,6 +1403,28 @@ const chapter3Lessons: Lesson[] = [
     xpReward: 15,
     duration: 6,
     pos: [35, 53],
+    games: [
+      {
+        id: 1,
+        type: "number-line",
+        instruction: "Lùi trên tia số từ 20!",
+        emoji: "📏",
+        xpReward: 3,
+        numberLine: { start: 5, end: 20, missing: [8, 12, 17] },
+      },
+      {
+        id: 2,
+        type: "fill-blank",
+        instruction: "Tìm kết quả!",
+        emoji: "✍️",
+        xpReward: 2,
+        fillBlank: {
+          question: "18 - 9 = ___",
+          answer: 9,
+          options: [7, 8, 9, 10],
+        },
+      },
+    ],
     questions: [
       {
         id: 1,
@@ -1101,6 +1483,20 @@ const chapter3Lessons: Lesson[] = [
     xpReward: 20,
     duration: 7,
     pos: [60, 35],
+    games: [
+      {
+        id: 1,
+        type: "fill-blank",
+        instruction: "Tìm kết quả trừ có nhớ!",
+        emoji: "✍️",
+        xpReward: 3,
+        fillBlank: {
+          question: "25 - 7 = ___",
+          answer: 18,
+          options: [16, 17, 18, 19],
+        },
+      },
+    ],
     questions: [
       {
         id: 1,
@@ -1159,6 +1555,28 @@ const chapter3Lessons: Lesson[] = [
     xpReward: 20,
     duration: 8,
     pos: [76, 56],
+    games: [
+      {
+        id: 1,
+        type: "object-count",
+        instruction: "Có 10 quả táo, bé ăn 3 quả. Đếm số còn lại!",
+        emoji: "🍎",
+        xpReward: 3,
+        objectCount: { objectEmoji: "🍎", count: 7, options: [5, 6, 7, 8] },
+      },
+      {
+        id: 2,
+        type: "fill-blank",
+        instruction: "Giải bài toán!",
+        emoji: "✍️",
+        xpReward: 2,
+        fillBlank: {
+          question: "Có 15 bông hoa, cho 6 bông. Còn ___ bông",
+          answer: 9,
+          options: [7, 8, 9, 10],
+        },
+      },
+    ],
     questions: [
       {
         id: 1,
@@ -1217,6 +1635,16 @@ const chapter3Lessons: Lesson[] = [
     xpReward: 25,
     duration: 10,
     pos: [88, 76],
+    games: [
+      {
+        id: 1,
+        type: "number-line",
+        instruction: "Tia số tổng hợp — điền số!",
+        emoji: "📏",
+        xpReward: 3,
+        numberLine: { start: 0, end: 20, missing: [3, 7, 11, 16] },
+      },
+    ],
     questions: [
       {
         id: 1,
@@ -1267,6 +1695,591 @@ const chapter3Lessons: Lesson[] = [
   },
 ];
 
+// ─── Chapter 4 – Tia số & Số liền kề ─────────────────────────────────────────
+
+const chapter4Lessons: Lesson[] = [
+  {
+    id: 401,
+    chapterId: 4,
+    title: "Tia số từ 0 đến 10",
+    emoji: "📏",
+    description: "Khám phá tia số và cách sắp xếp các số từ bé đến lớn.",
+    status: "active",
+    xpReward: 10,
+    duration: 5,
+    pos: [12, 72],
+    games: [
+      {
+        id: 1,
+        type: "number-line",
+        instruction: "Điền các số còn thiếu trên tia số từ 0 đến 10!",
+        emoji: "📏",
+        xpReward: 3,
+        numberLine: {
+          start: 0,
+          end: 10,
+          missing: [3, 5, 7, 9],
+        },
+      },
+      {
+        id: 2,
+        type: "object-count",
+        instruction: "Đếm xem có bao nhiêu quả táo trên cây!",
+        emoji: "🍎",
+        xpReward: 2,
+        objectCount: {
+          objectEmoji: "🍎",
+          count: 7,
+          options: [5, 6, 7, 8],
+        },
+      },
+    ],
+    questions: [
+      {
+        id: 1,
+        text: "Trên tia số, số nào đứng đầu tiên (nhỏ nhất)?",
+        emoji: "📏",
+        options: ["1", "0", "10", "5"],
+        correctIndex: 1,
+        hint: "Tia số bắt đầu từ vạch nào bên trái?",
+        explanation:
+          "Số 0 ở vạch đầu tiên, là số bé nhất trên tia số! 🎯",
+        explanationDetail: {
+          funFact:
+            "Trên tia số, mỗi số cách đều nhau. Số 0 nằm ở đầu tiên bên trái!",
+        },
+      },
+      {
+        id: 2,
+        type: "true-false",
+        text: "Đúng hay Sai: Trên tia số, số đứng bên phải luôn lớn hơn số bên trái?",
+        emoji: "👈👉",
+        trueFalse: { isTrue: true },
+        hint: "Nhìn tia số: 0, 1, 2, 3... số nào lớn hơn nằm ở đâu?",
+        explanation:
+          "ĐÚNG — Trên tia số, càng sang phải số càng lớn! 🌟",
+        explanationDetail: {
+          funFact:
+            "Rô-bốt đã sắp xếp các số theo thứ tự từ bé đến lớn trên tia số — đây là quy tắc quan trọng!",
+        },
+      },
+      {
+        id: 3,
+        text: "Số nào nằm giữa số 4 và số 6 trên tia số?",
+        emoji: "🔢",
+        options: ["3", "4", "5", "7"],
+        correctIndex: 2,
+        hint: "Đếm: 4, ?, 6 — số nào ở giữa?",
+        explanation:
+          "Số 5 nằm giữa 4 và 6 trên tia số! 🎉",
+        explanationDetail: {
+          funFact:
+            "Trên tia số, các số liên tiếp cách nhau đúng 1 đơn vị!",
+        },
+      },
+      {
+        id: 4,
+        type: "count-tap",
+        text: "Trên tia số từ 0 đến 10, có bao nhiêu số chẵn?",
+        emoji: "✌️",
+        countTap: { targetCount: 6, label: "số chẵn", maxCount: 10 },
+        hint: "Số chẵn: 0, 2, 4, 6, 8, 10 — hãy đếm!",
+        explanation:
+          "Có 6 số chẵn trên tia số từ 0 đến 10: 0, 2, 4, 6, 8, 10! 🏆",
+        explanationDetail: {
+          funFact:
+            "Số chẵn là số chia hết cho 2. Trên tia số, chúng cách nhau 2 đơn vị!",
+        },
+      },
+      {
+        id: 5,
+        type: "drag-match",
+        text: "Nối mỗi số với vị trí đúng:",
+        emoji: "🔗",
+        dragMatch: {
+          pairs: [
+            { left: "Số bé nhất", right: "0" },
+            { left: "Số lớn nhất (0-10)", right: "10" },
+            { left: "Số giữa tia số", right: "5" },
+            { left: "Số liền sau của 8", right: "9" },
+          ],
+        },
+        hint: "Nhớ lại tia số từ 0 đến 10!",
+        explanation:
+          "Số bé nhất là 0, lớn nhất (0-10) là 10, ở giữa là 5, liền sau 8 là 9! ✨",
+        explanationDetail: {
+          funFact:
+            "Tia số giúp ta biết thứ tự và so sánh các số dễ dàng!",
+        },
+      },
+    ],
+  },
+  {
+    id: 402,
+    chapterId: 4,
+    title: "Số liền trước",
+    emoji: "⬅️",
+    description: "Tìm hiểu cách xác định số liền trước trên tia số.",
+    status: "locked",
+    xpReward: 10,
+    duration: 5,
+    pos: [35, 53],
+    games: [
+      {
+        id: 1,
+        type: "fill-blank",
+        instruction: "Số liền trước của 5 là mấy?",
+        emoji: "⬅️",
+        xpReward: 3,
+        fillBlank: {
+          question: "Số liền trước của 5 là ___",
+          answer: 4,
+          options: [3, 4, 5, 6],
+        },
+      },
+      {
+        id: 2,
+        type: "fill-blank",
+        instruction: "Số liền trước của 10 là mấy?",
+        emoji: "⬅️",
+        xpReward: 2,
+        fillBlank: {
+          question: "Số liền trước của 10 là ___",
+          answer: 9,
+          options: [8, 9, 10, 11],
+        },
+      },
+    ],
+    questions: [
+      {
+        id: 1,
+        text: "Số liền trước của 4 là mấy?",
+        emoji: "⬅️",
+        options: ["2", "3", "4", "5"],
+        correctIndex: 1,
+        hint: "Nhìn tia số: ..., 2, 3, 4 — số nào đứng ngay trước 4?",
+        explanation:
+          "Số liền trước của 4 là 3! Vì trên tia số 3 đứng ngay trước 4. 🎯",
+        explanationDetail: {
+          funFact:
+            "Số liền trước luôn nhỏ hơn 1 đơn vị. Liền trước của 4 là 4−1=3!",
+        },
+      },
+      {
+        id: 2,
+        type: "true-false",
+        text: "Đúng hay Sai: Số liền trước của 16 là 15?",
+        emoji: "🤔",
+        trueFalse: { isTrue: true },
+        hint: "16 − 1 = ?",
+        explanation:
+          "ĐÚNG — Số liền trước của 16 là 15, vì 16 − 1 = 15! ✅",
+        explanationDetail: {
+          funFact:
+            "Để tìm số liền trước, bé chỉ cần lấy số đó trừ đi 1!",
+        },
+      },
+      {
+        id: 3,
+        type: "true-false",
+        text: "Đúng hay Sai: Số liền trước của 18 là 17?",
+        emoji: "🤔",
+        trueFalse: { isTrue: true },
+        hint: "18 − 1 = ?",
+        explanation:
+          "ĐÚNG — 18 − 1 = 17, nên số liền trước của 18 là 17! ✅",
+        explanationDetail: {
+          funFact:
+            "Quy tắc: Số liền trước = Số đó − 1. Luôn đúng với mọi số!",
+        },
+      },
+      {
+        id: 4,
+        text: "Số liền trước của 1 là mấy?",
+        emoji: "⬅️",
+        options: ["Không có", "0", "1", "2"],
+        correctIndex: 1,
+        hint: "Trên tia số: 0, 1, 2... số nào đứng trước 1?",
+        explanation:
+          "Số liền trước của 1 là 0! 🌟",
+        explanationDetail: {
+          funFact:
+            "Số 0 là số nhỏ nhất trên tia số. Liền trước của 1 chính là 0!",
+        },
+      },
+      {
+        id: 5,
+        type: "drag-match",
+        text: "Nối mỗi số với số liền trước của nó:",
+        emoji: "🔗",
+        dragMatch: {
+          pairs: [
+            { left: "Liền trước của 7", right: "6" },
+            { left: "Liền trước của 10", right: "9" },
+            { left: "Liền trước của 3", right: "2" },
+            { left: "Liền trước của 20", right: "19" },
+          ],
+        },
+        hint: "Lấy mỗi số trừ đi 1!",
+        explanation:
+          "7→6, 10→9, 3→2, 20→19 — Số liền trước luôn bé hơn 1! 🏆",
+        explanationDetail: {
+          funFact:
+            "Công thức đơn giản: Số liền trước = Số đó − 1!",
+        },
+      },
+    ],
+  },
+  {
+    id: 403,
+    chapterId: 4,
+    title: "Số liền sau",
+    emoji: "➡️",
+    description: "Tìm hiểu cách xác định số liền sau trên tia số.",
+    status: "locked",
+    xpReward: 10,
+    duration: 5,
+    pos: [58, 35],
+    games: [
+      {
+        id: 1,
+        type: "fill-blank",
+        instruction: "Số liền sau của 7 là mấy?",
+        emoji: "➡️",
+        xpReward: 3,
+        fillBlank: {
+          question: "Số liền sau của 7 là ___",
+          answer: 8,
+          options: [6, 7, 8, 9],
+        },
+      },
+      {
+        id: 2,
+        type: "fill-blank",
+        instruction: "Số liền sau của 19 là mấy?",
+        emoji: "➡️",
+        xpReward: 2,
+        fillBlank: {
+          question: "Số liền sau của 19 là ___",
+          answer: 20,
+          options: [18, 19, 20, 21],
+        },
+      },
+    ],
+    questions: [
+      {
+        id: 1,
+        text: "Số liền sau của 4 là mấy?",
+        emoji: "➡️",
+        options: ["3", "4", "5", "6"],
+        correctIndex: 2,
+        hint: "Nhìn tia số: 4, ?, ... — số nào đứng ngay sau 4?",
+        explanation:
+          "Số liền sau của 4 là 5! Vì trên tia số 5 đứng ngay sau 4. 🎯",
+        explanationDetail: {
+          funFact:
+            "Số liền sau luôn lớn hơn 1 đơn vị. Liền sau của 4 là 4+1=5!",
+        },
+      },
+      {
+        id: 2,
+        type: "true-false",
+        text: "Đúng hay Sai: Số liền sau của 16 là 17?",
+        emoji: "🤔",
+        trueFalse: { isTrue: true },
+        hint: "16 + 1 = ?",
+        explanation:
+          "ĐÚNG — 16 + 1 = 17, nên số liền sau của 16 là 17! ✅",
+        explanationDetail: {
+          funFact:
+            "Để tìm số liền sau, bé chỉ cần lấy số đó cộng thêm 1!",
+        },
+      },
+      {
+        id: 3,
+        type: "true-false",
+        text: "Đúng hay Sai: Số liền sau của 18 là 19?",
+        emoji: "🤔",
+        trueFalse: { isTrue: true },
+        hint: "18 + 1 = ?",
+        explanation:
+          "ĐÚNG — 18 + 1 = 19, nên số liền sau của 18 là 19! ✅",
+        explanationDetail: {
+          funFact:
+            "Quy tắc: Số liền sau = Số đó + 1. Luôn đúng!",
+        },
+      },
+      {
+        id: 4,
+        text: "Số liền sau của 1 là mấy?",
+        emoji: "➡️",
+        options: ["0", "1", "2", "3"],
+        correctIndex: 2,
+        hint: "Trên tia số: 0, 1, ?, 3... số nào đứng sau 1?",
+        explanation:
+          "Số liền sau của 1 là 2! 🌟",
+        explanationDetail: {
+          funFact:
+            "1 + 1 = 2! Số liền sau luôn bằng số đó cộng thêm 1!",
+        },
+      },
+      {
+        id: 5,
+        type: "drag-match",
+        text: "Nối mỗi số với số liền sau của nó:",
+        emoji: "🔗",
+        dragMatch: {
+          pairs: [
+            { left: "Liền sau của 6", right: "7" },
+            { left: "Liền sau của 9", right: "10" },
+            { left: "Liền sau của 14", right: "15" },
+            { left: "Liền sau của 0", right: "1" },
+          ],
+        },
+        hint: "Lấy mỗi số cộng thêm 1!",
+        explanation:
+          "6→7, 9→10, 14→15, 0→1 — Số liền sau luôn lớn hơn 1! 🏆",
+        explanationDetail: {
+          funFact:
+            "Công thức đơn giản: Số liền sau = Số đó + 1!",
+        },
+      },
+    ],
+  },
+  {
+    id: 404,
+    chapterId: 4,
+    title: "Tia số từ 10 đến 20",
+    emoji: "🔢",
+    description: "Mở rộng tia số và luyện tập với các số lớn hơn.",
+    status: "locked",
+    xpReward: 12,
+    duration: 5,
+    pos: [78, 55],
+    games: [
+      {
+        id: 1,
+        type: "number-line",
+        instruction: "Điền các số còn thiếu trên tia số từ 10 đến 20!",
+        emoji: "📏",
+        xpReward: 3,
+        numberLine: {
+          start: 10,
+          end: 20,
+          missing: [12, 14, 17, 19],
+        },
+      },
+      {
+        id: 2,
+        type: "object-count",
+        instruction: "Đếm xem có bao nhiêu quả bóng!",
+        emoji: "⚽",
+        xpReward: 2,
+        objectCount: {
+          objectEmoji: "⚽",
+          count: 15,
+          options: [13, 14, 15, 16],
+        },
+      },
+    ],
+    questions: [
+      {
+        id: 1,
+        text: "Số liền trước của 18 là bao nhiêu?",
+        emoji: "⬅️",
+        options: ["16", "17", "18", "19"],
+        correctIndex: 1,
+        hint: "18 − 1 = ?",
+        explanation:
+          "Số liền trước của 18 là 17! 🎯",
+        explanationDetail: {
+          funFact:
+            "Dù số lớn hay nhỏ, quy tắc liền trước luôn giống nhau: trừ đi 1!",
+        },
+      },
+      {
+        id: 2,
+        text: "Số liền sau của 18 là bao nhiêu?",
+        emoji: "➡️",
+        options: ["17", "18", "19", "20"],
+        correctIndex: 2,
+        hint: "18 + 1 = ?",
+        explanation:
+          "Số liền sau của 18 là 19! 🌟",
+        explanationDetail: {
+          funFact:
+            "Quy tắc liền sau: cộng thêm 1! 18 + 1 = 19!",
+        },
+      },
+      {
+        id: 3,
+        type: "true-false",
+        text: "Đúng hay Sai: Số liền sau của 19 là 20?",
+        emoji: "🤔",
+        trueFalse: { isTrue: true },
+        hint: "19 + 1 = ?",
+        explanation:
+          "ĐÚNG — 19 + 1 = 20! Số liền sau của 19 là 20! ✅",
+        explanationDetail: {
+          funFact:
+            "20 là số lớn nhất trên tia số từ 10 đến 20!",
+        },
+      },
+      {
+        id: 4,
+        type: "count-tap",
+        text: "Trên tia số từ 10 đến 20, có bao nhiêu số lẻ?",
+        emoji: "🔢",
+        countTap: { targetCount: 5, label: "số lẻ", maxCount: 10 },
+        hint: "Số lẻ: 11, 13, 15, 17, 19 — hãy đếm!",
+        explanation:
+          "Có 5 số lẻ: 11, 13, 15, 17, 19! 🏆",
+        explanationDetail: {
+          funFact:
+            "Số lẻ là số không chia hết cho 2. Trên tia số, chúng xen kẽ với số chẵn!",
+        },
+      },
+      {
+        id: 5,
+        type: "drag-match",
+        text: "Nối mỗi quả bóng với vạch đúng trên tia số:",
+        emoji: "⚽",
+        dragMatch: {
+          pairs: [
+            { left: "10 + 2", right: "12" },
+            { left: "10 + 7", right: "17" },
+            { left: "10 + 5", right: "15" },
+            { left: "0 + 1", right: "1" },
+          ],
+        },
+        hint: "Tính phép cộng để biết vị trí trên tia số!",
+        explanation:
+          "10+2=12, 10+7=17, 10+5=15, 0+1=1! Ghép đúng hết rồi! ✨",
+        explanationDetail: {
+          funFact:
+            "Trên tia số, mỗi phép cộng cho ta biết vị trí chính xác của số!",
+        },
+      },
+    ],
+  },
+  {
+    id: 405,
+    chapterId: 4,
+    title: "Thử thách tia số",
+    emoji: "🏆",
+    description: "Bài tổng hợp kiểm tra kiến thức về tia số và số liền kề!",
+    status: "locked",
+    xpReward: 15,
+    duration: 6,
+    pos: [88, 75],
+    games: [
+      {
+        id: 1,
+        type: "number-line",
+        instruction: "Điền các số còn thiếu trên tia số từ 0 đến 10!",
+        emoji: "📏",
+        xpReward: 3,
+        numberLine: {
+          start: 0,
+          end: 10,
+          missing: [1, 4, 6, 8],
+        },
+      },
+      {
+        id: 2,
+        type: "number-line",
+        instruction: "Điền số còn thiếu trên tia số từ 10 đến 20!",
+        emoji: "🔢",
+        xpReward: 3,
+        numberLine: {
+          start: 10,
+          end: 20,
+          missing: [11, 13, 16, 18],
+        },
+      },
+    ],
+    questions: [
+      {
+        id: 1,
+        text: "Số liền trước của 1 và số liền sau của 1 lần lượt là?",
+        emoji: "🎯",
+        options: ["0 và 1", "0 và 2", "1 và 2", "1 và 3"],
+        correctIndex: 1,
+        hint: "Liền trước: 1−1=?, Liền sau: 1+1=?",
+        explanation:
+          "Liền trước của 1 là 0, liền sau của 1 là 2! 🏆",
+        explanationDetail: {
+          funFact:
+            "Số liền trước bé hơn 1, số liền sau lớn hơn 1. Hai quy tắc đơn giản mà rất hữu ích!",
+        },
+      },
+      {
+        id: 2,
+        type: "true-false",
+        text: "Đúng hay Sai: Số liền trước của 1 là 0?",
+        emoji: "🤔",
+        trueFalse: { isTrue: true },
+        hint: "1 − 1 = ?",
+        explanation:
+          "ĐÚNG — 1 − 1 = 0, nên số liền trước của 1 là 0! ✅",
+        explanationDetail: {
+          funFact:
+            "Đây chính là bài tập Đ, S trong sách giáo khoa!",
+        },
+      },
+      {
+        id: 3,
+        text: "Ghép đúng: Quả bóng ghi '10 + 2' nằm ở vạch nào trên tia số?",
+        emoji: "⚽",
+        options: ["10", "11", "12", "13"],
+        correctIndex: 2,
+        hint: "10 + 2 = ?",
+        explanation:
+          "10 + 2 = 12! Quả bóng nằm ở vạch 12 trên tia số! ⚽",
+        explanationDetail: {
+          funFact:
+            "Trên tia số, bé có thể đặt phép tính vào đúng vị trí kết quả!",
+        },
+      },
+      {
+        id: 4,
+        type: "true-false",
+        text: "Đúng hay Sai: Số liền sau của 16 là 17?",
+        emoji: "🤔",
+        trueFalse: { isTrue: true },
+        hint: "16 + 1 = ?",
+        explanation:
+          "ĐÚNG — 16 + 1 = 17! ✅",
+        explanationDetail: {
+          funFact:
+            "Bé đã thuộc quy tắc rồi: liền sau = số đó + 1!",
+        },
+      },
+      {
+        id: 5,
+        type: "drag-match",
+        text: "Thử thách cuối: Nối đúng số liền trước và liền sau!",
+        emoji: "🏆",
+        dragMatch: {
+          pairs: [
+            { left: "Liền trước của 16", right: "15" },
+            { left: "Liền sau của 18", right: "19" },
+            { left: "Liền trước của 1", right: "0" },
+            { left: "Liền sau của 1", right: "2" },
+          ],
+        },
+        hint: "Liền trước: trừ 1. Liền sau: cộng 1!",
+        explanation:
+          "16→15, 18→19, 1→0, 1→2 — Bé giỏi quá! 🏆🎉",
+        explanationDetail: {
+          funFact:
+            "Bé đã hoàn thành bài tổng hợp! Tia số không còn là thử thách nữa rồi! 🌟",
+        },
+      },
+    ],
+  },
+];
+
 // ─── All Chapters ─────────────────────────────────────────────────────────────
 
 export const CHAPTERS: Chapter[] = [
@@ -1299,6 +2312,16 @@ export const CHAPTERS: Chapter[] = [
     accent: "text-purple-700",
     shadow: "shadow-[0_6px_0_#7e22ce]",
     lessons: chapter3Lessons,
+  },
+  {
+    id: 4,
+    title: "Tia số & Số liền kề",
+    emoji: "📏",
+    description: "Khám phá tia số, số liền trước và số liền sau!",
+    color: "bg-orange-400",
+    accent: "text-orange-700",
+    shadow: "shadow-[0_6px_0_#c2410c]",
+    lessons: chapter4Lessons,
   },
 ];
 
@@ -1337,6 +2360,105 @@ export function markLessonComplete(lessonId: number, xp: number) {
   if (!completed.includes(lessonId)) {
     completed.push(lessonId);
     localStorage.setItem(STUDENT_COMPLETED_KEY, JSON.stringify(completed));
+    const total = getTotalXP() + xp;
+    localStorage.setItem(STUDENT_XP_KEY, String(total));
+  }
+}
+
+// ── Active child plan helper ──────────────────────────────────────────────────
+
+import {
+  CHILD_PROFILES_STORAGE_KEY,
+  ACTIVE_CHILD_ID_KEY,
+  type PlanType,
+  type ChildProfile as DashChildProfile,
+} from "@/shared/api/dashboardMockData";
+
+export function getActiveChildPlan(): PlanType {
+  try {
+    const activeId = localStorage.getItem(ACTIVE_CHILD_ID_KEY);
+    const raw = localStorage.getItem(CHILD_PROFILES_STORAGE_KEY);
+    if (raw && activeId) {
+      const profiles = JSON.parse(raw) as DashChildProfile[];
+      const match = profiles.find((p) => p.id === activeId);
+      if (match) return match.plan;
+    }
+  } catch {
+    /* ignore */
+  }
+  return "FREE";
+}
+
+// ── Plan-based access control ─────────────────────────────────────────────────
+
+/** Chapter IDs accessible per plan */
+const PLAN_ACCESS: Record<PlanType, number[]> = {
+  FREE: [1], // Chapter 1 only
+  PRO: [1, 2, 4], // Chapters 1, 2 & 4
+  VIP: [1, 2, 3, 4], // All chapters
+};
+
+/** Max lessons per chapter for FREE plan */
+const FREE_LESSON_LIMIT = 3;
+
+export function getAccessibleChapterIds(plan: PlanType): number[] {
+  return PLAN_ACCESS[plan];
+}
+
+export function isLessonAccessible(lessonId: number, plan: PlanType): boolean {
+  const chapter = getChapterByLessonId(lessonId);
+  if (!chapter) return false;
+  if (!PLAN_ACCESS[plan].includes(chapter.id)) return false;
+  if (plan === "FREE") {
+    const idx = chapter.lessons.findIndex((l) => l.id === lessonId);
+    if (idx >= FREE_LESSON_LIMIT) return false;
+  }
+  return true;
+}
+
+/** Get all games across all chapters grouped by chapter */
+export function getAllGames(): {
+  chapter: Chapter;
+  games: { lesson: Lesson; game: GameActivity }[];
+}[] {
+  return CHAPTERS.map((chapter) => ({
+    chapter,
+    games: chapter.lessons.flatMap((lesson) =>
+      lesson.games.map((game) => ({ lesson, game })),
+    ),
+  }));
+}
+
+/** Get all quizzes across all chapters grouped by chapter */
+export function getAllQuizzes(): {
+  chapter: Chapter;
+  quizzes: { lesson: Lesson; questionCount: number }[];
+}[] {
+  return CHAPTERS.map((chapter) => ({
+    chapter,
+    quizzes: chapter.lessons.map((lesson) => ({
+      lesson,
+      questionCount: lesson.questions.length,
+    })),
+  }));
+}
+
+// ── Game progress in localStorage ─────────────────────────────────────────────
+const STUDENT_GAME_COMPLETED_KEY = "vio_student_game_completed";
+
+export function getCompletedGames(): number[] {
+  try {
+    return JSON.parse(localStorage.getItem(STUDENT_GAME_COMPLETED_KEY) ?? "[]");
+  } catch {
+    return [];
+  }
+}
+
+export function markGameComplete(lessonId: number, xp: number) {
+  const completed = getCompletedGames();
+  if (!completed.includes(lessonId)) {
+    completed.push(lessonId);
+    localStorage.setItem(STUDENT_GAME_COMPLETED_KEY, JSON.stringify(completed));
     const total = getTotalXP() + xp;
     localStorage.setItem(STUDENT_XP_KEY, String(total));
   }

@@ -4,35 +4,9 @@ import { ChevronDown, Plus, Check } from "lucide-react";
 import {
   CHILD_PROFILES_STORAGE_KEY,
   ACTIVE_CHILD_ID_KEY,
+  INITIAL_CHILD_PROFILES,
+  type ChildProfile,
 } from "@/shared/api/dashboardMockData";
-
-// ─── Types ───────────────────────────────────────────────────
-interface ChildProfile {
-  id: string;
-  name: string;
-  grade: string;
-  avatarEmoji: string;
-  avatarBg: string;
-}
-
-// ─── Mock data (replace with API / context later) ─────────────
-// Simulates a family with twins in the same grade
-const INITIAL_PROFILES: ChildProfile[] = [
-  {
-    id: "child-1",
-    name: "Bé Tom",
-    grade: "Lớp 2",
-    avatarEmoji: "🦊",
-    avatarBg: "#f97316",
-  },
-  {
-    id: "child-2",
-    name: "Bé Jerry",
-    grade: "Lớp 2",
-    avatarEmoji: "🐱",
-    avatarBg: "#3b82f6",
-  },
-];
 
 // ─── Helpers ──────────────────────────────────────────────────
 function loadProfilesFromStorage(fallback: ChildProfile[]): ChildProfile[] {
@@ -40,7 +14,8 @@ function loadProfilesFromStorage(fallback: ChildProfile[]): ChildProfile[] {
     const raw = localStorage.getItem(CHILD_PROFILES_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as ChildProfile[];
-      if (parsed.length > 0) return parsed;
+      if (parsed.length > 0 && parsed[0].plan) return parsed;
+      localStorage.removeItem(CHILD_PROFILES_STORAGE_KEY);
     }
   } catch {
     // ignore
@@ -77,10 +52,10 @@ function AvatarBubble({
 export function ProfileSelector() {
   const navigate = useNavigate();
   const [profiles, setProfiles] = useState<ChildProfile[]>(() =>
-    loadProfilesFromStorage(INITIAL_PROFILES),
+    loadProfilesFromStorage(INITIAL_CHILD_PROFILES),
   );
   const [activeId, setActiveId] = useState(() => {
-    const loaded = loadProfilesFromStorage(INITIAL_PROFILES);
+    const loaded = loadProfilesFromStorage(INITIAL_CHILD_PROFILES);
     const saved = localStorage.getItem(ACTIVE_CHILD_ID_KEY);
     const exists = loaded.find((p) => p.id === saved);
     return exists ? saved! : loaded[0].id;
@@ -93,7 +68,7 @@ export function ProfileSelector() {
   // Re-read localStorage when window regains focus (after returning from /add-child)
   useEffect(() => {
     const onFocus = () => {
-      const refreshed = loadProfilesFromStorage(INITIAL_PROFILES);
+      const refreshed = loadProfilesFromStorage(INITIAL_CHILD_PROFILES);
       setProfiles(refreshed);
     };
     window.addEventListener("focus", onFocus);

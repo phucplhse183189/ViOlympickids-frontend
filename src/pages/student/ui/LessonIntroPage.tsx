@@ -93,7 +93,7 @@ export function LessonIntroPage() {
             className="flex items-center gap-1 text-white font-extrabold text-sm hover:opacity-80 transition-opacity"
           >
             <ArrowLeft size={18} strokeWidth={3} />
-            <span>Bản đồ</span>
+            <span>Trang chủ</span>
           </button>
           <span className="text-white font-extrabold text-sm">
             {chapter.emoji} {chapter.title} · Bài {lessonIndex}

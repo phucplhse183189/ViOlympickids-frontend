@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Clock,
   Trophy,
@@ -13,10 +14,7 @@ import {
 } from "lucide-react";
 import { StudyProgressChart } from "@/widgets/study-progress-chart";
 import { RecentActivityTable } from "@/widgets/recent-activity-table";
-import {
-  MOCK_DASHBOARD_STATS,
-  MOCK_CHILD_PROFILE,
-} from "@/shared/api/dashboardMockData";
+import { useActiveChild } from "@/shared/lib/activeChild";
 
 /* ── tiny count-up hook ── */
 function useCountUp(target: number, duration = 1000, enabled = false) {
@@ -223,6 +221,7 @@ const QUICK_ACTIONS = [
 
 function QuickActionsCard() {
   const { ref, visible } = useReveal();
+  const navigate = useNavigate();
   return (
     <div
       ref={ref}
@@ -233,9 +232,10 @@ function QuickActionsCard() {
         Thao tác nhanh
       </p>
       <div className="space-y-2.5">
-        {QUICK_ACTIONS.map(({ label, icon: Icon, color }) => (
+        {QUICK_ACTIONS.map(({ label, icon: Icon, color, href }) => (
           <button
             key={label}
+            onClick={() => navigate(href)}
             className={`flex items-center justify-between w-full px-4 py-3 rounded-xl text-sm font-semibold transition-all ${color}`}
           >
             <div className="flex items-center gap-2.5">
@@ -252,6 +252,8 @@ function QuickActionsCard() {
 
 /* ── Main page ──────────────────────────────────────── */
 export function OverviewPage() {
+  const navigate = useNavigate();
+  const { activeChild, dashboardData } = useActiveChild();
   const headingRef = useRef<HTMLDivElement>(null);
   const [headingVisible, setHeadingVisible] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
@@ -279,7 +281,9 @@ export function OverviewPage() {
     observe(tableRef.current, () => setTableVisible(true));
   }, []);
 
-  const stats = MOCK_DASHBOARD_STATS;
+  const stats = dashboardData.stats;
+  const plan = activeChild.plan;
+  const isLocked = plan === "FREE";
 
   return (
     <div className="space-y-6">
@@ -292,7 +296,7 @@ export function OverviewPage() {
           <h2 className="text-xl font-bold text-gray-800">
             Xin chào,{" "}
             <span style={{ color: "var(--brand-primary)" }}>
-              {MOCK_CHILD_PROFILE.name}
+              {activeChild.name}
             </span>{" "}
             đang học tốt! 🎉
           </h2>
@@ -309,6 +313,69 @@ export function OverviewPage() {
           <span className="text-xs text-orange-400">🔥</span>
         </div>
       </div>
+
+      {/* Plan status banner */}
+      {plan === "FREE" && (
+        <div className="bg-gradient-to-r from-orange-50 to-yellow-50 border border-orange-200 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center text-2xl shrink-0">
+            🔒
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-bold text-gray-800">
+              {activeChild.name} đang dùng gói{" "}
+              <span className="text-gray-500">Miễn phí</span>
+            </p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Nâng cấp để xem biểu đồ chi tiết và phân tích AI lỗi sai
+            </p>
+          </div>
+          <button
+            onClick={() => navigate("/dashboard/payment?plan=PRO")}
+            className="shrink-0 px-5 py-2.5 bg-gradient-to-r from-orange-400 to-pink-500 text-white text-sm font-bold rounded-xl hover:brightness-110 transition shadow-sm whitespace-nowrap"
+          >
+            Nâng cấp PRO (55k/tháng)
+          </button>
+        </div>
+      )}
+      {plan === "VIP" && activeChild.planDaysLeft != null && (
+        <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-200 rounded-2xl p-4 flex items-center gap-3">
+          <span className="text-2xl">👑</span>
+          <div className="flex-1">
+            <p className="text-sm font-bold text-gray-800">
+              Tài khoản VIP — {activeChild.name}
+            </p>
+            <p className="text-xs text-gray-500">
+              Còn {activeChild.planDaysLeft} ngày
+            </p>
+          </div>
+          {activeChild.planDaysLeft <= 30 && (
+            <button
+              onClick={() => navigate("/dashboard/payment?plan=VIP")}
+              className="shrink-0 px-4 py-2 bg-yellow-500 text-white text-xs font-bold rounded-xl hover:bg-yellow-600 transition"
+            >
+              Gia hạn VIP
+            </button>
+          )}
+        </div>
+      )}
+      {plan === "PRO" &&
+        activeChild.planDaysLeft != null &&
+        activeChild.planDaysLeft <= 7 && (
+          <div className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-2xl p-4 flex items-center gap-3">
+            <span className="text-2xl">⏰</span>
+            <div className="flex-1">
+              <p className="text-sm font-bold text-orange-700">
+                Gói PRO sắp hết hạn — Còn {activeChild.planDaysLeft} ngày
+              </p>
+            </div>
+            <button
+              onClick={() => navigate("/dashboard/payment?plan=PRO")}
+              className="shrink-0 px-4 py-2 bg-orange-500 text-white text-xs font-bold rounded-xl hover:bg-orange-600 transition"
+            >
+              Gia hạn ngay
+            </button>
+          </div>
+        )}
 
       {/* Stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -365,20 +432,49 @@ export function OverviewPage() {
       {/* Progress chart */}
       <div
         ref={chartRef}
-        className={chartVisible ? "animate-fade-in-up" : "opacity-0"}
+        className={`relative ${chartVisible ? "animate-fade-in-up" : "opacity-0"}`}
         style={{ animationDelay: "80ms" }}
       >
-        <StudyProgressChart />
+        {isLocked && <LockedOverlay childName={activeChild.name} onUpgrade={() => navigate("/dashboard/payment?plan=PRO")} />}
+        <div
+          className={isLocked ? "blur-sm pointer-events-none select-none" : ""}
+        >
+          <StudyProgressChart />
+        </div>
       </div>
 
       {/* Activity table */}
       <div
         ref={tableRef}
-        className={tableVisible ? "animate-fade-in-up" : "opacity-0"}
+        className={`relative ${tableVisible ? "animate-fade-in-up" : "opacity-0"}`}
         style={{ animationDelay: "120ms" }}
       >
-        <RecentActivityTable />
+        {isLocked && <LockedOverlay childName={activeChild.name} onUpgrade={() => navigate("/dashboard/payment?plan=PRO")} />}
+        <div
+          className={isLocked ? "blur-sm pointer-events-none select-none" : ""}
+        >
+          <RecentActivityTable />
+        </div>
       </div>
+    </div>
+  );
+}
+
+/** Overlay for locked (FREE plan) sections */
+function LockedOverlay({ childName, onUpgrade }: { childName: string; onUpgrade: () => void }) {
+  return (
+    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/60 backdrop-blur-[2px] rounded-2xl">
+      <div className="text-4xl mb-3">🔒</div>
+      <p className="text-sm font-bold text-gray-700 mb-1">Tính năng Premium</p>
+      <p className="text-xs text-gray-400 mb-3 text-center max-w-xs">
+        Nâng cấp gói PRO cho {childName} để xem phân tích chi tiết
+      </p>
+      <button
+        onClick={onUpgrade}
+        className="px-5 py-2 bg-gradient-to-r from-orange-400 to-pink-500 text-white text-sm font-bold rounded-xl hover:brightness-110 transition shadow-sm"
+      >
+        Nâng cấp PRO (55k/tháng)
+      </button>
     </div>
   );
 }

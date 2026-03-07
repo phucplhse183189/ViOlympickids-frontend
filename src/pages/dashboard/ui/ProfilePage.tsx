@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Camera, Check, Pencil, X } from "lucide-react";
 import { MOCK_PARENT_PROFILE } from "@/shared/api/dashboardMockData";
+import { useAuth } from "@/shared/lib/auth";
 
 // ── Local state shape for the profile form ────────────────────
 interface ParentProfileForm {
@@ -167,7 +168,12 @@ function EditableField({
 
 // ── Main page ──────────────────────────────────────────────────
 export function ProfilePage() {
-  const [form, setForm] = useState<ParentProfileForm>(INITIAL);
+  const { user, updateUser } = useAuth();
+  const [form, setForm] = useState<ParentProfileForm>({
+    ...INITIAL,
+    name: user?.nickname ?? INITIAL.name,
+    email: user?.email ?? INITIAL.email,
+  });
   const [saved, setSaved] = useState(false);
 
   function update(field: keyof ParentProfileForm, value: string) {
@@ -176,8 +182,9 @@ export function ProfilePage() {
   }
 
   function handleSave() {
+    // Sync to auth context so other pages see the updated name/email
+    updateUser({ nickname: form.name, email: form.email });
     setSaved(true);
-    // TODO: replace with real API call
     setTimeout(() => setSaved(false), 2500);
   }
 

@@ -1,6 +1,5 @@
 import { Header } from "@/widgets/header";
 import { HeroSection } from "@/widgets/hero-section";
-import { StatsSection } from "@/widgets/stats-section";
 import { AboutSection } from "@/widgets/about-section";
 import { CoursesSection } from "@/widgets/courses-section";
 import { HowItWorksSection } from "@/widgets/how-it-works";
@@ -13,7 +12,6 @@ export function HomePage() {
       <Header />
       <main>
         <HeroSection />
-        <StatsSection />
         <AboutSection />
         <CoursesSection />
         <HowItWorksSection />
