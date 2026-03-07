@@ -15,6 +15,8 @@ import {
   LessonIntroPage,
   ExercisePage,
   ResultPage,
+  Math2TableOfContents,
+  NumberSequenceGame,
 } from "@/pages/student";
 import { AddChildPage } from "@/pages/add-child";
 import { ParentDashboardLayout } from "@/widgets/dashboard-layout";
@@ -39,11 +41,13 @@ export function RouterProvider() {
 
       {/* Student Portal */}
       <Route path="/student" element={<StudentLayout />}>
-        <Route index element={<LearningMapPage />} />
+        <Route index element={<Math2TableOfContents />} />
+        <Route path="map" element={<LearningMapPage />} />
         <Route path="lesson" element={<InteractiveMathSpacePage />} />
         <Route path="lesson/:id" element={<LessonIntroPage />} />
         <Route path="exercise/:id" element={<ExercisePage />} />
         <Route path="result/:id" element={<ResultPage />} />
+        <Route path="game/number-sequence" element={<NumberSequenceGame />} />
       </Route>
     </Routes>
   );

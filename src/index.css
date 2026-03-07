@@ -542,3 +542,33 @@
 .animate-count-pop {
   animation: countPop 0.25s ease-out;
 }
+
+/* ── Robot adventure game animations ──────────────────────────────────────── */
+
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
+}
+
+@keyframes robot-idle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.robot-idle {
+  animation: robot-idle 2s ease-in-out infinite;
+}
+
+@keyframes robot-jump {
+  0%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-12px); }
+}
+.robot-jump {
+  animation: robot-jump 0.6s ease-in-out;
+}
+
+@keyframes balloon-float {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-10px) rotate(2deg); }
+}
+.balloon-float {
+  animation: balloon-float 3s ease-in-out infinite;
+}
