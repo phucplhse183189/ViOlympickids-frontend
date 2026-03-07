@@ -185,12 +185,12 @@ export const translations = {
       ],
     },
     loginForm: {
-      emailLabel: "Tên đăng nhập / Email",
-      emailPlaceholder: "Nhập email của bạn!",
+      phoneLabel: "Số điện thoại",
+      phonePlaceholder: "Nhập số điện thoại của bạn",
       passwordLabel: "Mật khẩu",
-      passwordPlaceholder: "Nhập mật khẩu...",
+      passwordPlaceholder: "Nhập mật khẩu của bạn",
       forgotPassword: "Quên mật khẩu?",
-      submit: "Bắt đầu hành trình toán học 🚀",
+      submit: "Bắt đầu hành trình toán học",
       submitting: "Đang đăng nhập...",
       errors: {
         emailRequired: "Email không được để trống",
@@ -380,12 +380,12 @@ export const translations = {
       ],
     },
     loginForm: {
-      emailLabel: "Username / Email",
-      emailPlaceholder: "Enter your email!",
+      phoneLabel: "Phone number",
+      phonePlaceholder: "Enter your phone number",
       passwordLabel: "Password",
-      passwordPlaceholder: "Enter your password...",
+      passwordPlaceholder: "Enter your password",
       forgotPassword: "Forgot password?",
-      submit: "Start the Math Journey 🚀",
+      submit: "Start the Math Journey",
       submitting: "Logging in...",
       errors: {
         emailRequired: "Email is required",

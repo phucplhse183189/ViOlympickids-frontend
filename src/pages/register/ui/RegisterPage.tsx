@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  Mail,
+  Phone,
   Lock,
   Eye,
   EyeOff,
@@ -49,7 +49,7 @@ export function RegisterPage() {
   const [step, setStep] = useState(1);
 
   // Step 1 state
-  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -70,13 +70,14 @@ export function RegisterPage() {
   // ── Step 1 validation ───────────────────────────
   function validateStep1(): boolean {
     const errs: Record<string, string> = {};
-    if (!email.trim()) errs.email = "Vui lòng nhập email";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-      errs.email = "Email không đúng định dạng";
+    if (!phone.trim()) errs.phone = "Vui lòng nhập số điện thoại";
+    else if (!/^(0[3|5|7|8|9])[0-9]{8}$/.test(phone.trim()))
+      errs.phone = "Số điện thoại không đúng định dạng";
     if (!password) errs.password = "Vui lòng nhập mật khẩu";
     else if (password.length < 6) errs.password = "Mật khẩu ít nhất 6 ký tự";
     if (!confirmPassword) errs.confirmPassword = "Vui lòng xác nhận mật khẩu";
-    else if (confirmPassword !== password) errs.confirmPassword = "Mật khẩu xác nhận không khớp";
+    else if (confirmPassword !== password)
+      errs.confirmPassword = "Mật khẩu xác nhận không khớp";
     if (!agreed) errs.agreed = "Vui lòng đồng ý điều khoản";
     setStep1Errors(errs);
     return Object.keys(errs).length === 0;
@@ -108,7 +109,7 @@ export function RegisterPage() {
   // ── Step 3 (final) ─────────────────────────────
   function handleFinish() {
     const avatar = AVATAR_OPTIONS[selectedAvatar];
-    const identifier = email;
+    const identifier = phone;
 
     login({
       nickname: childName.trim() || "Phụ huynh",
@@ -205,213 +206,224 @@ export function RegisterPage() {
            ══════════════════════════════════════════ */}
         {step === 1 && (
           <div className="bg-white/90 backdrop-blur-md rounded-[2rem] shadow-2xl border-2 border-white/80 overflow-hidden max-w-lg mx-auto">
-              <div className="p-8 md:p-10">
-                <h2 className="text-2xl font-extrabold text-gray-800 mb-6 text-center">
-                  Tạo tài khoản phụ huynh
-                </h2>
+            <div className="p-8 md:p-10">
+              <h2 className="text-2xl font-extrabold text-gray-800 mb-6 text-center">
+                Tạo tài khoản phụ huynh
+              </h2>
 
-                {/* Input fields */}
-                <div className="space-y-3">
-                  {/* Email */}
-                  <div>
-                    <div className="relative">
-                      <Mail
-                        size={16}
-                        className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                      />
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => {
-                          setEmail(e.target.value);
-                          setStep1Errors((p) => ({ ...p, email: "" }));
-                        }}
-                        placeholder="Nhập email của bạn"
-                        className={`w-full pl-11 pr-4 py-3.5 rounded-2xl border-2 text-sm font-medium outline-none transition-all ${
-                          step1Errors.email
-                            ? "border-red-300 bg-red-50 focus:border-red-400"
-                            : "border-gray-200 bg-gray-50 focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
-                        }`}
-                      />
-                    </div>
-                    {step1Errors.email && (
-                      <p className="mt-1.5 ml-1 text-xs text-red-500 font-medium">
-                        ⚠️ {step1Errors.email}
-                      </p>
-                    )}
+              {/* Input fields */}
+              <div className="space-y-3">
+                {/* Phone */}
+                <div>
+                  <div className="relative">
+                    <Phone
+                      size={16}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                    />
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => {
+                        setPhone(e.target.value.replace(/[^0-9]/g, ""));
+                        setStep1Errors((p) => ({ ...p, phone: "" }));
+                      }}
+                      placeholder="Nhập số điện thoại của bạn"
+                      maxLength={10}
+                      className={`w-full pl-11 pr-4 py-3.5 rounded-2xl border-2 text-sm font-medium outline-none transition-all ${
+                        step1Errors.phone
+                          ? "border-red-300 bg-red-50 focus:border-red-400"
+                          : "border-gray-200 bg-gray-50 focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+                      }`}
+                    />
                   </div>
-
-                  {/* Password */}
-                  <div>
-                    <div className="relative">
-                      <Lock
-                        size={16}
-                        className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                      />
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        value={password}
-                        onChange={(e) => {
-                          setPassword(e.target.value);
-                          setStep1Errors((p) => ({ ...p, password: "" }));
-                        }}
-                        placeholder="Tạo mật khẩu (ít nhất 6 ký tự)"
-                        className={`w-full pl-11 pr-12 py-3.5 rounded-2xl border-2 text-sm font-medium outline-none transition-all ${
-                          step1Errors.password
-                            ? "border-red-300 bg-red-50 focus:border-red-400"
-                            : "border-gray-200 bg-gray-50 focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
-                        }`}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
-                      >
-                        {showPassword ? (
-                          <EyeOff size={16} />
-                        ) : (
-                          <Eye size={16} />
-                        )}
-                      </button>
-                    </div>
-                    {step1Errors.password && (
-                      <p className="mt-1.5 ml-1 text-xs text-red-500 font-medium">
-                        ⚠️ {step1Errors.password}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Confirm Password */}
-                  <div>
-                    <div className="relative">
-                      <Lock
-                        size={16}
-                        className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                      />
-                      <input
-                        type={showConfirmPassword ? "text" : "password"}
-                        value={confirmPassword}
-                        onChange={(e) => {
-                          setConfirmPassword(e.target.value);
-                          setStep1Errors((p) => ({ ...p, confirmPassword: "" }));
-                        }}
-                        placeholder="Xác nhận mật khẩu"
-                        className={`w-full pl-11 pr-12 py-3.5 rounded-2xl border-2 text-sm font-medium outline-none transition-all ${
-                          step1Errors.confirmPassword
-                            ? "border-red-300 bg-red-50 focus:border-red-400"
-                            : "border-gray-200 bg-gray-50 focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
-                        }`}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
-                      >
-                        {showConfirmPassword ? (
-                          <EyeOff size={16} />
-                        ) : (
-                          <Eye size={16} />
-                        )}
-                      </button>
-                    </div>
-                    {step1Errors.confirmPassword && (
-                      <p className="mt-1.5 ml-1 text-xs text-red-500 font-medium">
-                        ⚠️ {step1Errors.confirmPassword}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Terms */}
-                <label className="flex items-start gap-2.5 mt-4 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={agreed}
-                    onChange={(e) => {
-                      setAgreed(e.target.checked);
-                      setStep1Errors((p) => ({ ...p, agreed: "" }));
-                    }}
-                    className="mt-0.5 w-4 h-4 rounded border-gray-300 accent-orange-500"
-                  />
-                  <span className="text-xs text-gray-500 leading-relaxed">
-                    Tôi đồng ý với{" "}
-                    <span className="text-blue-600 hover:underline font-medium cursor-pointer">
-                      Điều khoản dịch vụ
-                    </span>{" "}
-                    và{" "}
-                    <span className="text-blue-600 hover:underline font-medium cursor-pointer">
-                      Chính sách bảo mật
-                    </span>{" "}
-                    của ViOlympic Kids
-                  </span>
-                </label>
-                {step1Errors.agreed && (
-                  <p className="mt-1 ml-6 text-xs text-red-500 font-medium">
-                    ⚠️ {step1Errors.agreed}
-                  </p>
-                )}
-
-                {/* CTA Button */}
-                <button
-                  type="button"
-                  onClick={handleStep1Submit}
-                  disabled={isLoading}
-                  className="w-full mt-5 py-4 rounded-2xl text-base font-extrabold text-white flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
-                  style={{
-                    background:
-                      "linear-gradient(135deg, var(--brand-primary) 0%, #f97316 100%)",
-                    boxShadow: "0 4px 15px rgba(249,115,22,0.35)",
-                  }}
-                >
-                  {isLoading ? (
-                    <>
-                      <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Đang xử lý...
-                    </>
-                  ) : (
-                    <>
-                      Tạo tài khoản phụ huynh
-                      <ArrowRight size={18} strokeWidth={2.5} />
-                    </>
+                  {step1Errors.phone && (
+                    <p className="mt-1.5 ml-1 text-xs text-red-500 font-medium">
+                      ⚠️ {step1Errors.phone}
+                    </p>
                   )}
-                </button>
-
-                {/* Divider */}
-                <div className="flex items-center gap-3 my-5">
-                  <div className="flex-1 h-px bg-gray-200" />
-                  <span className="text-gray-400 text-xs font-medium">
-                    hoặc tiếp tục với
-                  </span>
-                  <div className="flex-1 h-px bg-gray-200" />
                 </div>
 
-                {/* Google Login */}
-                <button
-                  type="button"
-                  onClick={() => handleSocialLogin("google")}
-                  disabled={isLoading}
-                  className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl border-2 border-gray-200 bg-white text-sm font-semibold text-gray-600 hover:border-gray-300 hover:bg-gray-50 hover:shadow-md transition-all duration-200 disabled:opacity-60"
-                >
-                  <svg className="w-5 h-5" viewBox="0 0 24 24">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                  </svg>
-                  Tiếp tục với Google
-                </button>
+                {/* Password */}
+                <div>
+                  <div className="relative">
+                    <Lock
+                      size={16}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                    />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        setStep1Errors((p) => ({ ...p, password: "" }));
+                      }}
+                      placeholder="Tạo mật khẩu (ít nhất 6 ký tự)"
+                      className={`w-full pl-11 pr-12 py-3.5 rounded-2xl border-2 text-sm font-medium outline-none transition-all ${
+                        step1Errors.password
+                          ? "border-red-300 bg-red-50 focus:border-red-400"
+                          : "border-gray-200 bg-gray-50 focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                  {step1Errors.password && (
+                    <p className="mt-1.5 ml-1 text-xs text-red-500 font-medium">
+                      ⚠️ {step1Errors.password}
+                    </p>
+                  )}
+                </div>
 
-                {/* Login link */}
-                <p className="mt-5 text-center text-sm text-gray-400">
-                  Đã có tài khoản?{" "}
-                  <Link
-                    to="/login"
-                    className="text-orange-500 hover:text-orange-600 font-bold transition-colors"
-                  >
-                    Đăng nhập ngay
-                  </Link>
-                </p>
+                {/* Confirm Password */}
+                <div>
+                  <div className="relative">
+                    <Lock
+                      size={16}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                    />
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => {
+                        setConfirmPassword(e.target.value);
+                        setStep1Errors((p) => ({ ...p, confirmPassword: "" }));
+                      }}
+                      placeholder="Xác nhận mật khẩu"
+                      className={`w-full pl-11 pr-12 py-3.5 rounded-2xl border-2 text-sm font-medium outline-none transition-all ${
+                        step1Errors.confirmPassword
+                          ? "border-red-300 bg-red-50 focus:border-red-400"
+                          : "border-gray-200 bg-gray-50 focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff size={16} />
+                      ) : (
+                        <Eye size={16} />
+                      )}
+                    </button>
+                  </div>
+                  {step1Errors.confirmPassword && (
+                    <p className="mt-1.5 ml-1 text-xs text-red-500 font-medium">
+                      ⚠️ {step1Errors.confirmPassword}
+                    </p>
+                  )}
+                </div>
               </div>
+
+              {/* Terms */}
+              <label className="flex items-start gap-2.5 mt-4 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={(e) => {
+                    setAgreed(e.target.checked);
+                    setStep1Errors((p) => ({ ...p, agreed: "" }));
+                  }}
+                  className="mt-0.5 w-4 h-4 rounded border-gray-300 accent-orange-500"
+                />
+                <span className="text-xs text-gray-500 leading-relaxed">
+                  Tôi đồng ý với{" "}
+                  <span className="text-blue-600 hover:underline font-medium cursor-pointer">
+                    Điều khoản dịch vụ
+                  </span>{" "}
+                  và{" "}
+                  <span className="text-blue-600 hover:underline font-medium cursor-pointer">
+                    Chính sách bảo mật
+                  </span>{" "}
+                  của ViOlympic Kids
+                </span>
+              </label>
+              {step1Errors.agreed && (
+                <p className="mt-1 ml-6 text-xs text-red-500 font-medium">
+                  ⚠️ {step1Errors.agreed}
+                </p>
+              )}
+
+              {/* CTA Button */}
+              <button
+                type="button"
+                onClick={handleStep1Submit}
+                disabled={isLoading}
+                className="w-full mt-5 py-4 rounded-2xl text-base font-extrabold text-white flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+                style={{
+                  background:
+                    "linear-gradient(135deg, var(--brand-primary) 0%, #f97316 100%)",
+                  boxShadow: "0 4px 15px rgba(249,115,22,0.35)",
+                }}
+              >
+                {isLoading ? (
+                  <>
+                    <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Đang xử lý...
+                  </>
+                ) : (
+                  <>
+                    Tạo tài khoản phụ huynh
+                    <ArrowRight size={18} strokeWidth={2.5} />
+                  </>
+                )}
+              </button>
+
+              {/* Divider */}
+              <div className="flex items-center gap-3 my-5">
+                <div className="flex-1 h-px bg-gray-200" />
+                <span className="text-gray-400 text-xs font-medium">
+                  hoặc tiếp tục với
+                </span>
+                <div className="flex-1 h-px bg-gray-200" />
+              </div>
+
+              {/* Google Login */}
+              <button
+                type="button"
+                onClick={() => handleSocialLogin("google")}
+                disabled={isLoading}
+                className="w-full flex items-center justify-center gap-3 py-3.5 rounded-2xl border-2 border-gray-200 bg-white text-sm font-semibold text-gray-600 hover:border-gray-300 hover:bg-gray-50 hover:shadow-md transition-all duration-200 disabled:opacity-60"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
+                    fill="#4285F4"
+                  />
+                  <path
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    fill="#34A853"
+                  />
+                  <path
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                    fill="#FBBC05"
+                  />
+                  <path
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                    fill="#EA4335"
+                  />
+                </svg>
+                Tiếp tục với Google
+              </button>
+
+              {/* Login link */}
+              <p className="mt-5 text-center text-sm text-gray-400">
+                Đã có tài khoản?{" "}
+                <Link
+                  to="/login"
+                  className="text-orange-500 hover:text-orange-600 font-bold transition-colors"
+                >
+                  Đăng nhập ngay
+                </Link>
+              </p>
+            </div>
           </div>
         )}
 
@@ -606,9 +618,7 @@ export function RegisterPage() {
               <p className="text-sm text-gray-400 leading-relaxed max-w-md mx-auto">
                 Ba mẹ đang gặp khó khăn gì khi kèm con học Toán?
                 <br />
-                <span className="text-gray-300">
-                  (Chọn tất cả phù hợp)
-                </span>
+                <span className="text-gray-300">(Chọn tất cả phù hợp)</span>
               </p>
             </div>
 
@@ -656,14 +666,11 @@ export function RegisterPage() {
             </div>
 
             <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 mb-6 flex items-start gap-3">
-              <Sparkles
-                size={18}
-                className="text-blue-500 shrink-0 mt-0.5"
-              />
+              <Sparkles size={18} className="text-blue-500 shrink-0 mt-0.5" />
               <p className="text-xs text-blue-700 leading-relaxed">
                 Dữ liệu này giúp AI đưa ra lời khuyên và lộ trình học phù hợp
-                nhất cho <strong>{childName || "bé"}</strong>. Bạn có thể bỏ
-                qua bước này.
+                nhất cho <strong>{childName || "bé"}</strong>. Bạn có thể bỏ qua
+                bước này.
               </p>
             </div>
 

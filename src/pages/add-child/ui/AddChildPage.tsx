@@ -264,9 +264,7 @@ export function AddChildPage() {
               ) : (
                 <>
                   🚀 Bắt đầu hành trình học tập
-                  {name.trim() && (
-                    <span className="ml-1">cho {name.trim()}!</span>
-                  )}
+                  {name.trim() ? ` cho ${name.trim()}!` : ""}
                 </>
               )}
             </button>
