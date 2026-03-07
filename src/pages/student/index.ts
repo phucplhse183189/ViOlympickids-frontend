@@ -6,3 +6,5 @@ export { ResultPage } from "./ui/ResultPage";
 export { StudentHomePage } from "./ui/StudentHomePage";
 export { GamePlayPage } from "./ui/GamePlayPage";
 export { GameResultPage } from "./ui/GameResultPage";
+export { Math2TableOfContents } from "./ui/Math2TableOfContents";
+export { NumberSequenceGame } from "./ui/NumberSequenceGame";
