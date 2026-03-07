@@ -4,7 +4,6 @@ import {
   Lock,
   Crown,
   X,
-  Star,
   ChevronLeft,
   ChevronRight,
   Gamepad2,
@@ -422,6 +421,8 @@ function RoadmapPath({ nodes }: Readonly<{ nodes: NodePos[] }>) {
 
 // ── Scatter decorations ──────────────────────────────────────────────────────
 
+// @ts-ignore: kept for future use
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function ScatterDecorations({ totalWidth }: Readonly<{ totalWidth: number }>) {
   // Place decorations pseudo-randomly
   const items: Array<{
@@ -475,7 +476,8 @@ function TopicGateNode({
   const gateW = 210;
   const gateH = 110;
   const bgIdx = topicIndex % THEME_BGS.length;
-  const _ = THEME_BGS[bgIdx]; // just for reference
+  const _themeBg = THEME_BGS[bgIdx]; // just for reference
+  void _themeBg;
 
   const textX = x - gateW / 2 + 14;
 

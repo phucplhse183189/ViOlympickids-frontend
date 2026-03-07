@@ -36,7 +36,6 @@ import {
   generateTrainPuzzle,
   generateBalloonPuzzle,
   generateRabbitPuzzle,
-  type MapInfo,
 } from "@/shared/lib/robotGameLogic";
 
 // ═══════════════════════════════════════════════════════════════════════════════

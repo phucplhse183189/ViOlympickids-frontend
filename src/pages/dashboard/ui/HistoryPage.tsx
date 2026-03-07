@@ -28,7 +28,7 @@ const statusIcon: Record<ActivityStatus, React.ReactNode> = {
 const PAGE_SIZE = 7;
 
 export function HistoryPage() {
-  const { activeChild, dashboardData } = useActiveChild();
+  const { dashboardData } = useActiveChild();
   const activities = dashboardData.activities;
   const [search, setSearch] = useState("");
   const [subjectFilter, setSubjectFilter] = useState("Tất cả");
