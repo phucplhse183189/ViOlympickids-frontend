@@ -1,11 +1,6 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
-import {
-  getLessonById,
-  getChapterByLessonId,
-  markLessonComplete,
-} from "@/shared/api/studentMockData";
-import { Map, RotateCcw } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { RotateCcw, Home } from "lucide-react";
 
 interface LocationState {
   correct: number;
@@ -14,7 +9,7 @@ interface LocationState {
 
 const confettiItems = ["🎉", "⭐", "🌟", "🎊", "💫", "✨", "🎈", "🏅"];
 
-function Confetti({ show }: { show: boolean }) {
+function Confetti({ show }: Readonly<{ show: boolean }>) {
   const pieces = Array.from({ length: 28 }, (_, i) => ({
     left: `${(i / 28) * 100}%`,
     delay: `${Math.random() * 1.2}s`,
@@ -22,7 +17,6 @@ function Confetti({ show }: { show: boolean }) {
     emoji: confettiItems[i % confettiItems.length],
     size: `${0.9 + Math.random() * 0.8}rem`,
   }));
-
   if (!show) return null;
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-3xl z-0">
@@ -43,7 +37,7 @@ function Confetti({ show }: { show: boolean }) {
   );
 }
 
-function StarBadge({ lit, index }: { lit: boolean; index: number }) {
+function StarBadge({ lit, index }: Readonly<{ lit: boolean; index: number }>) {
   return (
     <span
       className="text-5xl transition-all duration-300"
@@ -75,34 +69,20 @@ function getRankLabel(stars: number) {
   return { label: "💪 Thử lại nhé bé!", color: "text-red-500" };
 }
 
-export function ResultPage() {
-  const { id } = useParams<{ id: string }>();
+export function Math2ResultPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const lessonId = Number(id);
-  const lesson = getLessonById(lessonId);
-  const chapter = getChapterByLessonId(lessonId);
   const state = location.state as LocationState | null;
-
   const correct = state?.correct ?? 0;
-  const total = state?.total ?? lesson?.questions.length ?? 5;
+  const total = state?.total ?? 10;
   const stars = getStarCount(correct, total);
   const rank = getRankLabel(stars);
-  const xpEarned = stars > 0 ? (lesson?.xpReward ?? 10) : 0;
 
   const [litStars, setLitStars] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    // save progress
-    if (!saved && stars > 0 && lesson) {
-      markLessonComplete(lessonId, xpEarned);
-      setSaved(true);
-    }
-
-    // animate stars in
     const timers = [1, 2, 3].map((n, i) =>
       setTimeout(
         () => {
@@ -111,37 +91,17 @@ export function ResultPage() {
         300 + i * 400,
       ),
     );
-
     if (stars >= 2) {
-      const t = setTimeout(() => setShowConfetti(true), 400);
-      timers.push(t);
+      timers.push(setTimeout(() => setShowConfetti(true), 400));
     }
-
     return () => timers.forEach(clearTimeout);
-  }, []);
-
-  if (!lesson || !chapter) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-5rem)] gap-4">
-        <span className="text-5xl">😕</span>
-        <button
-          onClick={() => navigate("/student")}
-          className="px-6 py-3 bg-orange-400 text-white font-extrabold rounded-2xl"
-        >
-          ← Quay lại
-        </button>
-      </div>
-    );
-  }
-
-  const nextLesson = chapter.lessons.find((l) => l.id > lessonId);
+  }, [stars]);
 
   return (
     <div className="relative min-h-[calc(100vh-5rem)] flex items-center justify-center px-4 py-8 overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-sky-200 via-indigo-100 to-purple-100" />
 
-      {/* Floating emojis */}
       {["🌈", "☀️", "🎵", "💐"].map((e, i) => (
         <span
           key={i}
@@ -160,10 +120,10 @@ export function ResultPage() {
       <div className="relative z-10 w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden animate-kids-bounce-in">
         <Confetti show={showConfetti} />
 
-        {/* Chapter header */}
-        <div className={`${chapter.color} px-5 py-3 text-center`}>
+        {/* Header */}
+        <div className="bg-gradient-to-r from-orange-400 to-amber-300 px-5 py-3 text-center">
           <p className="text-white text-sm font-extrabold">
-            {chapter.emoji} {chapter.title} · {lesson.title}
+            📊 Bài 2: Tia số · Số liền trước, số liền sau
           </p>
         </div>
 
@@ -205,15 +165,6 @@ export function ResultPage() {
             ))}
           </div>
 
-          {/* XP banner */}
-          {xpEarned > 0 && (
-            <div className="bg-yellow-50 border-2 border-yellow-300 rounded-2xl px-6 py-3 animate-badge-pop">
-              <p className="text-yellow-700 font-extrabold text-lg">
-                +{xpEarned} ⭐ XP đã được cộng!
-              </p>
-            </div>
-          )}
-
           {/* Score breakdown */}
           <div className="w-full bg-gray-50 rounded-2xl p-4 grid grid-cols-3 gap-2 text-center">
             <div>
@@ -230,7 +181,7 @@ export function ResultPage() {
             </div>
             <div>
               <p className="text-2xl font-extrabold text-purple-600">
-                {Math.round((correct / total) * 100)}%
+                {total > 0 ? Math.round((correct / total) * 100) : 0}%
               </p>
               <p className="text-xs text-gray-500 font-bold">Điểm</p>
             </div>
@@ -238,43 +189,24 @@ export function ResultPage() {
 
           {/* Action buttons */}
           <div className="w-full flex flex-col gap-3">
-            {/* Continue to next lesson / Map */}
-            {nextLesson && stars > 0 ? (
-              <button
-                onClick={() => navigate(`/student/lesson/${nextLesson.id}`)}
-                className="w-full py-4 bg-gradient-to-r from-orange-400 to-orange-500 text-white text-lg font-extrabold rounded-2xl shadow-[0_5px_0_#c2550f] active:translate-y-[3px] active:shadow-none transition-all"
-              >
-                Bài tiếp theo: {nextLesson.emoji} {nextLesson.title} →
-              </button>
-            ) : (
-              <button
-                onClick={() => navigate("/student")}
-                className="w-full py-4 bg-gradient-to-r from-orange-400 to-orange-500 text-white text-lg font-extrabold rounded-2xl shadow-[0_5px_0_#c2550f] active:translate-y-[3px] active:shadow-none transition-all flex items-center justify-center gap-2"
-              >
-                <Map size={20} />
-                Trở về bản đồ
-              </button>
-            )}
-
-            {/* Retry */}
             <button
-              onClick={() => navigate(`/student/exercise/${lessonId}`)}
-              className="w-full py-3 bg-white border-2 border-gray-200 text-gray-600 font-extrabold rounded-2xl flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
+              onClick={() => navigate("/student")}
+              className="w-full py-4 bg-gradient-to-r from-orange-400 to-orange-500 text-white text-lg font-extrabold
+                         rounded-2xl shadow-[0_5px_0_#c2550f] active:translate-y-[3px] active:shadow-none
+                         transition-all flex items-center justify-center gap-2"
             >
-              <RotateCcw size={16} />
-              Làm lại bài này
+              <Home size={20} />
+              Về mục lục
             </button>
 
-            {/* Back to map */}
-            {nextLesson && (
-              <button
-                onClick={() => navigate("/student")}
-                className="text-sm text-gray-400 font-bold hover:text-gray-600 transition-colors flex items-center justify-center gap-1"
-              >
-                <Map size={14} />
-                Về bản đồ
-              </button>
-            )}
+            <button
+              onClick={() => navigate("/student/quiz/math2-b2")}
+              className="w-full py-3 bg-white border-2 border-gray-200 text-gray-600 font-extrabold
+                         rounded-2xl flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
+            >
+              <RotateCcw size={16} />
+              Làm lại bài quiz
+            </button>
           </div>
         </div>
       </div>

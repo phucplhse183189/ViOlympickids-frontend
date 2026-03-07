@@ -70,7 +70,13 @@ function RobotCharacter({
   const sizeMap = { sm: "w-14 h-14", md: "w-20 h-20", lg: "w-28 h-28" };
   const eyes = mood === "excited" ? "★" : mood === "sad" ? "•" : "◕";
   const mouth =
-    mood === "excited" ? "▽" : mood === "sad" ? "△" : mood === "thinking" ? "○" : "◡";
+    mood === "excited"
+      ? "▽"
+      : mood === "sad"
+        ? "△"
+        : mood === "thinking"
+          ? "○"
+          : "◡";
 
   return (
     <div className="flex items-end gap-2">
@@ -100,7 +106,9 @@ function RobotCharacter({
       {message && (
         <div className="relative bg-white rounded-2xl shadow-lg px-4 py-2.5 max-w-[260px] animate-fade-in-up">
           <div className="absolute -left-2 bottom-3 w-4 h-4 bg-white rotate-45" />
-          <p className="text-sm font-bold text-gray-700 relative z-10">{message}</p>
+          <p className="text-sm font-bold text-gray-700 relative z-10">
+            {message}
+          </p>
         </div>
       )}
     </div>
@@ -110,8 +118,14 @@ function RobotCharacter({
 // ─── Confetti ─────────────────────────────────────────────────────────────────
 
 const CONFETTI_COLORS = [
-  "#FF6B6B", "#4ECDC4", "#FFE66D", "#A855F7",
-  "#3B82F6", "#F472B6", "#34D399", "#FB923C",
+  "#FF6B6B",
+  "#4ECDC4",
+  "#FFE66D",
+  "#A855F7",
+  "#3B82F6",
+  "#F472B6",
+  "#34D399",
+  "#FB923C",
 ];
 
 function ConfettiEffect() {
@@ -161,7 +175,9 @@ function StarsDisplay({ count }: Readonly<{ count: number }>) {
           key={i}
           size={22}
           className={`transition-all duration-300 ${
-            i <= count ? "text-yellow-400 fill-yellow-400 scale-110" : "text-gray-300"
+            i <= count
+              ? "text-yellow-400 fill-yellow-400 scale-110"
+              : "text-gray-300"
           }`}
         />
       ))}
@@ -237,11 +253,15 @@ function AppleGardenMap({
   const [placed, setPlaced] = useState<Record<number, number | null>>({});
   const [remaining, setRemaining] = useState<number[]>([]);
   const [dragging, setDragging] = useState<number | null>(null);
-  const [robotMsg, setRobotMsg] = useState("Kéo quả táo vào ô trống trên tia số nhé! 🍎");
+  const [robotMsg, setRobotMsg] = useState(
+    "Kéo quả táo vào ô trống trên tia số nhé! 🍎",
+  );
   const [attempts, setAttempts] = useState(0);
   const [shake, setShake] = useState<number | null>(null);
   const [touchDragValue, setTouchDragValue] = useState<number | null>(null);
-  const [touchPos, setTouchPos] = useState<{ x: number; y: number } | null>(null);
+  const [touchPos, setTouchPos] = useState<{ x: number; y: number } | null>(
+    null,
+  );
   const dropZoneRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const completedRef = useRef(false);
 
@@ -310,8 +330,10 @@ function AppleGardenMap({
     for (const [idx, el] of dropZoneRefs.current.entries()) {
       const rect = el.getBoundingClientRect();
       if (
-        touchPos.x >= rect.left && touchPos.x <= rect.right &&
-        touchPos.y >= rect.top && touchPos.y <= rect.bottom
+        touchPos.x >= rect.left &&
+        touchPos.x <= rect.right &&
+        touchPos.y >= rect.top &&
+        touchPos.y <= rect.bottom
       ) {
         tryDrop(idx, touchDragValue);
         break;
@@ -325,7 +347,9 @@ function AppleGardenMap({
   useEffect(() => {
     if (completedRef.current) return;
     if (puzzle.missingIndices.length === 0) return;
-    const allFilled = puzzle.missingIndices.every((i) => typeof placed[i] === "number");
+    const allFilled = puzzle.missingIndices.every(
+      (i) => typeof placed[i] === "number",
+    );
     if (allFilled) {
       completedRef.current = true;
       const stars = attempts === 0 ? 3 : attempts <= 2 ? 2 : 1;
@@ -398,13 +422,18 @@ function AppleGardenMap({
 
       {/* Apple numbers */}
       <div className="text-center">
-        <p className="text-red-600 font-extrabold text-sm mb-3">🍎 Kéo táo vào đúng vị trí:</p>
+        <p className="text-red-600 font-extrabold text-sm mb-3">
+          🍎 Kéo táo vào đúng vị trí:
+        </p>
         <div className="flex justify-center gap-3 flex-wrap">
           {remaining.map((num, i) => (
             <div
               key={`apple-${num}-${i}`}
               draggable
-              onDragStart={() => { sound.pickup(); setDragging(num); }}
+              onDragStart={() => {
+                sound.pickup();
+                setDragging(num);
+              }}
               onTouchStart={(e) => handleTouchStart(num, e)}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
@@ -506,9 +535,10 @@ function BridgeMap({
   };
 
   // Determine question text
-  const questionRef = puzzle.type === "next"
-    ? puzzle.stones[puzzle.missingIndex - 1]
-    : puzzle.stones[puzzle.missingIndex + 1];
+  const questionRef =
+    puzzle.type === "next"
+      ? puzzle.stones[puzzle.missingIndex - 1]
+      : puzzle.stones[puzzle.missingIndex + 1];
   const questionText =
     puzzle.type === "next"
       ? `Số liền sau của ${questionRef} là bao nhiêu?`
@@ -518,7 +548,13 @@ function BridgeMap({
     <div className="space-y-6">
       <RobotCharacter
         message={robotMsg}
-        mood={isCorrect === true ? "excited" : isCorrect === false ? "sad" : "thinking"}
+        mood={
+          isCorrect === true
+            ? "excited"
+            : isCorrect === false
+              ? "sad"
+              : "thinking"
+        }
         size="sm"
       />
 
@@ -529,7 +565,11 @@ function BridgeMap({
         {/* Waves */}
         <div className="absolute bottom-2 left-0 right-0 flex justify-around opacity-50">
           {[0, 1, 2, 3, 4].map((i) => (
-            <span key={i} className="text-lg animate-float-slow" style={{ animationDelay: `${i * 0.5}s` }}>
+            <span
+              key={i}
+              className="text-lg animate-float-slow"
+              style={{ animationDelay: `${i * 0.5}s` }}
+            >
               〰️
             </span>
           ))}
@@ -542,13 +582,17 @@ function BridgeMap({
             const isRobotHere = idx === robotPos;
 
             return (
-              <div key={`stone-${idx}`} className="flex flex-col items-center relative">
+              <div
+                key={`stone-${idx}`}
+                className="flex flex-col items-center relative"
+              >
                 {/* Robot on stone */}
                 {isRobotHere && (
                   <div className="absolute -top-14 z-20 robot-jump">
                     <div className="w-11 h-11 bg-gradient-to-b from-sky-400 to-sky-500 rounded-xl border-3 border-sky-300 flex flex-col items-center justify-center shadow-lg">
                       <div className="flex gap-1 text-white text-xs font-bold">
-                        <span>◕</span><span>◕</span>
+                        <span>◕</span>
+                        <span>◕</span>
                       </div>
                       <span className="text-white text-[10px]">◡</span>
                     </div>
@@ -585,7 +629,9 @@ function BridgeMap({
       {/* Question & options */}
       {!answered && (
         <div className="text-center space-y-4">
-          <p className="font-extrabold text-sky-700 text-base sm:text-lg">{questionText}</p>
+          <p className="font-extrabold text-sky-700 text-base sm:text-lg">
+            {questionText}
+          </p>
           <div className="flex justify-center gap-4">
             {puzzle.options.map((opt) => (
               <button
@@ -628,11 +674,15 @@ function TrainMap({
   const [placed, setPlaced] = useState<Record<number, number | null>>({});
   const [remaining, setRemaining] = useState<number[]>([]);
   const [dragging, setDragging] = useState<number | null>(null);
-  const [robotMsg, setRobotMsg] = useState("Kéo toa tàu vào đúng vị trí trên đường ray! 🚂");
+  const [robotMsg, setRobotMsg] = useState(
+    "Kéo toa tàu vào đúng vị trí trên đường ray! 🚂",
+  );
   const [attempts, setAttempts] = useState(0);
   const [shake, setShake] = useState<number | null>(null);
   const [touchDragValue, setTouchDragValue] = useState<number | null>(null);
-  const [touchPos, setTouchPos] = useState<{ x: number; y: number } | null>(null);
+  const [touchPos, setTouchPos] = useState<{ x: number; y: number } | null>(
+    null,
+  );
   const dropZoneRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const completedRef = useRef(false);
 
@@ -698,7 +748,12 @@ function TrainMap({
     }
     for (const [idx, el] of dropZoneRefs.current.entries()) {
       const rect = el.getBoundingClientRect();
-      if (touchPos.x >= rect.left && touchPos.x <= rect.right && touchPos.y >= rect.top && touchPos.y <= rect.bottom) {
+      if (
+        touchPos.x >= rect.left &&
+        touchPos.x <= rect.right &&
+        touchPos.y >= rect.top &&
+        touchPos.y <= rect.bottom
+      ) {
         tryDrop(idx, touchDragValue);
         break;
       }
@@ -710,7 +765,9 @@ function TrainMap({
   useEffect(() => {
     if (completedRef.current) return;
     if (puzzle.missingIndices.length === 0) return;
-    const allFilled = puzzle.missingIndices.every((i) => typeof placed[i] === "number");
+    const allFilled = puzzle.missingIndices.every(
+      (i) => typeof placed[i] === "number",
+    );
     if (allFilled && remaining.length === 0) {
       completedRef.current = true;
       const stars = attempts === 0 ? 3 : attempts <= 2 ? 2 : 1;
@@ -723,7 +780,9 @@ function TrainMap({
       <RobotCharacter message={robotMsg} mood="happy" size="sm" />
 
       <div className="bg-gradient-to-b from-amber-100 to-yellow-200 rounded-3xl p-4 sm:p-6 shadow-inner">
-        <p className="text-center text-amber-700 font-extrabold text-sm mb-4">🚂 Đường ray tàu số</p>
+        <p className="text-center text-amber-700 font-extrabold text-sm mb-4">
+          🚂 Đường ray tàu số
+        </p>
 
         <div className="relative">
           {/* Rail tracks */}
@@ -782,7 +841,11 @@ function TrainMap({
                       if (isMissing && placedValue === null) handleDrop(idx);
                     }}
                   >
-                    {isMissing ? (placedValue !== null ? placedValue : "?") : num}
+                    {isMissing
+                      ? placedValue !== null
+                        ? placedValue
+                        : "?"
+                      : num}
                   </div>
                   <div className="flex gap-1 -mt-1 relative z-10">
                     <div className="w-3 h-3 bg-gray-700 rounded-full border border-gray-500" />
@@ -808,13 +871,18 @@ function TrainMap({
 
       {/* Spare cars */}
       <div className="text-center">
-        <p className="text-amber-700 font-extrabold text-sm mb-3">🚃 Kéo toa tàu vào đúng vị trí:</p>
+        <p className="text-amber-700 font-extrabold text-sm mb-3">
+          🚃 Kéo toa tàu vào đúng vị trí:
+        </p>
         <div className="flex justify-center gap-3 flex-wrap">
           {remaining.map((num, i) => (
             <div
               key={`spare-${num}-${i}`}
               draggable
-              onDragStart={() => { sound.pickup(); setDragging(num); }}
+              onDragStart={() => {
+                sound.pickup();
+                setDragging(num);
+              }}
               onTouchStart={(e) => handleTouchStart(num, e)}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
@@ -858,11 +926,15 @@ function BalloonCityMap({
   const [placed, setPlaced] = useState<Record<number, number | null>>({});
   const [remaining, setRemaining] = useState<typeof puzzle.balloons>([]);
   const [dragging, setDragging] = useState<number | null>(null);
-  const [robotMsg, setRobotMsg] = useState("Bắt bóng bay và kéo về đúng ô trống! 🎈");
+  const [robotMsg, setRobotMsg] = useState(
+    "Bắt bóng bay và kéo về đúng ô trống! 🎈",
+  );
   const [attempts, setAttempts] = useState(0);
   const [shake, setShake] = useState<number | null>(null);
   const [touchDragValue, setTouchDragValue] = useState<number | null>(null);
-  const [touchPos, setTouchPos] = useState<{ x: number; y: number } | null>(null);
+  const [touchPos, setTouchPos] = useState<{ x: number; y: number } | null>(
+    null,
+  );
   const dropZoneRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const completedRef = useRef(false);
 
@@ -925,7 +997,12 @@ function BalloonCityMap({
     }
     for (const [idx, el] of dropZoneRefs.current.entries()) {
       const rect = el.getBoundingClientRect();
-      if (touchPos.x >= rect.left && touchPos.x <= rect.right && touchPos.y >= rect.top && touchPos.y <= rect.bottom) {
+      if (
+        touchPos.x >= rect.left &&
+        touchPos.x <= rect.right &&
+        touchPos.y >= rect.top &&
+        touchPos.y <= rect.bottom
+      ) {
         tryDrop(idx, touchDragValue);
         break;
       }
@@ -937,7 +1014,9 @@ function BalloonCityMap({
   useEffect(() => {
     if (completedRef.current) return;
     if (puzzle.missingIndices.length === 0) return;
-    const allFilled = puzzle.missingIndices.every((i) => typeof placed[i] === "number");
+    const allFilled = puzzle.missingIndices.every(
+      (i) => typeof placed[i] === "number",
+    );
     if (allFilled && remaining.length === 0) {
       completedRef.current = true;
       const stars = attempts === 0 ? 3 : attempts <= 2 ? 2 : 1;
@@ -951,13 +1030,18 @@ function BalloonCityMap({
 
       {/* Floating balloons */}
       <div className="text-center">
-        <p className="text-pink-700 font-extrabold text-sm mb-3">🎈 Kéo bóng bay về đúng vị trí:</p>
+        <p className="text-pink-700 font-extrabold text-sm mb-3">
+          🎈 Kéo bóng bay về đúng vị trí:
+        </p>
         <div className="flex justify-center gap-4 flex-wrap">
           {remaining.map((balloon) => (
             <div
               key={`balloon-${balloon.id}`}
               draggable
-              onDragStart={() => { sound.pickup(); setDragging(balloon.value); }}
+              onDragStart={() => {
+                sound.pickup();
+                setDragging(balloon.value);
+              }}
               onTouchStart={(e) => handleTouchStart(balloon.value, e)}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
@@ -975,7 +1059,10 @@ function BalloonCityMap({
                 <span className="relative z-10">{balloon.value}</span>
               </div>
               {/* Knot + string */}
-              <div className="w-2 h-2 rounded-full" style={{ background: balloon.color }} />
+              <div
+                className="w-2 h-2 rounded-full"
+                style={{ background: balloon.color }}
+              />
               <div className="w-px h-8 bg-gray-400" />
             </div>
           ))}
@@ -987,7 +1074,11 @@ function BalloonCityMap({
         {/* City skyline background */}
         <div className="absolute bottom-0 left-0 right-0 flex items-end justify-around opacity-20">
           {[40, 60, 35, 70, 45, 55, 30, 65].map((h, i) => (
-            <div key={i} className="bg-gray-500 rounded-t" style={{ width: "8%", height: `${h}px` }} />
+            <div
+              key={i}
+              className="bg-gray-500 rounded-t"
+              style={{ width: "8%", height: `${h}px` }}
+            />
           ))}
         </div>
 
@@ -1071,14 +1162,18 @@ function RabbitRaceMap({
 }>) {
   const [puzzle, setPuzzle] = useState(() => generateRabbitPuzzle(difficulty));
   const [order, setOrder] = useState<number[]>([]);
-  const [robotMsg, setRobotMsg] = useState("Sắp xếp các bạn thỏ theo thứ tự từ bé đến lớn! 🐰");
+  const [robotMsg, setRobotMsg] = useState(
+    "Sắp xếp các bạn thỏ theo thứ tự từ bé đến lớn! 🐰",
+  );
   const [attempts, setAttempts] = useState(0);
   const [checked, setChecked] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
 
   const sound = useSounds();
 
-  const availableRabbits = puzzle.rabbits.filter((r) => !order.includes(r.value));
+  const availableRabbits = puzzle.rabbits.filter(
+    (r) => !order.includes(r.value),
+  );
 
   useEffect(() => {
     const p = generateRabbitPuzzle(difficulty);
@@ -1175,7 +1270,9 @@ function RabbitRaceMap({
                     🐰
                   </div>
                 </div>
-                <span className="font-extrabold text-purple-700 text-lg mt-1">{val}</span>
+                <span className="font-extrabold text-purple-700 text-lg mt-1">
+                  {val}
+                </span>
               </div>
             );
           })}
@@ -1207,7 +1304,9 @@ function RabbitRaceMap({
       {/* Available rabbits */}
       {availableRabbits.length > 0 && (
         <div className="text-center">
-          <p className="text-purple-700 font-extrabold text-sm mb-3">🐰 Chạm thỏ để xếp vào đường đua:</p>
+          <p className="text-purple-700 font-extrabold text-sm mb-3">
+            🐰 Chạm thỏ để xếp vào đường đua:
+          </p>
           <div className="flex justify-center gap-3 flex-wrap">
             {availableRabbits.map((rabbit) => (
               <button
@@ -1224,7 +1323,9 @@ function RabbitRaceMap({
                 >
                   🐰
                 </div>
-                <span className="font-extrabold text-gray-700 text-lg mt-1">{rabbit.value}</span>
+                <span className="font-extrabold text-gray-700 text-lg mt-1">
+                  {rabbit.value}
+                </span>
               </button>
             ))}
           </div>
@@ -1243,14 +1344,20 @@ function IntroScreen({ onStart }: Readonly<{ onStart: () => void }>) {
     <div className="space-y-6 text-center">
       {/* Robot greeting */}
       <div className="flex justify-center">
-        <RobotCharacter message={getRandomItem(ROBOT_GREETINGS)} mood="happy" size="lg" />
+        <RobotCharacter
+          message={getRandomItem(ROBOT_GREETINGS)}
+          mood="happy"
+          size="lg"
+        />
       </div>
 
       {/* Story intro */}
       <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-5 shadow-sm border border-white/50">
         <p className="text-gray-600 font-bold text-sm leading-relaxed">
-          🌪️ Một cơn bão toán học đã xáo trộn tất cả các số!<br />
-          Hãy giúp robot <strong className="text-sky-600">Tí Tách</strong> vượt qua
+          🌪️ Một cơn bão toán học đã xáo trộn tất cả các số!
+          <br />
+          Hãy giúp robot <strong className="text-sky-600">Tí Tách</strong> vượt
+          qua
           <strong className="text-amber-600"> 5 vùng đất </strong>
           để thu thập và sắp xếp lại nào! 🤖
         </p>
@@ -1269,7 +1376,9 @@ function IntroScreen({ onStart }: Readonly<{ onStart: () => void }>) {
               <p className="font-extrabold text-gray-700 text-sm">
                 Vùng {map.id}: {map.name}
               </p>
-              <p className="text-xs text-gray-500 font-bold">{map.description}</p>
+              <p className="text-xs text-gray-500 font-bold">
+                {map.description}
+              </p>
             </div>
             <MapPin size={14} className="text-gray-400" />
           </div>
@@ -1307,9 +1416,12 @@ function FinalVictoryScreen({
   onBack: () => void;
   onNextLesson: () => void;
 }>) {
-  const avgStars = MAPS.length > 0
-    ? Math.round(Object.values(mapStars).reduce((a, b) => a + b, 0) / MAPS.length)
-    : 3;
+  const avgStars =
+    MAPS.length > 0
+      ? Math.round(
+          Object.values(mapStars).reduce((a, b) => a + b, 0) / MAPS.length,
+        )
+      : 3;
 
   return (
     <div className="relative w-full min-h-[70vh] flex flex-col items-center justify-center">
@@ -1332,9 +1444,18 @@ function FinalVictoryScreen({
                 style={{
                   height: `${h}%`,
                   background: [
-                    "#60A5FA", "#34D399", "#FBBF24", "#F472B6",
-                    "#A78BFA", "#FB923C", "#38BDF8", "#4ADE80",
-                    "#FCD34D", "#F87171", "#818CF8", "#FB7185",
+                    "#60A5FA",
+                    "#34D399",
+                    "#FBBF24",
+                    "#F472B6",
+                    "#A78BFA",
+                    "#FB923C",
+                    "#38BDF8",
+                    "#4ADE80",
+                    "#FCD34D",
+                    "#F87171",
+                    "#818CF8",
+                    "#FB7185",
                   ][i],
                 }}
               />
@@ -1343,7 +1464,12 @@ function FinalVictoryScreen({
           {/* Number line on blackboard */}
           <div className="absolute bottom-1 left-6 right-6 flex justify-between">
             {[0, 1, 2, 3, 4, 5, "", "", "", 17, "", "", 20].map((n, i) => (
-              <span key={`num-${i}`} className="text-white/60 text-[8px] font-bold">{n}</span>
+              <span
+                key={`num-${i}`}
+                className="text-white/60 text-[8px] font-bold"
+              >
+                {n}
+              </span>
             ))}
           </div>
         </div>
@@ -1353,13 +1479,14 @@ function FinalVictoryScreen({
 
       {/* ── Content ── */}
       <div className="relative z-10 flex flex-col items-center w-full max-w-lg px-4 py-6">
-
         {/* Rainbow banner */}
         <div className="relative w-full mb-2">
           <div className="absolute inset-0 bg-gradient-to-r from-red-400 via-yellow-400 via-green-400 via-blue-400 to-purple-400 rounded-full blur-sm opacity-60 scale-105" />
           <div className="relative bg-gradient-to-r from-rose-400 via-amber-400 via-emerald-400 via-sky-400 to-violet-400 rounded-full px-6 py-3 shadow-lg">
-            <h1 className="text-center font-black text-white text-lg sm:text-xl tracking-wide drop-shadow-md"
-                style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.3)" }}>
+            <h1
+              className="text-center font-black text-white text-lg sm:text-xl tracking-wide drop-shadow-md"
+              style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.3)" }}
+            >
               TUYỆT VỜI! CON ĐÃ HOÀN THÀNH XUẤT SẮC BÀI 2!
             </h1>
           </div>
@@ -1367,13 +1494,22 @@ function FinalVictoryScreen({
 
         {/* 3 big stars */}
         <div className="flex justify-center items-end gap-1 mb-3">
-          <span className="text-5xl drop-shadow-lg animate-kids-bounce-in" style={{ animationDelay: "0.1s" }}>
+          <span
+            className="text-5xl drop-shadow-lg animate-kids-bounce-in"
+            style={{ animationDelay: "0.1s" }}
+          >
             {avgStars >= 1 ? "⭐" : "☆"}
           </span>
-          <span className="text-6xl drop-shadow-lg animate-kids-bounce-in -mt-2" style={{ animationDelay: "0.3s" }}>
+          <span
+            className="text-6xl drop-shadow-lg animate-kids-bounce-in -mt-2"
+            style={{ animationDelay: "0.3s" }}
+          >
             {avgStars >= 2 ? "⭐" : "☆"}
           </span>
-          <span className="text-5xl drop-shadow-lg animate-kids-bounce-in" style={{ animationDelay: "0.5s" }}>
+          <span
+            className="text-5xl drop-shadow-lg animate-kids-bounce-in"
+            style={{ animationDelay: "0.5s" }}
+          >
             {avgStars >= 3 ? "⭐" : "☆"}
           </span>
         </div>
@@ -1381,20 +1517,45 @@ function FinalVictoryScreen({
         {/* Bear character + speech bubble */}
         <div className="flex items-end justify-center gap-3 mb-4">
           {/* Bear */}
-          <div className="text-center animate-kids-bounce-in" style={{ animationDelay: "0.4s" }}>
-            <div className="text-7xl sm:text-8xl" style={{ filter: "drop-shadow(2px 4px 6px rgba(0,0,0,0.15))" }}>🐻</div>
+          <div
+            className="text-center animate-kids-bounce-in"
+            style={{ animationDelay: "0.4s" }}
+          >
+            <div
+              className="text-7xl sm:text-8xl"
+              style={{ filter: "drop-shadow(2px 4px 6px rgba(0,0,0,0.15))" }}
+            >
+              🐻
+            </div>
             {/* Confetti around bear */}
             <div className="relative -mt-6">
-              <span className="absolute -left-4 -top-8 text-lg animate-float-slow">🎊</span>
-              <span className="absolute -right-4 -top-10 text-lg animate-float-slow" style={{ animationDelay: "0.5s" }}>🎉</span>
-              <span className="absolute left-2 -top-14 text-sm animate-float-slow" style={{ animationDelay: "1s" }}>✨</span>
+              <span className="absolute -left-4 -top-8 text-lg animate-float-slow">
+                🎊
+              </span>
+              <span
+                className="absolute -right-4 -top-10 text-lg animate-float-slow"
+                style={{ animationDelay: "0.5s" }}
+              >
+                🎉
+              </span>
+              <span
+                className="absolute left-2 -top-14 text-sm animate-float-slow"
+                style={{ animationDelay: "1s" }}
+              >
+                ✨
+              </span>
             </div>
           </div>
 
           {/* Speech bubble */}
-          <div className="relative bg-white rounded-2xl shadow-lg px-5 py-3 max-w-[200px] animate-fade-in-up" style={{ animationDelay: "0.6s" }}>
+          <div
+            className="relative bg-white rounded-2xl shadow-lg px-5 py-3 max-w-[200px] animate-fade-in-up"
+            style={{ animationDelay: "0.6s" }}
+          >
             <p className="font-extrabold text-gray-700 text-sm leading-snug">
-              Giỏi quá!<br />Cố lên con nhé! 🥰
+              Giỏi quá!
+              <br />
+              Cố lên con nhé! 🥰
             </p>
             <span className="text-xl absolute -bottom-1 right-4">🎤</span>
             {/* Bubble tail */}
@@ -1405,7 +1566,9 @@ function FinalVictoryScreen({
         {/* Score summary */}
         <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-full px-5 py-2 shadow-md mb-4">
           <Trophy size={20} className="text-amber-500" />
-          <span className="font-extrabold text-amber-600">{totalStars} / 15</span>
+          <span className="font-extrabold text-amber-600">
+            {totalStars} / 15
+          </span>
           <span className="text-amber-400">⭐</span>
         </div>
 
@@ -1420,7 +1583,7 @@ function FinalVictoryScreen({
                        flex items-center justify-center gap-3
                        border-b-4 border-green-700"
           >
-            <Play size={22} fill="white" /> BÀI TIẾP THEO (BÀI 3)
+            <Play size={22} fill="white" /> LÀM BÀI QUIZ
           </button>
 
           {/* Secondary row: Chơi lại + Về mục lục */}
@@ -1512,9 +1675,13 @@ const ROUNDS_PER_MAP: Record<number, number> = { 1: 2, 2: 2, 3: 3, 4: 3, 5: 3 };
 export function NumberSequenceGame() {
   const navigate = useNavigate();
   const sound = useGameSound();
-  const [gameState, setGameState] = useState<"intro" | "playing" | "finished">("intro");
+  const [gameState, setGameState] = useState<"intro" | "playing" | "finished">(
+    "intro",
+  );
   const [activeMap, setActiveMap] = useState(1);
-  const [completedMaps, setCompletedMaps] = useState<Record<number, number>>({});
+  const [completedMaps, setCompletedMaps] = useState<Record<number, number>>(
+    {},
+  );
   const [showVictory, setShowVictory] = useState(false);
   const [lastStars, setLastStars] = useState(0);
   const [showHint, setShowHint] = useState(false);
@@ -1546,7 +1713,8 @@ export function NumberSequenceGame() {
         }, 1500);
       } else {
         // All rounds done — calculate average stars
-        const avg = newRoundStars.reduce((a, b) => a + b, 0) / newRoundStars.length;
+        const avg =
+          newRoundStars.reduce((a, b) => a + b, 0) / newRoundStars.length;
         const finalStars = Math.round(avg);
         setCompletedMaps((prev) => ({
           ...prev,
@@ -1636,15 +1804,30 @@ export function NumberSequenceGame() {
         />
 
         {/* Floating clouds */}
-        <div className="absolute top-8 left-5 text-4xl animate-float-slow opacity-50 pointer-events-none">☁️</div>
-        <div className="absolute top-16 right-10 text-3xl animate-float-slow opacity-30 pointer-events-none" style={{ animationDelay: "1.5s" }}>☁️</div>
-        <div className="absolute top-4 right-1/3 text-2xl animate-float-slow opacity-20 pointer-events-none" style={{ animationDelay: "3s" }}>☁️</div>
+        <div className="absolute top-8 left-5 text-4xl animate-float-slow opacity-50 pointer-events-none">
+          ☁️
+        </div>
+        <div
+          className="absolute top-16 right-10 text-3xl animate-float-slow opacity-30 pointer-events-none"
+          style={{ animationDelay: "1.5s" }}
+        >
+          ☁️
+        </div>
+        <div
+          className="absolute top-4 right-1/3 text-2xl animate-float-slow opacity-20 pointer-events-none"
+          style={{ animationDelay: "3s" }}
+        >
+          ☁️
+        </div>
 
         <div className="relative z-10 max-w-5xl mx-auto px-3 sm:px-6 py-4">
           {/* ── Header ── */}
           <div className="flex items-center justify-between mb-4">
             <button
-              onClick={() => { sound.click(); navigate("/student"); }}
+              onClick={() => {
+                sound.click();
+                navigate("/student");
+              }}
               className="flex items-center gap-2 bg-white/80 hover:bg-white rounded-2xl px-4 py-2
                          text-gray-600 font-bold text-sm shadow-sm transition-all active:scale-95"
             >
@@ -1672,7 +1855,9 @@ export function NumberSequenceGame() {
                 onClick={handleToggleSound}
                 className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm
                            transition-all active:scale-95 ${
-                             soundOn ? "bg-emerald-400 text-white" : "bg-gray-200 text-gray-400"
+                             soundOn
+                               ? "bg-emerald-400 text-white"
+                               : "bg-gray-200 text-gray-400"
                            }`}
                 aria-label={soundOn ? "Tắt âm thanh" : "Bật âm thanh"}
               >
@@ -1683,7 +1868,9 @@ export function NumberSequenceGame() {
                 onClick={handleToggleVoice}
                 className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm
                            transition-all active:scale-95 ${
-                             voiceOn ? "bg-sky-400 text-white" : "bg-gray-200 text-gray-400"
+                             voiceOn
+                               ? "bg-sky-400 text-white"
+                               : "bg-gray-200 text-gray-400"
                            }`}
                 aria-label={voiceOn ? "Tắt giọng nói" : "Bật giọng nói"}
               >
@@ -1691,7 +1878,10 @@ export function NumberSequenceGame() {
               </button>
               {gameState === "playing" && (
                 <button
-                  onClick={() => { sound.hint(); setShowHint((h) => !h); }}
+                  onClick={() => {
+                    sound.hint();
+                    setShowHint((h) => !h);
+                  }}
                   className="w-8 h-8 rounded-full bg-amber-400 hover:bg-amber-500 text-white
                              flex items-center justify-center shadow-sm transition-all active:scale-95"
                   aria-label="Gợi ý"
@@ -1701,7 +1891,9 @@ export function NumberSequenceGame() {
               )}
               <div className="flex items-center gap-1 bg-white/80 rounded-full px-3 py-1.5 shadow-sm">
                 <Star size={14} className="text-amber-400 fill-amber-400" />
-                <span className="font-extrabold text-amber-600 text-sm">{totalStars}</span>
+                <span className="font-extrabold text-amber-600 text-sm">
+                  {totalStars}
+                </span>
               </div>
             </div>
           </div>
@@ -1710,7 +1902,10 @@ export function NumberSequenceGame() {
           {showHint && gameState === "playing" && (
             <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl px-4 py-3 mb-4 text-sm font-bold text-amber-700 animate-fade-in-down flex items-start gap-2">
               <span className="text-lg">💡</span>
-              <span>{ROBOT_HINTS[activeMap]?.[0] ?? "Hãy quan sát kỹ và tìm quy luật!"}</span>
+              <span>
+                {ROBOT_HINTS[activeMap]?.[0] ??
+                  "Hãy quan sát kỹ và tìm quy luật!"}
+              </span>
             </div>
           )}
 
@@ -1722,30 +1917,59 @@ export function NumberSequenceGame() {
               totalStars={totalStars}
               mapStars={completedMaps}
               onRestart={handleRestart}
-              onBack={() => { sound.click(); navigate("/student"); }}
-              onNextLesson={() => { sound.click(); navigate("/student/lesson/math2-b3"); }}
+              onBack={() => {
+                sound.click();
+                navigate("/student");
+              }}
+              onNextLesson={() => {
+                sound.click();
+                navigate("/student/quiz/math2-b2");
+              }}
             />
           )}
 
           {gameState === "playing" && (
             <>
-              <MapProgressBar activeMap={activeMap} completedMaps={completedMaps} />
+              <MapProgressBar
+                activeMap={activeMap}
+                completedMaps={completedMaps}
+              />
 
               <div className="bg-white/40 backdrop-blur-sm rounded-3xl shadow-lg border-2 border-white/60 p-4 sm:p-6">
                 {activeMap === 1 && (
-                  <AppleGardenMap key={mapKey} onComplete={handleMapComplete} difficulty={difficulty} />
+                  <AppleGardenMap
+                    key={mapKey}
+                    onComplete={handleMapComplete}
+                    difficulty={difficulty}
+                  />
                 )}
                 {activeMap === 2 && (
-                  <BridgeMap key={mapKey} onComplete={handleMapComplete} difficulty={difficulty} />
+                  <BridgeMap
+                    key={mapKey}
+                    onComplete={handleMapComplete}
+                    difficulty={difficulty}
+                  />
                 )}
                 {activeMap === 3 && (
-                  <TrainMap key={mapKey} onComplete={handleMapComplete} difficulty={difficulty} />
+                  <TrainMap
+                    key={mapKey}
+                    onComplete={handleMapComplete}
+                    difficulty={difficulty}
+                  />
                 )}
                 {activeMap === 4 && (
-                  <BalloonCityMap key={mapKey} onComplete={handleMapComplete} difficulty={difficulty} />
+                  <BalloonCityMap
+                    key={mapKey}
+                    onComplete={handleMapComplete}
+                    difficulty={difficulty}
+                  />
                 )}
                 {activeMap === 5 && (
-                  <RabbitRaceMap key={mapKey} onComplete={handleMapComplete} difficulty={difficulty} />
+                  <RabbitRaceMap
+                    key={mapKey}
+                    onComplete={handleMapComplete}
+                    difficulty={difficulty}
+                  />
                 )}
               </div>
             </>
@@ -1782,7 +2006,9 @@ export function NumberSequenceGame() {
                 <div className="flex justify-center gap-1 mt-2">
                   {roundStars.map((s, i) => (
                     <span key={`rs-${i}`} className="text-lg">
-                      {s >= 1 ? "⭐" : "☆"}{s >= 2 ? "⭐" : "☆"}{s >= 3 ? "⭐" : "☆"}
+                      {s >= 1 ? "⭐" : "☆"}
+                      {s >= 2 ? "⭐" : "☆"}
+                      {s >= 3 ? "⭐" : "☆"}
                     </span>
                   ))}
                 </div>

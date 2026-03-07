@@ -12,16 +12,10 @@ import {
   ProfilePage,
 } from "@/pages/dashboard";
 import {
-  LearningMapPage,
-  InteractiveMathSpacePage,
-  LessonIntroPage,
-  ExercisePage,
-  ResultPage,
-  StudentHomePage,
-  GamePlayPage,
-  GameResultPage,
   Math2TableOfContents,
   NumberSequenceGame,
+  Math2QuizPage,
+  Math2ResultPage,
 } from "@/pages/student";
 import { AddChildPage } from "@/pages/add-child";
 import { ParentDashboardLayout } from "@/widgets/dashboard-layout";
@@ -48,16 +42,10 @@ export function RouterProvider() {
 
       {/* Student Portal */}
       <Route path="/student" element={<StudentLayout />}>
-        <Route index element={<StudentHomePage />} />
-        <Route path="math2" element={<Math2TableOfContents />} />
-        <Route path="map" element={<LearningMapPage />} />
-        <Route path="lesson" element={<InteractiveMathSpacePage />} />
-        <Route path="lesson/:id" element={<LessonIntroPage />} />
-        <Route path="exercise/:id" element={<ExercisePage />} />
-        <Route path="result/:id" element={<ResultPage />} />
-        <Route path="game/:id" element={<GamePlayPage />} />
-        <Route path="game-result/:id" element={<GameResultPage />} />
+        <Route index element={<Math2TableOfContents />} />
         <Route path="game/number-sequence" element={<NumberSequenceGame />} />
+        <Route path="quiz/math2-b2" element={<Math2QuizPage />} />
+        <Route path="result/math2-b2" element={<Math2ResultPage />} />
       </Route>
     </Routes>
   );

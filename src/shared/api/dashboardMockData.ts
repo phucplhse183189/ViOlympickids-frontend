@@ -669,7 +669,11 @@ export function updateChildPlan(
   const profiles = loadChildProfiles();
   const updated = profiles.map((p) =>
     p.id === childId
-      ? { ...p, plan, planDaysLeft: daysLeft ?? (plan === "FREE" ? undefined : 30) }
+      ? {
+          ...p,
+          plan,
+          planDaysLeft: daysLeft ?? (plan === "FREE" ? undefined : 30),
+        }
       : p,
   );
   localStorage.setItem(CHILD_PROFILES_STORAGE_KEY, JSON.stringify(updated));

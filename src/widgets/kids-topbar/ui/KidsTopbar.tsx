@@ -1,13 +1,24 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, Map, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   CHILD_PROFILES_STORAGE_KEY,
   ACTIVE_CHILD_ID_KEY,
+  type PlanType,
 } from "@/shared/api/dashboardMockData";
-import { getTotalXP } from "@/shared/api/studentMockData";
+import { getActiveChildPlan, PLAN_LABELS } from "@/shared/api/math2Data";
 import { useAuth } from "@/shared/lib/auth";
 import { ParentGate } from "@/shared/ui/ParentGate";
+
+/** Read total XP from localStorage */
+function getTotalXP(): number {
+  try {
+    const raw = localStorage.getItem("violympic_total_xp");
+    return raw ? Number(raw) : 0;
+  } catch {
+    return 0;
+  }
+}
 
 interface ChildProfile {
   id: string;
@@ -58,6 +69,7 @@ export function KidsTopbar({ backTo = "/student" }: KidsTopbarProps) {
   const { setActiveRole } = useAuth();
   const [profile, setProfile] = useState(() => getActiveProfile());
   const [xp, setXp] = useState(() => getTotalXP());
+  const [plan, setPlan] = useState<PlanType>(() => getActiveChildPlan());
   const [showPinGate, setShowPinGate] = useState(false);
 
   // Hide the back button when already on the map page
@@ -67,6 +79,7 @@ export function KidsTopbar({ backTo = "/student" }: KidsTopbarProps) {
     const refresh = () => {
       setProfile(getActiveProfile());
       setXp(getTotalXP());
+      setPlan(getActiveChildPlan());
     };
     refresh();
     window.addEventListener("focus", refresh);
@@ -122,6 +135,27 @@ export function KidsTopbar({ backTo = "/student" }: KidsTopbarProps) {
                 {xp}
               </span>
             </div>
+
+            {/* Plan badge */}
+            {(() => {
+              const pInfo = PLAN_LABELS[plan];
+              const badgeColors =
+                plan === "VIP"
+                  ? "from-amber-400 to-orange-500"
+                  : plan === "PRO"
+                    ? "from-blue-400 to-indigo-500"
+                    : "from-gray-400 to-gray-500";
+              return (
+                <div
+                  className={`flex items-center gap-1 bg-gradient-to-r ${badgeColors} rounded-2xl px-3 py-1.5 shadow-sm select-none`}
+                >
+                  <span className="text-sm leading-none">{pInfo.icon}</span>
+                  <span className="text-white font-extrabold text-xs leading-none">
+                    {pInfo.label}
+                  </span>
+                </div>
+              );
+            })()}
 
             {/* Avatar card */}
             <div className="relative flex items-center gap-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/40 rounded-2xl pl-1.5 pr-3.5 py-1.5 select-none transition-all cursor-default">

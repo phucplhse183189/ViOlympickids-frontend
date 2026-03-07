@@ -1,10 +1,4 @@
-export { LearningMapPage } from "./ui/LearningMapPage";
-export { InteractiveMathSpacePage } from "./ui/InteractiveMathSpace";
-export { LessonIntroPage } from "./ui/LessonIntroPage";
-export { ExercisePage } from "./ui/ExercisePage";
-export { ResultPage } from "./ui/ResultPage";
-export { StudentHomePage } from "./ui/StudentHomePage";
-export { GamePlayPage } from "./ui/GamePlayPage";
-export { GameResultPage } from "./ui/GameResultPage";
 export { Math2TableOfContents } from "./ui/Math2TableOfContents";
 export { NumberSequenceGame } from "./ui/NumberSequenceGame";
+export { Math2QuizPage } from "./ui/Math2QuizPage";
+export { Math2ResultPage } from "./ui/Math2ResultPage";
