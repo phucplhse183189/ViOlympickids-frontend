@@ -16,6 +16,7 @@ import {
   NumberSequenceGame,
   Math2QuizPage,
   Math2ResultPage,
+  Math2Quiz3DPage,
 } from "@/pages/student";
 import { AddChildPage } from "@/pages/add-child";
 import { ParentDashboardLayout } from "@/widgets/dashboard-layout";
@@ -44,6 +45,7 @@ export function RouterProvider() {
       <Route path="/student" element={<StudentLayout />}>
         <Route index element={<Math2TableOfContents />} />
         <Route path="game/number-sequence" element={<NumberSequenceGame />} />
+        <Route path="game/math2-quiz-3d" element={<Math2Quiz3DPage />} />
         <Route path="quiz/math2-b2" element={<Math2QuizPage />} />
         <Route path="result/math2-b2" element={<Math2ResultPage />} />
       </Route>

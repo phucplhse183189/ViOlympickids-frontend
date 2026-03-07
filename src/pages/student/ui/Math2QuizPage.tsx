@@ -1,3 +1,12 @@
+// AI voice function
+function speak(text: string) {
+  if (window.speechSynthesis) {
+    const utter = new window.SpeechSynthesisUtterance(text);
+    utter.lang = "vi-VN";
+    utter.rate = 1;
+    window.speechSynthesis.speak(utter);
+  }
+}
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { X } from "lucide-react";
@@ -168,6 +177,8 @@ export function Math2QuizPage() {
     setAnswerState("idle");
     setShowConfetti(false);
     setShowExplanation(false);
+    // Speak question when moving to new question
+    speak(questions[currentIdx].question);
   }, [currentIdx]);
 
   const q = questions[currentIdx];
@@ -177,6 +188,9 @@ export function Math2QuizPage() {
     if (answerState !== "idle" || animating) return;
     setSelectedOption(idx);
     setAnsweredCount((c) => c + 1);
+
+    // Speak answer
+    speak(q.options[idx]);
 
     const isCorrect = idx === q.correctIndex;
     setAnswerState(isCorrect ? "correct" : "wrong");
@@ -334,7 +348,10 @@ export function Math2QuizPage() {
                   </div>
 
                   <button
-                    onClick={handleNext}
+                    onClick={() => {
+                      speak(q.explanation);
+                      handleNext();
+                    }}
                     className="mt-4 w-full py-4 bg-gradient-to-r from-orange-400 to-orange-500 text-white
                                text-lg font-extrabold rounded-2xl shadow-[0_5px_0_#c2550f]
                                active:translate-y-[3px] active:shadow-none transition-all
