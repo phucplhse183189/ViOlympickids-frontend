@@ -237,7 +237,13 @@ function AppleGardenMap({
   const [placed, setPlaced] = useState<Record<number, number | null>>({});
   const [remaining, setRemaining] = useState<number[]>([]);
   const [dragging, setDragging] = useState<number | null>(null);
+<<<<<<< Updated upstream
   const [robotMsg, setRobotMsg] = useState("Kéo quả táo vào ô trống trên tia số nhé! 🍎");
+=======
+  const [robotMsg, setRobotMsg] = useState(
+    "Hãy đặt quả táo vào đúng số! 🍎",
+  );
+>>>>>>> Stashed changes
   const [attempts, setAttempts] = useState(0);
   const [shake, setShake] = useState<number | null>(null);
   const [touchDragValue, setTouchDragValue] = useState<number | null>(null);
@@ -334,6 +340,7 @@ function AppleGardenMap({
   }, [placed, puzzle.missingIndices, attempts, onComplete]);
 
   return (
+<<<<<<< Updated upstream
     <div className="space-y-6">
       <RobotCharacter message={robotMsg} mood="happy" size="sm" />
 
@@ -400,6 +407,145 @@ function AppleGardenMap({
       <div className="text-center">
         <p className="text-red-600 font-extrabold text-sm mb-3">🍎 Kéo táo vào đúng vị trí:</p>
         <div className="flex justify-center gap-3 flex-wrap">
+=======
+    <div
+      className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_8px_40px_rgba(34,94,34,0.25)]"
+      style={{
+        backgroundImage: "url('/NenVuonTao.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        aspectRatio: "16 / 9",
+        minHeight: "360px",
+      }}
+    >
+      {/* ── Wooden sign title — top center ── */}
+      <div className="absolute top-2 sm:top-3 left-1/2 -translate-x-1/2 z-20">
+        <div className="relative">
+          <div
+            className="px-5 sm:px-8 py-1.5 sm:py-2.5 rounded-lg text-center
+                       shadow-[0_4px_16px_rgba(120,80,20,0.35),inset_0_1px_0_rgba(255,255,255,0.3)]
+                       border-2 border-amber-900/40"
+            style={{
+              background: "linear-gradient(180deg, #f0deb4 0%, #d4b87a 30%, #c9a96e 60%, #b8944f 100%)",
+            }}
+          >
+            <div className="absolute inset-0 rounded-lg opacity-10"
+                 style={{ backgroundImage: "repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(120,80,20,0.15) 8px, rgba(120,80,20,0.15) 9px)" }} />
+            <div className="flex items-center gap-2">
+              <span className="text-xl sm:text-2xl drop-shadow-sm">🍎</span>
+              <h2
+                className="text-base sm:text-xl md:text-2xl font-black tracking-wider text-amber-900 relative z-10 whitespace-nowrap"
+                style={{
+                  textShadow: "0 1px 0 rgba(255,255,255,0.5), 0 2px 4px rgba(120,80,20,0.15)",
+                  fontFamily: "'Baloo 2', 'Nunito', sans-serif",
+                }}
+              >
+                TIA SỐ TRONG VƯỜN TÁO
+              </h2>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Robot — large, left side, inside the scene ── */}
+      <div className="absolute left-2 sm:left-4 bottom-[30%] sm:bottom-[25%] z-20"
+           style={{ width: "clamp(100px, 22vw, 200px)" }}>
+        <div className="robot-idle">
+          <video
+            className="w-full h-auto object-cover rounded-xl drop-shadow-[0_6px_20px_rgba(0,0,0,0.3)]"
+            src="/videos/VideoRobotHoatDong.mp4"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            controls={false}
+            disablePictureInPicture
+            controlsList="nodownload noplaybackrate noremoteplayback nofullscreen"
+            style={{ background: "transparent" }}
+          />
+        </div>
+      </div>
+
+      {/* ── Speech bubble — above/right of robot ── */}
+      <div className="absolute left-[100px] sm:left-[160px] top-[50px] sm:top-[55px] z-20 animate-fade-in-up"
+           style={{ left: "clamp(90px, 18vw, 180px)", top: "clamp(40px, 10%, 70px)" }}>
+        <div className="relative bg-white/95 backdrop-blur-sm rounded-[20px] shadow-xl
+                        px-4 sm:px-5 py-3 sm:py-4 max-w-[180px] sm:max-w-[220px]
+                        border border-white/80">
+          {/* Tail pointing down-left toward robot */}
+          <div className="absolute -bottom-2 left-6 w-5 h-5 bg-white/95 rotate-45 rounded-sm" />
+          <p className="text-sm sm:text-lg font-extrabold text-gray-700 leading-snug relative z-10 text-center">
+            {robotMsg}
+          </p>
+        </div>
+      </div>
+
+      {/* ── Number line — centered horizontally in middle of scene ── */}
+      <div className="absolute left-[28%] sm:left-[30%] right-4 sm:right-8 z-10"
+           style={{ top: "52%" }}>
+        <div className="relative flex items-center w-full">
+          {/* Thick brown line */}
+          <div className="absolute left-0 right-8 top-1/2 -translate-y-1/2 h-[5px] sm:h-[7px]
+                          bg-gradient-to-b from-amber-600 via-amber-700 to-amber-800
+                          rounded-full shadow-[0_2px_4px_rgba(120,80,20,0.5)]" />
+          {/* Arrow */}
+          <div className="absolute right-0 top-1/2 -translate-y-1/2">
+            <svg width="28" height="24" viewBox="0 0 28 24" fill="none">
+              <path d="M0 12L24 12M24 12L14 3M24 12L14 21" stroke="#92400e" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+
+          <div className="flex items-center justify-between w-full pr-10 relative">
+            {puzzle.numberLine.map((num, idx) => {
+              const isMissing = puzzle.missingIndices.includes(idx);
+              const placedValue = placed[idx];
+
+              return (
+                <div
+                  key={`nl-${idx}`}
+                  ref={(el) => {
+                    if (el && isMissing && placedValue === null) {
+                      dropZoneRefs.current.set(idx, el);
+                    } else {
+                      dropZoneRefs.current.delete(idx);
+                    }
+                  }}
+                  className={`flex flex-col items-center transition-all duration-200 ${shake === idx ? "animate-shake" : ""}`}
+                  onDragOver={(e: DragEvent) => {
+                    if (isMissing && placedValue === null) e.preventDefault();
+                  }}
+                  onDrop={() => {
+                    if (isMissing && placedValue === null) handleDrop(idx);
+                  }}
+                >
+                  <div
+                    className={`
+                      w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center
+                      font-black text-lg sm:text-xl md:text-2xl transition-all duration-300 relative z-10
+                      ${
+                        isMissing && placedValue === null
+                          ? "bg-transparent"
+                          : isMissing && placedValue !== null
+                            ? "bg-gradient-to-b from-emerald-400 to-emerald-600 text-white shadow-[0_4px_12px_rgba(16,185,129,0.5)] scale-110 border-2 border-emerald-300 animate-kids-bounce-in"
+                            : "bg-gradient-to-b from-[#faf5e4] to-[#e8dbb8] text-stone-800 border-2 border-amber-700/40 shadow-[0_3px_8px_rgba(120,80,20,0.2)]"
+                      }
+                    `}
+                  >
+                    {isMissing ? (placedValue !== null ? placedValue : "") : num}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Apples — below number line, center ── */}
+      <div className="absolute left-1/2 -translate-x-1/2 z-10"
+           style={{ top: "66%" }}>
+        <div className="flex justify-center gap-6 sm:gap-10">
+>>>>>>> Stashed changes
           {remaining.map((num, i) => (
             <div
               key={`apple-${num}-${i}`}
@@ -409,19 +555,57 @@ function AppleGardenMap({
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
               className={`
+<<<<<<< Updated upstream
                 w-14 h-14 sm:w-16 sm:h-16 rounded-full cursor-grab active:cursor-grabbing
                 bg-gradient-to-b from-red-400 to-red-500 text-white font-extrabold text-xl
                 flex items-center justify-center shadow-lg select-none
                 hover:scale-110 active:scale-95 transition-transform border-3 border-red-300
                 ${dragging === num ? "opacity-50 scale-90" : ""}
+=======
+                relative cursor-grab active:cursor-grabbing select-none
+                hover:scale-110 active:scale-95 transition-all duration-200
+                ${dragging === num ? "opacity-40 scale-90" : "apple-hover-float"}
+>>>>>>> Stashed changes
               `}
+              style={{ width: "clamp(65px, 14vw, 100px)" }}
             >
+<<<<<<< Updated upstream
               {num}
+=======
+              <svg viewBox="0 0 100 110" className="w-full h-auto drop-shadow-[0_8px_12px_rgba(0,0,0,0.3)]">
+                <path d="M50 8 Q52 0 54 8 L52 22 Q50 24 48 22 Z" fill="#5D4037" />
+                <ellipse cx="62" cy="12" rx="14" ry="7" transform="rotate(25,62,12)" fill="#4CAF50" />
+                <path d="M56 12 Q62 8 68 12" stroke="#388E3C" strokeWidth="1" fill="none" />
+                <defs>
+                  <radialGradient id={`appleGrad-${num}-${i}`} cx="40%" cy="35%" r="55%">
+                    <stop offset="0%" stopColor="#FF6B6B" />
+                    <stop offset="30%" stopColor="#E53935" />
+                    <stop offset="70%" stopColor="#C62828" />
+                    <stop offset="100%" stopColor="#8B1A1A" />
+                  </radialGradient>
+                  <radialGradient id={`appleShine-${num}-${i}`} cx="30%" cy="25%" r="25%">
+                    <stop offset="0%" stopColor="rgba(255,255,255,0.6)" />
+                    <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+                  </radialGradient>
+                </defs>
+                <path
+                  d="M50 20 C30 20 10 35 10 60 C10 85 30 105 50 105 C70 105 90 85 90 60 C90 35 70 20 50 20 Z"
+                  fill={`url(#appleGrad-${num}-${i})`}
+                  stroke="#B71C1C" strokeWidth="1.5"
+                />
+                <ellipse cx="36" cy="42" rx="12" ry="16" fill={`url(#appleShine-${num}-${i})`} />
+                <text x="50" y="72" textAnchor="middle"
+                      style={{ fontSize: "36px", fill: "white", fontWeight: 900, filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.4))" }}>
+                  {num}
+                </text>
+              </svg>
+>>>>>>> Stashed changes
             </div>
           ))}
         </div>
       </div>
 
+<<<<<<< Updated upstream
       {/* Touch drag ghost */}
       {touchDragValue !== null && touchPos && (
         <div
@@ -429,8 +613,50 @@ function AppleGardenMap({
                      bg-gradient-to-b from-red-400 to-red-500 text-white font-extrabold text-xl
                      flex items-center justify-center shadow-2xl border-3 border-red-300 opacity-90"
           style={{ left: touchPos.x - 28, top: touchPos.y - 28 }}
+=======
+      {/* ── KIỂM TRA button — bottom center, overlapping edge ── */}
+      <div className="absolute bottom-2 sm:bottom-3 left-1/2 -translate-x-1/2 z-20 w-[70%] max-w-sm">
+        <button
+          type="button"
+          className="w-full py-3 sm:py-4 rounded-full font-black text-xl sm:text-2xl uppercase tracking-wider
+                     bg-gradient-to-b from-white via-gray-50 to-gray-200
+                     text-gray-800 border-[3px] border-gray-300
+                     shadow-[0_6px_0_#9ca3af,0_8px_20px_rgba(0,0,0,0.2)]
+                     active:translate-y-[3px] active:shadow-[0_2px_0_#9ca3af]
+                     hover:from-white hover:to-gray-100
+                     transition-all duration-150"
         >
-          {touchDragValue}
+          KIỂM TRA
+        </button>
+      </div>
+
+      {/* Touch drag ghost */}
+      {touchDragValue !== null && touchPos && (
+        <div
+          className="fixed z-50 pointer-events-none opacity-90"
+          style={{ left: touchPos.x - 36, top: touchPos.y - 40, width: 72, height: 80 }}
+>>>>>>> Stashed changes
+        >
+          <svg viewBox="0 0 100 110" className="w-full h-full drop-shadow-[0_8px_16px_rgba(0,0,0,0.35)]">
+            <path d="M50 8 Q52 0 54 8 L52 22 Q50 24 48 22 Z" fill="#5D4037" />
+            <ellipse cx="62" cy="12" rx="14" ry="7" transform="rotate(25,62,12)" fill="#4CAF50" />
+            <defs>
+              <radialGradient id="ghostAppleGrad" cx="40%" cy="35%" r="55%">
+                <stop offset="0%" stopColor="#FF6B6B" />
+                <stop offset="30%" stopColor="#E53935" />
+                <stop offset="70%" stopColor="#C62828" />
+                <stop offset="100%" stopColor="#8B1A1A" />
+              </radialGradient>
+            </defs>
+            <path
+              d="M50 20 C30 20 10 35 10 60 C10 85 30 105 50 105 C70 105 90 85 90 60 C90 35 70 20 50 20 Z"
+              fill="url(#ghostAppleGrad)" stroke="#B71C1C" strokeWidth="1.5"
+            />
+            <text x="50" y="72" textAnchor="middle"
+                  style={{ fontSize: "36px", fill: "white", fontWeight: 900, filter: "drop-shadow(0 2px 3px rgba(0,0,0,0.4))" }}>
+              {touchDragValue}
+            </text>
+          </svg>
         </div>
       )}
     </div>
