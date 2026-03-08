@@ -138,8 +138,8 @@ export const translations = {
     },
     cta: {
       title: "Sẵn sàng giúp con yêu Toán học?",
-      subtitle: "Tham gia cùng 5.000+ phụ huynh khác ngay hôm nay",
-      emailPlaceholder: "Nhập email của bạn",
+      subtitle: "Tham gia cùng các phụ huynh khác ngay hôm nay",
+      emailPlaceholder: "Nhập email/số điện thoại của bạn",
       button: "Nhận ưu đãi",
       footnote: "Miễn phí 7 ngày • Không cần thẻ tín dụng",
     },
