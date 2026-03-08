@@ -31,7 +31,6 @@ import {
   ROBOT_HINTS,
   ROBOT_GREETINGS,
   getRandomItem,
-  generateApplePuzzle,
   generateBridgePuzzle,
   generateTrainPuzzle,
   generateBalloonPuzzle,
@@ -241,7 +240,10 @@ function AppleGardenMap({
   onComplete: (stars: number) => void;
   difficulty: number;
 }>) {
-  const [puzzle, setPuzzle] = useState(() => generateApplePuzzle(difficulty));
+  const fixedNumberLine = [1, 2, null, 4, null, 6, null] as const;
+  const fixedMissingIndices = [2, 4, 6] as const;
+  const fixedAnswers: Record<number, number> = { 2: 3, 4: 5, 6: 7 };
+
   const [placed, setPlaced] = useState<Record<number, number | null>>({});
   const [remaining, setRemaining] = useState<number[]>([]);
   const [dragging, setDragging] = useState<number | null>(null);
@@ -258,12 +260,8 @@ function AppleGardenMap({
   const completedRef = useRef(false);
 
   useEffect(() => {
-    const p = generateApplePuzzle(difficulty);
-    setPuzzle(p);
-    setRemaining([...p.appleNumbers]);
-    const init: Record<number, number | null> = {};
-    p.missingIndices.forEach((i) => (init[i] = null));
-    setPlaced(init);
+    setRemaining([3, 5, 7]);
+    setPlaced({ 2: null, 4: null, 6: null });
     setAttempts(0);
     completedRef.current = false;
   }, [difficulty]);
@@ -272,7 +270,7 @@ function AppleGardenMap({
 
   const tryDrop = useCallback(
     (targetIdx: number, value: number) => {
-      const correct = puzzle.numberLine[targetIdx];
+      const correct = fixedAnswers[targetIdx];
       if (value === correct) {
         setPlaced((p) => ({ ...p, [targetIdx]: value }));
         setRemaining((r) => {
@@ -289,7 +287,7 @@ function AppleGardenMap({
         setTimeout(() => setShake(null), 500);
       }
     },
-    [puzzle.numberLine, sound],
+    [sound],
   );
 
   const handleDrop = (targetIdx: number) => {
@@ -338,94 +336,84 @@ function AppleGardenMap({
   // Check victory
   useEffect(() => {
     if (completedRef.current) return;
-    if (puzzle.missingIndices.length === 0) return;
-    const allFilled = puzzle.missingIndices.every(
-      (i) => typeof placed[i] === "number",
-    );
+    if (fixedMissingIndices.length === 0) return;
+    const allFilled = fixedMissingIndices.every((i) => typeof placed[i] === "number");
     if (allFilled) {
       completedRef.current = true;
       const stars = attempts === 0 ? 3 : attempts <= 2 ? 2 : 1;
       setTimeout(() => onComplete(stars), 600);
     }
-  }, [placed, puzzle.missingIndices, attempts, onComplete]);
+  }, [placed, attempts, onComplete]);
 
   return (
     <div
-      className="relative space-y-4 rounded-3xl border-2 border-green-700/40 p-3 sm:p-5 shadow-[0_12px_30px_rgba(34,94,34,0.18)] overflow-hidden"
+      className="relative rounded-[30px] overflow-hidden border-2 border-emerald-900/35 shadow-[0_16px_35px_rgba(21,84,52,0.24)]"
       style={{
         backgroundImage: "url('/NenVuonTao.jpg')",
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
     >
-      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/10 via-green-100/20 to-green-50/35" />
+      <div className="absolute inset-0 bg-gradient-to-b from-white/5 via-transparent to-black/10 pointer-events-none" />
 
-      <div className="relative z-10 flex justify-center">
-        <img
-          src="/NenThanhPhanVuonTao.jpg"
-          alt="Tia số trong vườn táo"
-          className="w-full max-w-3xl rounded-xl border border-amber-300/60 shadow-md"
-        />
-      </div>
-
-      <div className="relative z-10 flex items-end gap-2">
-        <RobotCharacter message={robotMsg} mood="happy" size="sm" />
-      </div>
-
-      <div className="relative z-10 rounded-2xl border-2 border-green-700/50 bg-[#d5f0b6]/75 backdrop-blur-[1px] p-3 sm:p-4">
-        <div className="relative px-2 mb-3">
-          <div className="h-1.5 bg-amber-700 rounded-full" />
-          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-0 h-0 border-l-[14px] border-l-amber-700 border-y-[8px] border-y-transparent" />
+      <div className="relative z-10 max-w-5xl mx-auto px-4 py-5 sm:py-6 min-h-[560px] sm:min-h-[620px]">
+        <div className="absolute left-1/2 -translate-x-1/2 top-5 sm:top-6 w-[76%] max-w-[620px]">
+          <img src="/bang.png" alt="Tiêu đề" className="w-full object-contain" />
         </div>
 
-        <div className="flex items-end justify-center gap-1 sm:gap-2 overflow-x-auto pb-2">
-          {puzzle.numberLine.map((num, idx) => {
-            const isMissing = puzzle.missingIndices.includes(idx);
-            const placedValue = placed[idx];
+        <div className="absolute left-[8%] top-[34%] w-[19%] min-w-[88px] max-w-[160px]">
+          <img src="/robot%20(1).png" alt="Robot" className="w-full object-contain drop-shadow" />
+        </div>
 
-            return (
-              <div
-                key={`nl-${idx}`}
-                ref={(el) => {
-                  if (el && isMissing && placedValue === null) {
-                    dropZoneRefs.current.set(idx, el);
-                  } else {
-                    dropZoneRefs.current.delete(idx);
-                  }
-                }}
-                className={`flex flex-col items-center gap-1 transition-all ${shake === idx ? "animate-shake" : ""}`}
-                onDragOver={(e: DragEvent) => {
-                  if (isMissing && placedValue === null) e.preventDefault();
-                }}
-                onDrop={() => {
-                  if (isMissing && placedValue === null) handleDrop(idx);
-                }}
-              >
+        <div className="absolute left-1/2 -translate-x-1/2 top-[25%] w-[40%] min-w-[220px] max-w-[370px]">
+          <img src="/khungThoai.png" alt="Khung thoại" className="w-full object-contain" />
+          <p className="absolute left-[15%] right-[15%] top-[22%] bottom-[22%] flex items-center justify-center text-[13px] sm:text-[16px] font-black text-gray-800 text-center leading-tight">
+            {robotMsg}
+          </p>
+        </div>
+
+        <div className="absolute left-1/2 -translate-x-1/2 top-[56%] w-[78%]">
+          <div className="h-[7px] bg-amber-500 rounded-full shadow-[inset_0_1px_2px_rgba(0,0,0,0.25)]" />
+          <div className="absolute right-[-8px] top-1/2 -translate-y-1/2 w-0 h-0 border-l-[16px] border-l-amber-500 border-y-[10px] border-y-transparent" />
+
+          <div className="absolute left-[8%] right-[8%] -top-[22px] flex items-end justify-between">
+            {fixedNumberLine.map((num, idx) => {
+              const isMissing = fixedMissingIndices.includes(idx as 2 | 4 | 6);
+              const placedValue = placed[idx];
+              return (
                 <div
-                  className={`
-                    w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center
-                    font-black text-lg sm:text-2xl transition-all duration-300
-                    ${
-                      isMissing && placedValue === null
-                        ? "border-2 border-dashed border-amber-500 bg-amber-50 text-amber-400 animate-pulse-slow"
-                        : isMissing && placedValue !== null
-                          ? "bg-emerald-500 text-white shadow-lg scale-105 border-2 border-emerald-300"
-                          : "bg-[#f1e3b8] text-stone-700 border-2 border-amber-700/60 shadow-sm"
-                    }
-                  `}
+                  key={`nl-${idx}`}
+                  ref={(el) => {
+                    if (el && isMissing && placedValue === null) dropZoneRefs.current.set(idx, el);
+                    else dropZoneRefs.current.delete(idx);
+                  }}
+                  className={`flex flex-col items-center ${shake === idx ? "animate-shake" : ""}`}
+                  onDragOver={(e: DragEvent) => {
+                    if (isMissing && placedValue === null) e.preventDefault();
+                  }}
+                  onDrop={() => {
+                    if (isMissing && placedValue === null) handleDrop(idx);
+                  }}
                 >
-                  {isMissing ? (placedValue !== null ? placedValue : "?") : num}
+                  <div
+                    className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center font-black text-xl sm:text-2xl ${
+                      isMissing && placedValue === null
+                        ? "border-2 border-dashed border-amber-500 bg-amber-50/95 text-amber-500"
+                        : isMissing && placedValue !== null
+                          ? "bg-emerald-500 text-white shadow-lg border-2 border-emerald-300"
+                          : "bg-[#f1e9c9]/95 text-stone-700 border-2 border-amber-700/55"
+                    }`}
+                  >
+                    {isMissing ? (placedValue !== null ? placedValue : "?") : (num ?? "")}
+                  </div>
+                  <div className="w-1 h-2 bg-amber-800/70 rounded-full mt-1" />
                 </div>
-                <div className="w-1 h-2 bg-amber-700 rounded-full" />
-                <div className="w-3 h-1 bg-amber-700 rounded-full" />
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
-      </div>
 
-      <div className="relative z-10 text-center pt-1">
-        <div className="flex justify-center gap-3 flex-wrap">
+        <div className="absolute left-1/2 -translate-x-1/2 bottom-[21%] flex items-center justify-center gap-6 sm:gap-8 min-h-[86px]">
           {remaining.map((num, i) => (
             <div
               key={`apple-${num}-${i}`}
@@ -437,40 +425,26 @@ function AppleGardenMap({
               onTouchStart={(e) => handleTouchStart(num, e)}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
-              className={`
-                relative w-16 h-16 sm:w-20 sm:h-20 rounded-full cursor-grab active:cursor-grabbing
-                bg-gradient-to-b from-red-400 via-red-500 to-red-600 text-white font-black text-2xl sm:text-3xl
-                flex items-center justify-center shadow-[0_6px_0_#7f1d1d] select-none
-                hover:scale-110 active:scale-95 transition-transform border-2 border-red-300
-                ${dragging === num ? "opacity-50 scale-90" : ""}
-              `}
+              className={`cursor-grab active:cursor-grabbing select-none hover:scale-105 active:scale-95 transition-transform ${dragging === num ? "opacity-50 scale-90" : ""}`}
             >
-              <span className="absolute -top-1 left-1/2 -translate-x-1/2 text-lg">🍃</span>
-              {num}
+              <img
+                src={num === 3 ? "/tao3.png" : num === 5 ? "/tao5.png" : "/tao7.png"}
+                alt={`Táo số ${num}`}
+                className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow"
+              />
             </div>
           ))}
         </div>
-      </div>
 
-      <div className="relative z-10 flex justify-center pt-1">
-        <button
-          type="button"
-          className="px-10 sm:px-16 py-2.5 rounded-full text-cyan-900 font-black text-xl
-                     bg-gradient-to-b from-cyan-100 to-cyan-300 border-2 border-cyan-500
-                     shadow-[0_4px_0_#0e7490] active:translate-y-[2px]"
-        >
-          Kiểm tra
-        </button>
       </div>
 
       {touchDragValue !== null && touchPos && (
-        <div
-          className="fixed z-50 pointer-events-none w-16 h-16 rounded-full
-                     bg-gradient-to-b from-red-400 to-red-600 text-white font-black text-2xl
-                     flex items-center justify-center shadow-2xl border-2 border-red-300 opacity-90"
-          style={{ left: touchPos.x - 32, top: touchPos.y - 32 }}
-        >
-          {touchDragValue}
+        <div className="fixed z-50 pointer-events-none" style={{ left: touchPos.x - 32, top: touchPos.y - 32 }}>
+          <img
+            src={touchDragValue === 3 ? "/tao3.png" : touchDragValue === 5 ? "/tao5.png" : "/tao7.png"}
+            alt="Táo đang kéo"
+            className="w-16 h-16 object-contain drop-shadow-2xl opacity-95"
+          />
         </div>
       )}
     </div>
