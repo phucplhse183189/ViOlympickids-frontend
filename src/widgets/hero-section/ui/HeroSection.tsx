@@ -92,6 +92,9 @@ export function HeroSection() {
             <video
               className="absolute inset-0 w-full h-full object-cover"
               src="/videos/intro-web.mp4"
+              autoPlay
+              muted
+              loop
               controls
               preload="metadata"
               playsInline
