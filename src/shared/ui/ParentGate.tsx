@@ -60,11 +60,17 @@ export function ParentGate({ onSuccess, onClose, onInteract }: ParentGateProps) 
   }
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
+      onMouseDown={() => onInteract?.()}
+      onTouchStart={() => onInteract?.()}
+    >
       <div
         className={`bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm relative ${
           shake ? "animate-shake" : ""
         }`}
+        onMouseDown={() => onInteract?.()}
+        onTouchStart={() => onInteract?.()}
       >
         {/* Close */}
         <button

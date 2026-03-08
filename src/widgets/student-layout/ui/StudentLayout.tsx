@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { KidsTopbar } from "@/widgets/kids-topbar";
 import { ParentGate } from "@/shared/ui/ParentGate";
 
 function isProtectedStudentRoute(pathname: string) {
-  return pathname.startsWith("/student/game/") || pathname.startsWith("/student/quiz/");
+  return (
+    pathname.startsWith("/student/game/") ||
+    pathname.startsWith("/student/quiz/")
+  );
 }
 
 export function StudentLayout() {
@@ -13,6 +16,8 @@ export function StudentLayout() {
 
   const [showExitGate, setShowExitGate] = useState(false);
   const [allowExitToMap, setAllowExitToMap] = useState(false);
+  const [pendingReenterFullscreen, setPendingReenterFullscreen] =
+    useState(false);
 
   const protectedRoute = useMemo(
     () => isProtectedStudentRoute(location.pathname),
@@ -21,7 +26,23 @@ export function StudentLayout() {
 
   useEffect(() => {
     setAllowExitToMap(false);
+    setPendingReenterFullscreen(false);
   }, [location.pathname]);
+
+  const ensureFullscreen = useCallback(async () => {
+    if (!protectedRoute || allowExitToMap) return;
+
+    if (!document.fullscreenElement) {
+      try {
+        await document.documentElement.requestFullscreen();
+        setPendingReenterFullscreen(false);
+      } catch {
+        setPendingReenterFullscreen(true);
+      }
+    } else {
+      setPendingReenterFullscreen(false);
+    }
+  }, [protectedRoute, allowExitToMap]);
 
   useEffect(() => {
     if (!protectedRoute) {
@@ -29,17 +50,7 @@ export function StudentLayout() {
       return;
     }
 
-    const requestFull = async () => {
-      if (!document.fullscreenElement) {
-        try {
-          await document.documentElement.requestFullscreen();
-        } catch {
-          // Browser may block fullscreen if not triggered by user gesture.
-        }
-      }
-    };
-
-    void requestFull();
+    void ensureFullscreen();
 
     const handleFullscreenChange = () => {
       const inProtectedPath = isProtectedStudentRoute(window.location.pathname);
@@ -47,25 +58,16 @@ export function StudentLayout() {
 
       if (!document.fullscreenElement && !allowExitToMap) {
         setShowExitGate(true);
+        setPendingReenterFullscreen(true);
       }
     };
 
     document.addEventListener("fullscreenchange", handleFullscreenChange);
+
     return () => {
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
     };
-  }, [protectedRoute, allowExitToMap]);
-
-  const ensureFullscreen = async () => {
-    if (!protectedRoute) return;
-    if (!document.fullscreenElement) {
-      try {
-        await document.documentElement.requestFullscreen();
-      } catch {
-        // ignore browser denial if not from user gesture
-      }
-    }
-  };
+  }, [protectedRoute, allowExitToMap, ensureFullscreen]);
 
   const handleExitSuccess = async () => {
     setAllowExitToMap(true);
@@ -86,6 +88,37 @@ export function StudentLayout() {
     setShowExitGate(false);
     await ensureFullscreen();
   };
+
+  useEffect(() => {
+    if (
+      !showExitGate ||
+      !pendingReenterFullscreen ||
+      !protectedRoute ||
+      allowExitToMap
+    ) {
+      return;
+    }
+
+    const onUserGesture = () => {
+      void ensureFullscreen();
+    };
+
+    window.addEventListener("pointerdown", onUserGesture, { passive: true });
+    window.addEventListener("keydown", onUserGesture);
+    window.addEventListener("touchstart", onUserGesture, { passive: true });
+
+    return () => {
+      window.removeEventListener("pointerdown", onUserGesture);
+      window.removeEventListener("keydown", onUserGesture);
+      window.removeEventListener("touchstart", onUserGesture);
+    };
+  }, [
+    showExitGate,
+    pendingReenterFullscreen,
+    protectedRoute,
+    allowExitToMap,
+    ensureFullscreen,
+  ]);
 
   return (
     <div className="min-h-screen bg-sky-100 font-kids overflow-x-hidden">

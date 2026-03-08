@@ -66,39 +66,24 @@ function RobotCharacter({
   mood: "happy" | "excited" | "thinking" | "sad";
   size?: "sm" | "md" | "lg";
 }>) {
-  const sizeMap = { sm: "w-14 h-14", md: "w-20 h-20", lg: "w-28 h-28" };
-  const eyes = mood === "excited" ? "★" : mood === "sad" ? "•" : "◕";
-  const mouth =
-    mood === "excited"
-      ? "▽"
-      : mood === "sad"
-        ? "△"
-        : mood === "thinking"
-          ? "○"
-          : "◡";
+  const sizeMap = { sm: "w-16 h-16", md: "w-24 h-24", lg: "w-32 h-32" };
 
   return (
     <div className="flex items-end gap-2">
       {/* Robot body */}
       <div className={`${sizeMap[size]} relative robot-idle flex-shrink-0`}>
-        {/* Antenna */}
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 flex flex-col items-center">
-          <div className="w-3 h-3 rounded-full bg-red-400 animate-pulse" />
-          <div className="w-1 h-3 bg-gray-400" />
-        </div>
-        {/* Head */}
-        <div className="w-full h-full bg-gradient-to-b from-sky-400 to-sky-500 rounded-2xl border-4 border-sky-300 flex flex-col items-center justify-center shadow-lg relative overflow-hidden">
-          {/* Eyes */}
-          <div className="flex gap-2 text-white font-bold mb-1">
-            <span className="text-lg">{eyes}</span>
-            <span className="text-lg">{eyes}</span>
-          </div>
-          {/* Mouth */}
-          <span className="text-white text-sm">{mouth}</span>
-          {/* Cheeks */}
-          <div className="absolute bottom-3 left-2 w-3 h-2 rounded-full bg-pink-300/60" />
-          <div className="absolute bottom-3 right-2 w-3 h-2 rounded-full bg-pink-300/60" />
-        </div>
+        <video
+          className="w-full h-full object-cover rounded-2xl border-2 border-sky-300 shadow-lg bg-sky-100"
+          src="/videos/VideoRobotHoatDong.mp4"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          controls={false}
+          disablePictureInPicture
+          controlsList="nodownload noplaybackrate noremoteplayback nofullscreen"
+        />
       </div>
 
       {/* Speech bubble */}
@@ -357,19 +342,34 @@ function AppleGardenMap({
   }, [placed, puzzle.missingIndices, attempts, onComplete]);
 
   return (
-    <div className="space-y-6">
-      <RobotCharacter message={robotMsg} mood="happy" size="sm" />
+    <div
+      className="relative space-y-4 rounded-3xl border-2 border-green-700/40 p-3 sm:p-5 shadow-[0_12px_30px_rgba(34,94,34,0.18)] overflow-hidden"
+      style={{
+        backgroundImage: "url('/NenVuonTao.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
+    >
+      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/10 via-green-100/20 to-green-50/35" />
 
-      {/* Number line – tree garden */}
-      <div className="bg-gradient-to-b from-green-100 to-green-200 rounded-3xl p-4 sm:p-6 shadow-inner">
-        <p className="text-center text-green-700 font-extrabold text-sm mb-4">
-          🌳 Tia số trong vườn táo
-        </p>
-        {/* Arrow line */}
-        <div className="relative px-2 mb-2">
-          <div className="h-1 bg-green-400 rounded-full" />
-          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-0 h-0 border-l-8 border-l-green-400 border-y-4 border-y-transparent" />
+      <div className="relative z-10 flex justify-center">
+        <img
+          src="/NenThanhPhanVuonTao.jpg"
+          alt="Tia số trong vườn táo"
+          className="w-full max-w-3xl rounded-xl border border-amber-300/60 shadow-md"
+        />
+      </div>
+
+      <div className="relative z-10 flex items-end gap-2">
+        <RobotCharacter message={robotMsg} mood="happy" size="sm" />
+      </div>
+
+      <div className="relative z-10 rounded-2xl border-2 border-green-700/50 bg-[#d5f0b6]/75 backdrop-blur-[1px] p-3 sm:p-4">
+        <div className="relative px-2 mb-3">
+          <div className="h-1.5 bg-amber-700 rounded-full" />
+          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-0 h-0 border-l-[14px] border-l-amber-700 border-y-[8px] border-y-transparent" />
         </div>
+
         <div className="flex items-end justify-center gap-1 sm:gap-2 overflow-x-auto pb-2">
           {puzzle.numberLine.map((num, idx) => {
             const isMissing = puzzle.missingIndices.includes(idx);
@@ -385,10 +385,7 @@ function AppleGardenMap({
                     dropZoneRefs.current.delete(idx);
                   }
                 }}
-                className={`
-                  flex flex-col items-center gap-1 transition-all
-                  ${shake === idx ? "animate-shake" : ""}
-                `}
+                className={`flex flex-col items-center gap-1 transition-all ${shake === idx ? "animate-shake" : ""}`}
                 onDragOver={(e: DragEvent) => {
                   if (isMissing && placedValue === null) e.preventDefault();
                 }}
@@ -398,32 +395,28 @@ function AppleGardenMap({
               >
                 <div
                   className={`
-                    w-11 h-11 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center
-                    font-extrabold text-lg sm:text-xl transition-all duration-300
+                    w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center
+                    font-black text-lg sm:text-2xl transition-all duration-300
                     ${
                       isMissing && placedValue === null
-                        ? "border-3 border-dashed border-orange-400 bg-orange-50 text-orange-300 animate-pulse-slow"
+                        ? "border-2 border-dashed border-amber-500 bg-amber-50 text-amber-400 animate-pulse-slow"
                         : isMissing && placedValue !== null
-                          ? "bg-green-400 text-white shadow-lg scale-105 border-3 border-green-300"
-                          : "bg-white text-green-700 border-2 border-green-300 shadow-sm"
+                          ? "bg-emerald-500 text-white shadow-lg scale-105 border-2 border-emerald-300"
+                          : "bg-[#f1e3b8] text-stone-700 border-2 border-amber-700/60 shadow-sm"
                     }
                   `}
                 >
                   {isMissing ? (placedValue !== null ? placedValue : "?") : num}
                 </div>
-                <div className="w-1 h-3 bg-green-400 rounded-full" />
-                <div className="w-3 h-1 bg-green-400 rounded-full" />
+                <div className="w-1 h-2 bg-amber-700 rounded-full" />
+                <div className="w-3 h-1 bg-amber-700 rounded-full" />
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* Apple numbers */}
-      <div className="text-center">
-        <p className="text-red-600 font-extrabold text-sm mb-3">
-          🍎 Kéo táo vào đúng vị trí:
-        </p>
+      <div className="relative z-10 text-center pt-1">
         <div className="flex justify-center gap-3 flex-wrap">
           {remaining.map((num, i) => (
             <div
@@ -437,26 +430,37 @@ function AppleGardenMap({
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
               className={`
-                w-14 h-14 sm:w-16 sm:h-16 rounded-full cursor-grab active:cursor-grabbing
-                bg-gradient-to-b from-red-400 to-red-500 text-white font-extrabold text-xl
-                flex items-center justify-center shadow-lg select-none
-                hover:scale-110 active:scale-95 transition-transform border-3 border-red-300
+                relative w-16 h-16 sm:w-20 sm:h-20 rounded-full cursor-grab active:cursor-grabbing
+                bg-gradient-to-b from-red-400 via-red-500 to-red-600 text-white font-black text-2xl sm:text-3xl
+                flex items-center justify-center shadow-[0_6px_0_#7f1d1d] select-none
+                hover:scale-110 active:scale-95 transition-transform border-2 border-red-300
                 ${dragging === num ? "opacity-50 scale-90" : ""}
               `}
             >
+              <span className="absolute -top-1 left-1/2 -translate-x-1/2 text-lg">🍃</span>
               {num}
             </div>
           ))}
         </div>
       </div>
 
-      {/* Touch drag ghost */}
+      <div className="relative z-10 flex justify-center pt-1">
+        <button
+          type="button"
+          className="px-10 sm:px-16 py-2.5 rounded-full text-cyan-900 font-black text-xl
+                     bg-gradient-to-b from-cyan-100 to-cyan-300 border-2 border-cyan-500
+                     shadow-[0_4px_0_#0e7490] active:translate-y-[2px]"
+        >
+          Kiểm tra
+        </button>
+      </div>
+
       {touchDragValue !== null && touchPos && (
         <div
-          className="fixed z-50 pointer-events-none w-14 h-14 rounded-full
-                     bg-gradient-to-b from-red-400 to-red-500 text-white font-extrabold text-xl
-                     flex items-center justify-center shadow-2xl border-3 border-red-300 opacity-90"
-          style={{ left: touchPos.x - 28, top: touchPos.y - 28 }}
+          className="fixed z-50 pointer-events-none w-16 h-16 rounded-full
+                     bg-gradient-to-b from-red-400 to-red-600 text-white font-black text-2xl
+                     flex items-center justify-center shadow-2xl border-2 border-red-300 opacity-90"
+          style={{ left: touchPos.x - 32, top: touchPos.y - 32 }}
         >
           {touchDragValue}
         </div>

@@ -1,9 +1,13 @@
+import { useState } from "react";
+import { Volume2, VolumeX } from "lucide-react";
 import { useLang } from "@/shared/lib/i18n";
 import { useInView } from "@/shared/lib/useInView";
 
 export function HeroSection() {
   const { t } = useLang();
   const { ref, inView } = useInView<HTMLElement>(0);
+  const [isMuted, setIsMuted] = useState(true);
+
   return (
     <section
       ref={ref}
@@ -93,12 +97,25 @@ export function HeroSection() {
               className="absolute inset-0 w-full h-full object-cover"
               src="/videos/intro-web.mp4"
               autoPlay
-              muted
+              muted={isMuted}
               loop
-              controls
+              controls={false}
               preload="metadata"
               playsInline
+              disablePictureInPicture
+              controlsList="nodownload noplaybackrate noremoteplayback nofullscreen"
+              onContextMenu={(e) => e.preventDefault()}
             />
+
+            <button
+              type="button"
+              onClick={() => setIsMuted((prev) => !prev)}
+              className="absolute bottom-4 right-4 z-10 w-11 h-11 rounded-full bg-black/55 hover:bg-black/70 text-white flex items-center justify-center backdrop-blur-sm transition"
+              aria-label={isMuted ? "Mở tiếng" : "Tắt tiếng"}
+              title={isMuted ? "Mở tiếng" : "Tắt tiếng"}
+            >
+              {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+            </button>
           </div>
         </div>
       </div>

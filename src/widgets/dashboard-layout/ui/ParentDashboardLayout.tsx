@@ -38,11 +38,19 @@ const navItems = [
 
 // ─── Sidebar ──────────────────────────────────────────────────
 function Sidebar({ onClose }: { onClose?: () => void }) {
+  const navigate = useNavigate();
+
   return (
     <aside className="flex flex-col h-full w-[260px] bg-white border-r border-gray-100 shadow-sm animate-slide-in-left">
       {/* Logo */}
       <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
-        <div className="flex items-center gap-2">
+        <button
+          onClick={() => {
+            navigate("/profile-picker");
+            onClose?.();
+          }}
+          className="flex items-center gap-2 rounded-lg hover:bg-gray-50 px-1 py-0.5 transition"
+        >
           <img
             src="/robot-head.png"
             alt="ViOlympicKids"
@@ -54,7 +62,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
           >
             ViOlympicKids
           </span>
-        </div>
+        </button>
         {onClose && (
           <button
             onClick={onClose}
