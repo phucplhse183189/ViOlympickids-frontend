@@ -67,13 +67,21 @@ function RobotCharacter({
   size?: "sm" | "md" | "lg";
 }>) {
   const sizeMap = { sm: "w-16 h-16", md: "w-24 h-24", lg: "w-32 h-32" };
+  const moodRing =
+    mood === "excited"
+      ? "ring-2 ring-amber-300"
+      : mood === "sad"
+        ? "ring-2 ring-rose-300"
+        : mood === "thinking"
+          ? "ring-2 ring-violet-300"
+          : "ring-2 ring-sky-300";
 
   return (
     <div className="flex items-end gap-2">
       {/* Robot body */}
       <div className={`${sizeMap[size]} relative robot-idle flex-shrink-0`}>
         <video
-          className="w-full h-full object-cover rounded-2xl border-2 border-sky-300 shadow-lg bg-sky-100"
+          className={`w-full h-full object-cover rounded-2xl shadow-lg bg-sky-100 ${moodRing}`}
           src="/videos/VideoRobotHoatDong.mp4"
           autoPlay
           muted
