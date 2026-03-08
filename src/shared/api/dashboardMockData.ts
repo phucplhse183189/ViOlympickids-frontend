@@ -171,11 +171,11 @@ export const MOCK_PARENT_PROFILE: ParentProfile = {
 
 const CHILD_1_DATA: ChildDashboardData = {
   stats: {
-    weeklyMinutes: 120,
+    weeklyMinutes: 100,
     weeklyMinutesPctChange: 15,
-    completedLessons: 15,
+    completedLessons: 5,
     completedLessonsLabel: "Tuần này",
-    bestSkill: "Hình học không gian",
+    bestSkill: "Phép cộng",
     overallScore: 82,
     streakDays: 7,
   },

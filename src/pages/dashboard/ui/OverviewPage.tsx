@@ -435,7 +435,13 @@ export function OverviewPage() {
         className={`relative ${chartVisible ? "animate-fade-in-up" : "opacity-0"}`}
         style={{ animationDelay: "80ms" }}
       >
-        {isLocked && <LockedOverlay childName={activeChild.name} onUpgrade={() => navigate("/dashboard/payment?plan=PRO")} />}
+        {isLocked && (
+          <LockedOverlay
+            childName={activeChild.name}
+            title="Tính năng PRO"
+            onUpgrade={() => navigate("/dashboard/payment?plan=PRO")}
+          />
+        )}
         <div
           className={isLocked ? "blur-sm pointer-events-none select-none" : ""}
         >
@@ -449,7 +455,13 @@ export function OverviewPage() {
         className={`relative ${tableVisible ? "animate-fade-in-up" : "opacity-0"}`}
         style={{ animationDelay: "120ms" }}
       >
-        {isLocked && <LockedOverlay childName={activeChild.name} onUpgrade={() => navigate("/dashboard/payment?plan=PRO")} />}
+        {isLocked && (
+          <LockedOverlay
+            childName={activeChild.name}
+            title="Tính năng VIP"
+            onUpgrade={() => navigate("/dashboard/payment?plan=PRO")}
+          />
+        )}
         <div
           className={isLocked ? "blur-sm pointer-events-none select-none" : ""}
         >
@@ -461,11 +473,19 @@ export function OverviewPage() {
 }
 
 /** Overlay for locked (FREE plan) sections */
-function LockedOverlay({ childName, onUpgrade }: { childName: string; onUpgrade: () => void }) {
+function LockedOverlay({
+  childName,
+  title,
+  onUpgrade,
+}: {
+  childName: string;
+  title: string;
+  onUpgrade: () => void;
+}) {
   return (
     <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/60 backdrop-blur-[2px] rounded-2xl">
       <div className="text-4xl mb-3">🔒</div>
-      <p className="text-sm font-bold text-gray-700 mb-1">Tính năng Premium</p>
+      <p className="text-sm font-bold text-gray-700 mb-1">{title}</p>
       <p className="text-xs text-gray-400 mb-3 text-center max-w-xs">
         Nâng cấp gói PRO cho {childName} để xem phân tích chi tiết
       </p>
@@ -473,7 +493,7 @@ function LockedOverlay({ childName, onUpgrade }: { childName: string; onUpgrade:
         onClick={onUpgrade}
         className="px-5 py-2 bg-gradient-to-r from-orange-400 to-pink-500 text-white text-sm font-bold rounded-xl hover:brightness-110 transition shadow-sm"
       >
-        Nâng cấp PRO (55k/tháng)
+        Nâng cấp VIP (89k/tháng)
       </button>
     </div>
   );

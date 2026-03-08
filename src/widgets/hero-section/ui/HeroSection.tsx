@@ -89,17 +89,13 @@ export function HeroSection() {
             className="relative w-full rounded-2xl overflow-hidden shadow-2xl bg-gray-100 hover:shadow-[0_20px_60px_rgba(0,0,0,0.15)] transition-shadow duration-500"
             style={{ paddingBottom: "56.25%" }}
           >
-            <div className="absolute inset-0 flex items-center justify-center p-6">
-              {/* Play button overlay */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-white/80 shadow-lg flex items-center justify-center text-2xl cursor-pointer hover:scale-110 transition-transform">
-                  ▶
-                </div>
-                <p className="text-gray-400 font-medium text-sm text-center px-8 leading-relaxed">
-                  {t.hero.videoPlaceholder}
-                </p>
-              </div>
-            </div>
+            <video
+              className="absolute inset-0 w-full h-full object-cover"
+              src="/videos/intro-web.mp4"
+              controls
+              preload="metadata"
+              playsInline
+            />
           </div>
         </div>
       </div>

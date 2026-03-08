@@ -5,13 +5,14 @@ import { PARENT_PIN_KEY, DEFAULT_PARENT_PIN } from "@/shared/lib/auth";
 interface ParentGateProps {
   onSuccess: () => void;
   onClose: () => void;
+  onInteract?: () => void;
 }
 
 function getPin(): string {
   return localStorage.getItem(PARENT_PIN_KEY) || DEFAULT_PARENT_PIN;
 }
 
-export function ParentGate({ onSuccess, onClose }: ParentGateProps) {
+export function ParentGate({ onSuccess, onClose, onInteract }: ParentGateProps) {
   const [digits, setDigits] = useState(["", "", "", ""]);
   const [error, setError] = useState(false);
   const [shake, setShake] = useState(false);
@@ -22,6 +23,7 @@ export function ParentGate({ onSuccess, onClose }: ParentGateProps) {
   }, []);
 
   function handleChange(index: number, value: string) {
+    onInteract?.();
     if (!/^\d*$/.test(value)) return;
     const newDigits = [...digits];
     newDigits[index] = value.slice(-1);
@@ -50,6 +52,7 @@ export function ParentGate({ onSuccess, onClose }: ParentGateProps) {
   }
 
   function handleKeyDown(index: number, e: React.KeyboardEvent) {
+    onInteract?.();
     if (e.key === "Backspace" && !digits[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
