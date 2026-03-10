@@ -128,18 +128,11 @@ function findVietnameseVoice(): SpeechSynthesisVoice | null {
   if (typeof window === "undefined" || !window.speechSynthesis) return null;
 
   const voices = window.speechSynthesis.getVoices();
-  const viVoices = voices.filter((v) => v.lang.toLowerCase().startsWith("vi"));
-
-  const pickByKeywords = (list: SpeechSynthesisVoice[], keywords: string[]) =>
-    list.find((v) => {
-      const name = v.name.toLowerCase();
-      return keywords.some((k) => name.includes(k));
-    });
-
   cachedVoice =
-    pickByKeywords(viVoices, ["google", "microsoft", "natural", "xuan", "linh", "thuy", "yen"]) ??
-    pickByKeywords(viVoices, ["female", "woman", "girl", "nu", "nữ"]) ??
-    viVoices[0] ??
+    voices.find((v) => v.lang.startsWith("vi") && v.name.toLowerCase().includes("female")) ??
+    voices.find((v) => v.lang.startsWith("vi")) ??
+    voices.find((v) => v.lang.startsWith("en") && v.name.toLowerCase().includes("female")) ??
+    voices.find((v) => v.lang.startsWith("en")) ??
     null;
 
   voiceSearched = true;
@@ -173,12 +166,10 @@ function speakCuteFallback(text: string): void {
   } else {
     utterance.lang = "vi-VN";
   }
-
-  // Giọng trẻ nhỏ thân thiện: pitch cao vừa + tốc độ hơi nhanh
-  utterance.pitch = 1.35;
-  utterance.rate = 1.02;
-  utterance.volume = 0.9;
-
+  // Giọng cute: pitch cao + rate hơi chậm → giống cô giáo mầm non
+  utterance.pitch = 1.6;
+  utterance.rate = 0.9;
+  utterance.volume = 0.85;
   window.speechSynthesis.speak(utterance);
 }
 
