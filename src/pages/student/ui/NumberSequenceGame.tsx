@@ -59,11 +59,9 @@ function useSounds(): GameSoundAPI {
 
 function RobotCharacter({
   message,
-  mood,
   size = "md",
 }: Readonly<{
   message: string;
-  mood: "happy" | "excited" | "thinking" | "sad";
   size?: "sm" | "md" | "lg";
 }>) {
   const sizeMap = { sm: "w-16 h-16", md: "w-24 h-24", lg: "w-32 h-32" };
