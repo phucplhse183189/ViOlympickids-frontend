@@ -939,7 +939,7 @@ export function Math2TableOfContents() {
   const [selectedLesson, setSelectedLesson] = useState<Math2Lesson | null>(null);
   const [currentTopicIndex, setCurrentTopicIndex] = useState(0);
   const controlsRef = useRef<any>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [webglLost, setWebglLost] = useState(false);
 
   const nodes = useMemo(() => buildNodes3D(), []);
 
@@ -1019,29 +1019,69 @@ export function Math2TableOfContents() {
       </div>
 
       {/* 3D Canvas */}
-      <Suspense fallback={<LoadingScreen />}>
-        <Canvas
-          camera={{ position: [0, 3, 14], fov: 55, near: 0.1, far: 200 }}
-          style={{
-            width: "100%",
-            height: "100%",
-            position: "relative",
-            zIndex: 10,
-          }}
-          dpr={[1, 1.2]}
-          gl={{ antialias: true, alpha: false }}
-          ref={canvasRef}
-        >
-          <JourneyScene
-            nodes={nodes}
-            userPlan={userPlan}
-            currentLessonIndex={currentLessonIndex}
-            cameraFocusIndex={cameraFocusIndex}
-            onSelectLesson={handleSelectLesson}
-            controlsRef={controlsRef}
-          />
-        </Canvas>
-      </Suspense>
+      {!webglLost ? (
+        <Suspense fallback={<LoadingScreen />}>
+          <Canvas
+            camera={{ position: [0, 3, 14], fov: 55, near: 0.1, far: 200 }}
+            style={{
+              width: "100%",
+              height: "100%",
+              position: "relative",
+              zIndex: 10,
+            }}
+            dpr={[1, 1]}
+            gl={{ antialias: false, alpha: false, powerPreference: "low-power" }}
+            onCreated={({ gl }) => {
+              const canvas = gl.domElement;
+              const onContextLost = (e: Event) => {
+                e.preventDefault();
+                setWebglLost(true);
+              };
+              const onContextRestored = () => {
+                setWebglLost(false);
+              };
+              canvas.addEventListener("webglcontextlost", onContextLost as EventListener, false);
+              canvas.addEventListener(
+                "webglcontextrestored",
+                onContextRestored as EventListener,
+                false,
+              );
+            }}
+          >
+            <JourneyScene
+              nodes={nodes}
+              userPlan={userPlan}
+              currentLessonIndex={currentLessonIndex}
+              cameraFocusIndex={cameraFocusIndex}
+              onSelectLesson={handleSelectLesson}
+              controlsRef={controlsRef}
+            />
+          </Canvas>
+        </Suspense>
+      ) : (
+        <div className="absolute inset-0 z-20 flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-6 text-center">
+            <h2 className="text-xl font-black text-gray-800 mb-2">Không tải được chế độ 3D</h2>
+            <p className="text-sm text-gray-500 mb-4">
+              Thiết bị/trình duyệt đang thiếu tài nguyên WebGL. Bạn có thể tải lại trang hoặc vào game trực tiếp bên dưới.
+            </p>
+            <div className="grid gap-2">
+              <button
+                onClick={() => navigate("/student/game/number-sequence")}
+                className="py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 to-sky-500 text-white font-extrabold"
+              >
+                Vào game Táo ngay
+              </button>
+              <button
+                onClick={() => window.location.reload()}
+                className="py-2.5 rounded-xl bg-gray-100 text-gray-700 font-bold"
+              >
+                Tải lại trang
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Navigation HUD */}
       <NavigationHUD
