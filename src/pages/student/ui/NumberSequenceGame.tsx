@@ -31,7 +31,6 @@ import {
   ROBOT_HINTS,
   ROBOT_GREETINGS,
   getRandomItem,
-  generateApplePuzzle,
   generateBridgePuzzle,
   generateTrainPuzzle,
   generateBalloonPuzzle,
@@ -361,7 +360,7 @@ function AppleGardenMap({
         <div className="absolute left-1/2 -translate-x-1/2 top-[25%] w-[40%] min-w-[220px] max-w-[370px]">
           <img src="/khungThoai.png" alt="Khung thoại" className="w-full object-contain" />
           <p className="absolute left-[15%] right-[15%] top-[22%] bottom-[22%] flex items-center justify-center text-[13px] sm:text-[16px] font-black text-gray-800 text-center leading-tight">
-            Hãy đặt quả táo vào đúng số
+            {robotMsg}
           </p>
         </div>
 
