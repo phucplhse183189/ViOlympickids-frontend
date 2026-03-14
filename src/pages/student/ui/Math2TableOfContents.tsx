@@ -938,8 +938,10 @@ export function Math2TableOfContents() {
   const [upgradeLesson, setUpgradeLesson] = useState<Math2Lesson | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<Math2Lesson | null>(null);
   const [currentTopicIndex, setCurrentTopicIndex] = useState(0);
+  const [canvasKey, setCanvasKey] = useState(0);
+  const [webglFailed, setWebglFailed] = useState(false);
   const controlsRef = useRef<any>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const webglLossCountRef = useRef(0);
 
   const nodes = useMemo(() => buildNodes3D(), []);
 
@@ -994,8 +996,31 @@ export function Math2TableOfContents() {
     [navigate],
   );
 
+  const handleCanvasCreated = useCallback(
+    ({ gl }: { gl: THREE.WebGLRenderer }) => {
+      gl.setClearColor("#0f1847", 1);
+      const canvas = gl.domElement;
+      const onContextLost = (event: Event) => {
+        event.preventDefault();
+        webglLossCountRef.current += 1;
+
+        if (webglLossCountRef.current >= 3) {
+          setWebglFailed(true);
+          return;
+        }
+
+        setCanvasKey((k) => k + 1);
+      };
+
+      canvas.addEventListener("webglcontextlost", onContextLost, {
+        passive: false,
+      });
+    },
+    [],
+  );
+
   return (
-    <div className="relative h-[calc(100vh-5rem)] overflow-hidden">
+    <div className="relative h-[calc(100vh-5rem)] overflow-hidden bg-gradient-to-b from-indigo-950 via-indigo-900 to-slate-900">
       {/* Title overlay */}
       <div className="absolute top-3 left-4 z-30 flex items-center gap-2">
         <span className="text-3xl">📐</span>
@@ -1019,29 +1044,50 @@ export function Math2TableOfContents() {
       </div>
 
       {/* 3D Canvas */}
-      <Suspense fallback={<LoadingScreen />}>
-        <Canvas
-          camera={{ position: [0, 3, 14], fov: 55, near: 0.1, far: 200 }}
-          style={{
-            width: "100%",
-            height: "100%",
-            position: "relative",
-            zIndex: 10,
-          }}
-          dpr={[1, 1.2]}
-          gl={{ antialias: true, alpha: false }}
-          ref={canvasRef}
-        >
-          <JourneyScene
-            nodes={nodes}
-            userPlan={userPlan}
-            currentLessonIndex={currentLessonIndex}
-            cameraFocusIndex={cameraFocusIndex}
-            onSelectLesson={handleSelectLesson}
-            controlsRef={controlsRef}
-          />
-        </Canvas>
-      </Suspense>
+      {webglFailed ? (
+        <div className="absolute inset-0 z-20 flex items-center justify-center px-4">
+          <div className="max-w-md rounded-2xl border border-white/20 bg-slate-900/65 p-4 text-center backdrop-blur-sm">
+            <p className="text-sm font-bold text-white">
+              Thiết bị đang gặp lỗi hiển thị 3D tạm thời.
+            </p>
+            <button
+              onClick={() => {
+                webglLossCountRef.current = 0;
+                setWebglFailed(false);
+                setCanvasKey((k) => k + 1);
+              }}
+              className="mt-3 rounded-xl bg-sky-500 px-4 py-2 text-xs font-black text-white hover:bg-sky-400"
+            >
+              Tải lại bản đồ
+            </button>
+          </div>
+        </div>
+      ) : (
+        <Suspense fallback={<LoadingScreen />}>
+          <Canvas
+            key={canvasKey}
+            camera={{ position: [0, 3, 14], fov: 55, near: 0.1, far: 200 }}
+            style={{
+              width: "100%",
+              height: "100%",
+              position: "relative",
+              zIndex: 10,
+            }}
+            dpr={[1, 1.2]}
+            gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
+            onCreated={handleCanvasCreated}
+          >
+            <JourneyScene
+              nodes={nodes}
+              userPlan={userPlan}
+              currentLessonIndex={currentLessonIndex}
+              cameraFocusIndex={cameraFocusIndex}
+              onSelectLesson={handleSelectLesson}
+              controlsRef={controlsRef}
+            />
+          </Canvas>
+        </Suspense>
+      )}
 
       {/* Navigation HUD */}
       <NavigationHUD

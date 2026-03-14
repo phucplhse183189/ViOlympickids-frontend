@@ -19,11 +19,8 @@ const quizData = [
 ];
 
 function speak(text: string) {
-  if (window.speechSynthesis) {
-    const utter = new window.SpeechSynthesisUtterance(text);
-    utter.lang = "vi-VN";
-    window.speechSynthesis.speak(utter);
-  }
+  // Đã tắt giọng AI để tránh chồng với audio thu âm sẵn.
+  void text;
 }
 
 function QuizCard3D({

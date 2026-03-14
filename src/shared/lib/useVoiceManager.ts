@@ -1,6 +1,6 @@
 // ─── Voice Audio Manager ─────────────────────────────────────────────────────
-// Module quản lý âm thanh giọng nói tiếng Việt dễ thương cho game
-// Hỗ trợ phát file .mp3 với fallback SpeechSynthesis (TTS)
+// Module quản lý âm thanh giọng nói cho game
+// Chỉ phát file .mp3, không dùng SpeechSynthesis (TTS)
 //
 // Cách dùng sau này: chỉ cần thay đường dẫn audioUrl trong config
 // bằng file .mp3 thực tế là giọng nói tự động chạy mượt mà.
@@ -10,7 +10,7 @@ import { useCallback, useRef, useEffect } from "react";
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface VoiceLine {
-  /** Nội dung text (dùng cho TTS fallback & hiển thị UI) */
+  /** Nội dung text để hiển thị UI */
   text: string;
   /** Đường dẫn file .mp3 — để trống "" nếu chưa có file */
   audioUrl: string;
@@ -28,7 +28,7 @@ export interface VoiceConfig {
 }
 
 // ─── Default Config ──────────────────────────────────────────────────────────
-// Thay audioUrl bằng file .mp3 thực tế khi có sẵn
+// Chỉ giữ các file audio đang có sẵn
 
 export const defaultVoiceConfig: VoiceConfig = {
   intro: [
@@ -42,25 +42,17 @@ export const defaultVoiceConfig: VoiceConfig = {
       text: "Wow! Chuẩn không cần chỉnh!",
       audioUrl: "/audio/voice/correct_01.mp3",
     },
-    {
-      text: "Đúng phóc rồi! Con giỏi quá!",
-      audioUrl: "/audio/voice/correct_02.mp3",
-    },
   ],
   wrong: [
     {
       text: "Ôi, sai một xíu thôi. Tính lại nhé!",
       audioUrl: "/audio/voice/wrong_01.mp3",
     },
-    {
-      text: "Chưa đúng mất rồi. Thử lại tẹo nha!",
-      audioUrl: "/audio/voice/wrong_02.mp3",
-    },
   ],
   victory: [
     {
       text: "Tuyệt vờiii! Con đã hoàn thành xuất sắc! Cùng sang bài mới nhé!",
-      audioUrl: "/audio/voice/victory_01.mp3",
+      audioUrl: "",
     },
   ],
 };
@@ -75,21 +67,11 @@ function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-/**
- * Phát file .mp3 nếu có, fallback sang TTS nếu file lỗi hoặc chưa có.
- * @returns Promise resolve khi bắt đầu phát thành công
- */
-function playVoiceLine(
-  line: VoiceLine,
-  options: { volume?: number; ttsFallback?: (text: string) => void },
-): void {
-  const { volume = 0.85, ttsFallback } = options;
+/** Phát file .mp3 nếu có. */
+function playVoiceLine(line: VoiceLine, options: { volume?: number }): void {
+  const { volume = 0.85 } = options;
 
-  // Nếu không có audioUrl → dùng TTS ngay
-  if (!line.audioUrl) {
-    ttsFallback?.(line.text);
-    return;
-  }
+  if (!line.audioUrl) return;
 
   // Thử phát mp3
   let audio = audioCache.get(line.audioUrl);
@@ -104,8 +86,7 @@ function playVoiceLine(
   const playPromise = audio.play();
   if (playPromise) {
     playPromise.catch(() => {
-      // File chưa có hoặc lỗi → fallback TTS
-      ttsFallback?.(line.text);
+      // Không fallback sang AI voice.
     });
   }
 }
@@ -118,65 +99,8 @@ function stopAllAudio(): void {
   });
 }
 
-// ─── TTS Fallback (giọng cute tiếng Việt) ────────────────────────────────────
-
-let cachedVoice: SpeechSynthesisVoice | null = null;
-let voiceSearched = false;
-
-function findVietnameseVoice(): SpeechSynthesisVoice | null {
-  if (voiceSearched) return cachedVoice;
-  if (typeof window === "undefined" || !window.speechSynthesis) return null;
-
-  const voices = window.speechSynthesis.getVoices();
-  cachedVoice =
-    voices.find((v) => v.lang.startsWith("vi") && v.name.toLowerCase().includes("female")) ??
-    voices.find((v) => v.lang.startsWith("vi")) ??
-    voices.find((v) => v.lang.startsWith("en") && v.name.toLowerCase().includes("female")) ??
-    voices.find((v) => v.lang.startsWith("en")) ??
-    null;
-
-  voiceSearched = true;
-  return cachedVoice;
-}
-
-if (typeof window !== "undefined" && window.speechSynthesis) {
-  window.speechSynthesis.onvoiceschanged = () => {
-    voiceSearched = false;
-    findVietnameseVoice();
-  };
-}
-
-function speakCuteFallback(text: string): void {
-  if (typeof window === "undefined" || !window.speechSynthesis) return;
-  window.speechSynthesis.cancel();
-
-  const cleanText = text
-    .replace(
-      /[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{1F000}-\u{1FFFF}]/gu,
-      "",
-    )
-    .trim();
-  if (!cleanText) return;
-
-  const utterance = new SpeechSynthesisUtterance(cleanText);
-  const voice = findVietnameseVoice();
-  if (voice) {
-    utterance.voice = voice;
-    utterance.lang = voice.lang;
-  } else {
-    utterance.lang = "vi-VN";
-  }
-  // Giọng cute: pitch cao + rate hơi chậm → giống cô giáo mầm non
-  utterance.pitch = 1.6;
-  utterance.rate = 0.9;
-  utterance.volume = 0.85;
-  window.speechSynthesis.speak(utterance);
-}
-
 function stopTTS(): void {
-  if (typeof window !== "undefined" && window.speechSynthesis) {
-    window.speechSynthesis.cancel();
-  }
+  // AI voice đã bị tắt hoàn toàn.
 }
 
 // ─── React Hook ──────────────────────────────────────────────────────────────
@@ -222,9 +146,7 @@ export function useVoiceManager(config: VoiceConfig = defaultVoiceConfig): Voice
         // Dừng audio/TTS cũ trước
         stopAllAudio();
         stopTTS();
-        playVoiceLine(line, {
-          ttsFallback: speakCuteFallback,
-        });
+        playVoiceLine(line, {});
       }
       return line.text;
     },
@@ -252,9 +174,7 @@ export function useVoiceManager(config: VoiceConfig = defaultVoiceConfig): Voice
 
   const speakText = useCallback((text: string) => {
     if (enabledRef.current) {
-      stopAllAudio();
-      stopTTS();
-      speakCuteFallback(text);
+      void text;
     }
   }, []);
 

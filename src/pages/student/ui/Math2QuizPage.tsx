@@ -1,11 +1,7 @@
 // AI voice function
 function speak(text: string) {
-  if (window.speechSynthesis) {
-    const utter = new window.SpeechSynthesisUtterance(text);
-    utter.lang = "vi-VN";
-    utter.rate = 1;
-    window.speechSynthesis.speak(utter);
-  }
+  // Đã tắt giọng AI để tránh chồng với audio thu âm sẵn.
+  void text;
 }
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
