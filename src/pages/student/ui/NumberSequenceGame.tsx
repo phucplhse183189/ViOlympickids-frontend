@@ -53,6 +53,8 @@ function useSounds(): GameSoundAPI {
   return ctx;
 }
 
+export default NumberSequenceGame;
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // SHARED COMPONENTS
 // ═══════════════════════════════════════════════════════════════════════════════
