@@ -83,6 +83,18 @@ export function ChildAvatarBar() {
           );
         })}
 
+        {/* Play active child button */}
+        <button
+          onClick={() => navigate("/student")}
+          title="Vào học ngay"
+          className="ml-2 flex items-center gap-2 bg-gradient-to-r from-emerald-400 to-teal-500 text-white px-4 py-2 rounded-xl font-bold shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all text-sm shrink-0"
+        >
+          <span>Vào học</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+        </button>
+
+        <div className="w-px h-6 bg-gray-200 mx-1" />
+
         {/* Add child mini button */}
         <button
           onClick={() => navigate("/add-child")}

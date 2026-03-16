@@ -1,0 +1,36 @@
+/* Banner container */
+.banner-ad {
+  position: absolute;
+  top: 150px; /* Adjusted to fit the new layout below the header */
+  z-index: 20;
+  animation: fadeInBanner 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.banner-ad-left {
+  left: 20px; /* Reduced from 32px to push closer to edge */
+}
+
+.banner-ad-right {
+  right: 20px; /* Reduced from 32px to push closer to edge */
+}
+
+/* Base fade-in animation */
+@keyframes fadeInBanner {
+  0% {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Make sure it drops behind content on smaller screens before hiding */
+@media (max-width: 1400px) {
+  .banner-ad {
+    display: none; /* In replaced TSX we use hidden xl:block (xl is 1280px in tailwind), this matches that behavior */
+  }
+}

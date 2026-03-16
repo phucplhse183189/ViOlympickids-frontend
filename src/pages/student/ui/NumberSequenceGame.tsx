@@ -24,6 +24,8 @@ import {
   MicOff,
   Home,
   Play,
+  Maximize,
+  Minimize,
 } from "lucide-react";
 import { useGameSound } from "@/shared/lib/useGameSound";
 import {
@@ -36,6 +38,7 @@ import {
   generateBalloonPuzzle,
   generateRabbitPuzzle,
 } from "@/shared/lib/robotGameLogic";
+import { ParentGate } from "@/shared/ui/ParentGate";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SOUND CONTEXT
@@ -1311,56 +1314,67 @@ function RabbitRaceMap({
 
 function IntroScreen({ onStart }: Readonly<{ onStart: () => void }>) {
   return (
-    <div className="space-y-6 text-center">
+    <div className="flex flex-col items-center justify-center space-y-4 md:space-y-5 text-center px-4 w-full h-full min-h-[70vh] pb-8">
       {/* Robot greeting */}
-      <div className="flex justify-center">
-        <RobotCharacter message={getRandomItem(ROBOT_GREETINGS)} size="lg" />
+      <div className="flex justify-center hover:scale-105 transition-transform duration-500">
+        <RobotCharacter message={getRandomItem(ROBOT_GREETINGS)} size="md" />
       </div>
 
       {/* Story intro */}
-      <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-5 shadow-sm border border-white/50">
-        <p className="text-gray-600 font-bold text-sm leading-relaxed">
-          🌪️ Một cơn bão toán học đã xáo trộn tất cả các số!
-          <br />
-          Hãy giúp robot <strong className="text-sky-600">Tí Tách</strong> vượt
-          qua
-          <strong className="text-amber-600"> 5 vùng đất </strong>
+      <div className="relative overflow-hidden bg-white/80 backdrop-blur-md rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.06)] border-2 border-white/60 max-w-4xl mx-auto transform hover:-translate-y-1 transition-transform duration-300">
+        <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-sky-400 via-amber-400 to-emerald-400"></div>
+        <p className="text-gray-700 font-extrabold text-sm md:text-base leading-relaxed">
+          <span className="text-xl inline-block mr-2 animate-bounce">🌪️</span>
+          Một cơn bão toán học đã xáo trộn tất cả các số!
+          Hãy giúp robot <span className="text-sky-600 font-black relative px-1">Tí Tách<span className="absolute -bottom-0.5 left-0 w-full h-1 bg-sky-300/50 rounded-full"></span></span> vượt qua
+          <span className="text-amber-600 font-black text-lg mx-1.5 bg-amber-100/80 px-2.5 py-0.5 rounded-lg border-2 border-amber-200/60 shadow-sm inline-block transform hover:scale-105 transition-transform"> 5 vùng đất </span>
           để thu thập và sắp xếp lại nào! 🤖
         </p>
       </div>
 
       {/* Map preview list */}
-      <div className="space-y-2 max-w-md mx-auto">
-        {MAPS.map((map) => (
+      <div className="w-full max-w-3xl mx-auto grid gap-2">
+        {MAPS.map((map, index) => (
           <div
             key={map.id}
-            className={`flex items-center gap-3 bg-white/50 rounded-2xl px-4 py-3
-                        border border-white/40 shadow-sm`}
+            className="group flex items-center gap-3 bg-white/60 hover:bg-white rounded-xl px-4 py-2.5
+                       border border-white/60 hover:border-sky-300 shadow-sm hover:shadow-[0_4px_15px_rgba(56,189,248,0.15)] 
+                       transition-all duration-300 transform hover:-translate-y-0.5 cursor-default"
+            style={{ animation: `fade-in-up 0.4s ease-out ${index * 0.08}s both` }}
           >
-            <span className="text-2xl">{map.emoji}</span>
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-white to-sky-50 flex items-center justify-center text-xl shadow-inner border border-sky-100 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+              {map.emoji}
+            </div>
             <div className="text-left flex-1">
-              <p className="font-extrabold text-gray-700 text-sm">
+              <p className="font-extrabold text-gray-800 text-sm group-hover:text-sky-600 transition-colors">
                 Vùng {map.id}: {map.name}
               </p>
-              <p className="text-xs text-gray-500 font-bold">
+              <p className="text-[11px] text-gray-500 font-bold mt-0.5 line-clamp-1">
                 {map.description}
               </p>
             </div>
-            <MapPin size={14} className="text-gray-400" />
+            <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-sky-100 group-hover:shadow-inner transition-colors duration-300">
+               <MapPin size={14} className="text-gray-400 group-hover:text-sky-500 transition-colors duration-300" />
+            </div>
           </div>
         ))}
       </div>
 
       {/* Start button */}
-      <button
-        onClick={onStart}
-        className="bg-gradient-to-r from-emerald-400 to-sky-500 text-white font-extrabold
-                   text-lg px-10 py-4 rounded-2xl shadow-lg hover:shadow-xl
-                   transition-all active:scale-95 hover:scale-105
-                   animate-pulse-slow"
-      >
-        🚀 Bắt đầu phiêu lưu!
-      </button>
+      <div className="pt-2 pb-1">
+        <button
+          onClick={onStart}
+          className="relative overflow-hidden group bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-500 text-white font-black
+                     text-lg md:text-xl px-10 py-3 rounded-3xl shadow-[0_8px_30px_rgba(56,189,248,0.4)]
+                     transition-all duration-300 active:scale-95 hover:scale-105 hover:shadow-[0_12px_40px_rgba(56,189,248,0.5)]"
+        >
+          <div className="absolute inset-0 bg-white/20 group-hover:translate-x-full -translate-x-full transition-transform duration-700 ease-in-out skew-x-12"></div>
+          <span className="relative flex items-center justify-center gap-2">
+             <span className="text-2xl group-hover:animate-bounce drop-shadow-md">🚀</span> 
+             <span>Bắt đầu phiêu lưu!</span>
+          </span>
+        </button>
+      </div>
     </div>
   );
 }
@@ -1657,10 +1671,144 @@ export function NumberSequenceGame() {
   const [currentRound, setCurrentRound] = useState(1);
   const [roundStars, setRoundStars] = useState<number[]>([]);
   const [showRoundTransition, setShowRoundTransition] = useState(false);
+  const [showPinGate, setShowPinGate] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  // State to track if we're asking for PIN specifically to exit fullscreen
+  const [pinActionTarget, setPinActionTarget] = useState<"menu" | "fullscreen" | null>(null);
+  const gameContainerRef = useRef<HTMLDivElement>(null);
 
   const totalStars = Object.values(completedMaps).reduce((a, b) => a + b, 0);
   const difficulty = activeMap;
   const totalRounds = ROUNDS_PER_MAP[activeMap] ?? 3;
+
+  const toggleFullScreen = async () => {
+    sound.click();
+    if (!document.fullscreenElement) {
+      try {
+        await gameContainerRef.current?.requestFullscreen();
+        // Attempt to lock ESC key so user cannot exit fullscreen without PIN
+        if ("keyboard" in navigator && (navigator as any).keyboard?.lock) {
+          try {
+            await (navigator as any).keyboard.lock(["Escape"]);
+          } catch (lockErr) {
+            console.warn("Keyboard lock not supported or failed:", lockErr);
+          }
+        }
+      } catch (err) {
+        console.error("Error attempting to enable fullscreen:", err);
+      }
+    } else {
+      // If we are playing, require PIN to exit fullscreen
+      if (gameState === "playing") {
+        setPinActionTarget("fullscreen");
+        setShowPinGate(true);
+      } else {
+        if (document.exitFullscreen) {
+          // Unlock keyboard if it was locked
+          if ("keyboard" in navigator && (navigator as any).keyboard?.unlock) {
+            (navigator as any).keyboard.unlock();
+          }
+          await document.exitFullscreen();
+        }
+      }
+    }
+  };
+
+  // Prevent accidental tab close/refresh while playing
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (gameState === "playing") {
+        e.preventDefault();
+        e.returnValue = ""; // Required for Chrome to show the prompt
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [gameState]);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const currentlyFullscreen = !!document.fullscreenElement;
+      setIsFullscreen(currentlyFullscreen);
+
+      // If the browser forced an exit (e.g. user pressed ESC) while playing
+      // and we didn't explicitly authorize it via PIN success (pinActionTarget is null)
+      if (!currentlyFullscreen && gameState === "playing" && pinActionTarget === null) {
+        // We immediately show the PIN gate
+        setPinActionTarget("fullscreen");
+        setShowPinGate(true);
+        // Force them right back into fullscreen instantly
+        gameContainerRef.current?.requestFullscreen().catch(console.error);
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && gameState === "playing" && document.fullscreenElement) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    // Use capture phase to intercept before native browser handlers if possible
+    window.addEventListener("keydown", handleKeyDown, { capture: true });
+    
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      window.removeEventListener("keydown", handleKeyDown, { capture: true });
+    };
+  }, [gameState, pinActionTarget]);
+
+  const handleBackToMenu = () => {
+    sound.click();
+    if (gameState === "playing") {
+      setPinActionTarget("menu");
+      setShowPinGate(true);
+    } else {
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(console.error);
+      }
+      navigate("/student");
+    }
+  };
+
+  const handlePinSuccess = () => {
+    setShowPinGate(false);
+    
+    if (pinActionTarget === "menu") {
+      if (document.fullscreenElement) {
+        if ("keyboard" in navigator && (navigator as any).keyboard?.unlock) {
+          (navigator as any).keyboard.unlock();
+        }
+        document.exitFullscreen().catch(console.error);
+      }
+      navigate("/student");
+    } else if (pinActionTarget === "fullscreen") {
+      if (document.fullscreenElement) {
+        if ("keyboard" in navigator && (navigator as any).keyboard?.unlock) {
+          (navigator as any).keyboard.unlock();
+        }
+        document.exitFullscreen().catch(console.error);
+      }
+    }
+    
+    setPinActionTarget(null);
+  };
+
+  const handlePinCancel = () => {
+    setShowPinGate(false);
+
+    // If they were trying to exit fullscreen via ESC and cancelled the PIN
+    // we force them back into fullscreen.
+    if (pinActionTarget === "fullscreen" && !document.fullscreenElement) {
+      gameContainerRef.current?.requestFullscreen().catch(console.error);
+    }
+
+    setPinActionTarget(null);
+  };
 
   const handleMapComplete = useCallback(
     (stars: number) => {
@@ -1759,54 +1907,66 @@ export function NumberSequenceGame() {
 
   return (
     <GameSoundContext.Provider value={sound}>
-      <div className="min-h-[calc(100vh-5rem)] relative overflow-hidden">
-        {/* Background */}
+      <div ref={gameContainerRef} className="min-h-screen relative overflow-hidden flex flex-col">
+        {/* Background Base */}
         <div
-          className={`absolute inset-0 bg-gradient-to-b ${
+          className={`absolute inset-0 bg-gradient-to-br ${
             gameState === "playing" && currentMapInfo
               ? currentMapInfo.bgGradient
-              : "from-indigo-100 via-sky-100 to-emerald-100"
+              : "from-sky-200 via-indigo-100 to-emerald-100"
           } transition-all duration-700`}
         />
+        
+        {/* Ambient light blobs (Intro only) */}
+        {gameState === "intro" && (
+          <>
+            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-pink-300/30 rounded-full blur-[80px] animate-pulse-slow mix-blend-multiply pointer-events-none" />
+            <div className="absolute top-[20%] right-[-5%] w-[35%] h-[45%] bg-amber-300/30 rounded-full blur-[80px] animate-pulse-slow mix-blend-multiply pointer-events-none" style={{ animationDelay: '2s' }} />
+            <div className="absolute bottom-[-10%] left-[20%] w-[50%] h-[40%] bg-blue-300/30 rounded-full blur-[100px] animate-pulse-slow mix-blend-multiply pointer-events-none" style={{ animationDelay: '1s' }} />
+          </>
+        )}
 
         {/* Floating clouds */}
-        <div className="absolute top-8 left-5 text-4xl animate-float-slow opacity-50 pointer-events-none">
+        <div className="absolute top-8 left-10 text-5xl animate-float-slow opacity-60 pointer-events-none drop-shadow-sm">
           ☁️
         </div>
         <div
-          className="absolute top-16 right-10 text-3xl animate-float-slow opacity-30 pointer-events-none"
+          className="absolute top-24 right-12 text-4xl animate-float-slow opacity-40 pointer-events-none drop-shadow-sm"
           style={{ animationDelay: "1.5s" }}
         >
           ☁️
         </div>
         <div
-          className="absolute top-4 right-1/3 text-2xl animate-float-slow opacity-20 pointer-events-none"
+          className="absolute bottom-1/4 left-5 text-3xl animate-float-slow opacity-30 pointer-events-none drop-shadow-sm"
+          style={{ animationDelay: "2.5s" }}
+        >
+           ☁️
+        </div>
+        <div
+          className="absolute top-10 right-1/3 text-3xl animate-float-slow opacity-50 pointer-events-none drop-shadow-sm"
           style={{ animationDelay: "3s" }}
         >
           ☁️
         </div>
 
-        <div className="relative z-10 max-w-5xl mx-auto px-3 sm:px-6 py-4">
+        <div className="relative flex-1 flex flex-col z-10 max-w-5xl w-full mx-auto px-3 sm:px-6 py-4">
           {/* ── Header ── */}
           <div className="flex items-center justify-between mb-4">
             <button
-              onClick={() => {
-                sound.click();
-                navigate("/student");
-              }}
+              onClick={handleBackToMenu}
               className="flex items-center gap-2 bg-white/80 hover:bg-white rounded-2xl px-4 py-2
-                         text-gray-600 font-bold text-sm shadow-sm transition-all active:scale-95"
+                         text-gray-600 font-bold text-sm shadow-sm transition-all active:scale-95 z-50 relative"
             >
               <ArrowLeft size={18} />
               <span className="hidden sm:inline">Mục lục</span>
             </button>
 
-            <div className="text-center">
-              <h1 className="font-extrabold text-gray-800 text-sm sm:text-lg flex items-center gap-2">
+            <div className="text-center absolute left-0 right-0 pointer-events-none flex flex-col items-center">
+              <h1 className="font-extrabold text-gray-800 text-sm sm:text-lg flex items-center gap-2 drop-shadow-sm">
                 🤖 Robot Tí Tách Phiêu Lưu
               </h1>
               {gameState === "playing" && currentMapInfo && (
-                <p className="text-xs font-bold text-gray-500 mt-0.5">
+                <p className="text-xs font-bold text-gray-500 mt-0.5 drop-shadow-sm">
                   {currentMapInfo.emoji} Vùng {activeMap}: {currentMapInfo.name}
                   <span className="ml-2 text-amber-500">
                     (Lượt {currentRound}/{totalRounds})
@@ -1815,7 +1975,20 @@ export function NumberSequenceGame() {
               )}
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 relative z-50">
+              {/* Fullscreen toggle */}
+              <button
+                onClick={toggleFullScreen}
+                className={`w-8 h-8 rounded-full flex items-center justify-center shadow-sm
+                           transition-all active:scale-95 ${
+                             isFullscreen
+                               ? "bg-indigo-400 text-white"
+                               : "bg-gray-200 text-gray-500 hover:bg-white"
+                           }`}
+                aria-label={isFullscreen ? "Thu nhỏ" : "Toàn màn hình"}
+              >
+                {isFullscreen ? <Minimize size={14} /> : <Maximize size={14} />}
+              </button>
               {/* Sound toggle */}
               <button
                 onClick={handleToggleSound}
@@ -1876,6 +2049,7 @@ export function NumberSequenceGame() {
           )}
 
           {/* ── Content ── */}
+          <div className="flex-1 flex flex-col justify-center w-full relative">
           {gameState === "intro" && <IntroScreen onStart={handleStart} />}
 
           {gameState === "finished" && (
@@ -1981,6 +2155,16 @@ export function NumberSequenceGame() {
               </div>
             </div>
           )}
+
+          {/* PIN Gate Modal */}
+          {showPinGate && (
+            <ParentGate
+              onSuccess={handlePinSuccess}
+              onClose={handlePinCancel}
+            />
+          )}
+
+          </div>
         </div>
       </div>
     </GameSoundContext.Provider>

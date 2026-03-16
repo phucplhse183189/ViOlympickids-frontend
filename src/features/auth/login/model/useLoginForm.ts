@@ -62,6 +62,7 @@ export function useLoginForm() {
           nickname: MOCK_ACCOUNT.nickname,
           email: MOCK_ACCOUNT.phone,
           avatarId: MOCK_ACCOUNT.avatarId,
+          tier: "free",
         });
         navigate("/profile-picker");
       } else {

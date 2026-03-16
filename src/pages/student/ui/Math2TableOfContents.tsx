@@ -40,6 +40,7 @@ import {
 } from "@/shared/api/math2Data";
 import type { PlanType } from "@/shared/api/dashboardMockData";
 import ReactDOM from "react-dom";
+import { PreRollAdModal } from "@/shared/ui/PreRollAdModal";
 
 // ── Lesson Info Popup ─────────────────────────────────────────────────────────
 
@@ -111,57 +112,57 @@ function LessonPopup({
         </div>
 
         {/* Body */}
-        <div className="px-5 py-4 space-y-3">
+        <div className="px-6 py-5 space-y-4">
           {/* Description */}
-          <div className="flex items-start gap-2.5">
-            <span className="text-2xl mt-0.5">{lesson.emoji}</span>
-            <p className="text-gray-600 text-sm leading-relaxed">
+          <div className="flex items-start gap-3">
+            <span className="text-3xl mt-0.5 drop-shadow-sm">{lesson.emoji}</span>
+            <p className="text-gray-600 text-[15px] leading-relaxed font-medium">
               {lesson.description}
             </p>
           </div>
 
           {/* Info chips */}
-          <div className="flex flex-wrap gap-2">
-            <div className="flex items-center gap-1 px-2 py-0 bg-sky-50 text-sky-600 rounded-full text-[11px] font-bold max-w-[120px] truncate">
-              <Layers size={12} />
-              <span className="truncate">Chủ đề {topic.topicNumber}</span>
+          <div className="flex flex-wrap gap-2.5">
+            <div className="flex items-center gap-1.5 px-3 py-1 bg-sky-50 text-sky-700 rounded-full text-xs font-bold shadow-sm border border-sky-100">
+              <Layers size={14} />
+              <span>Chủ đề {topic.topicNumber}</span>
             </div>
             {hasGame && gameLabel && (
-              <div className="flex items-center gap-1 px-2 py-0 bg-emerald-50 text-emerald-600 rounded-full text-[11px] font-bold max-w-[120px] truncate">
-                <Gamepad2 size={12} />
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold shadow-sm border border-emerald-100">
+                <Gamepad2 size={14} />
                 {gameLabel}
               </div>
             )}
             {!hasGame && (
-              <div className="flex items-center gap-1 px-2 py-0 bg-gray-100 text-gray-400 rounded-full text-[11px] font-bold max-w-[120px] truncate">
-                <Clock size={12} />
-                Sắp có game
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-gray-50 text-gray-500 rounded-full text-xs font-bold shadow-sm border border-gray-200">
+                <Clock size={14} />
+                Sắp ra mắt
               </div>
             )}
-            <div className="flex items-center gap-1 px-2 py-0 bg-amber-50 text-amber-600 rounded-full text-[11px] font-bold max-w-[120px] truncate">
-              <Target size={12} />
+            <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-bold shadow-sm border border-amber-100">
+              <Target size={14} />
               Toán lớp 2
             </div>
           </div>
 
           {/* Learning objectives */}
-          <div className="bg-gray-50 rounded-xl p-3">
-            <p className="text-xs font-bold text-gray-500 mb-1.5 flex items-center gap-1">
-              <Sparkles size={12} /> Mục tiêu bài học
+          <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-2xl p-4 border border-gray-100/80 shadow-[inset_0_2px_10px_rgba(0,0,0,0.02)]">
+            <p className="text-[13px] font-black text-slate-700 mb-2.5 flex items-center gap-1.5">
+              <Sparkles size={14} className="text-amber-500" /> Mục tiêu bài học
             </p>
-            <ul className="space-y-1">
-              <li className="text-xs text-gray-600 flex items-start gap-1.5">
-                <span className="text-emerald-400 mt-0.5">✓</span>
+            <ul className="space-y-2">
+              <li className="text-[13px] text-slate-600 flex items-start gap-2 font-medium">
+                <span className="text-emerald-500 mt-0.5">✓</span>
                 {lesson.description}
               </li>
               {hasGame && (
-                <li className="text-xs text-gray-600 flex items-start gap-1.5">
-                  <span className="text-emerald-400 mt-0.5">✓</span>
-                  Luyện tập qua trò chơi tương tác
+                <li className="text-[13px] text-slate-600 flex items-start gap-2 font-medium">
+                  <span className="text-emerald-500 mt-0.5">✓</span>
+                  Luyện tập qua trò chơi tương tác thú vị
                 </li>
               )}
-              <li className="text-xs text-gray-600 flex items-start gap-1.5">
-                <span className="text-emerald-400 mt-0.5">✓</span>
+              <li className="text-[13px] text-slate-600 flex items-start gap-2 font-medium">
+                <span className="text-emerald-500 mt-0.5">✓</span>
                 Kiểm tra kiến thức cuối bài
               </li>
             </ul>
@@ -169,11 +170,11 @@ function LessonPopup({
 
           {/* Plan requirement note */}
           {!isAccessible && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 rounded-xl border border-amber-200">
-              <Lock size={14} className="text-amber-500 shrink-0" />
-              <p className="text-xs text-amber-700">
+            <div className="flex items-center gap-2.5 px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl border border-amber-200/60 shadow-inner">
+              <Lock size={16} className="text-amber-600 shrink-0" />
+              <p className="text-[13px] text-amber-800 font-medium">
                 Bài này yêu cầu gói{" "}
-                <span className="font-black">
+                <span className="font-black text-amber-900 bg-amber-200/40 px-1.5 py-0.5 rounded-md">
                   {PLAN_LABELS[lesson.requiredPlan].icon}{" "}
                   {PLAN_LABELS[lesson.requiredPlan].label}
                 </span>{" "}
@@ -187,21 +188,21 @@ function LessonPopup({
             hasGame ? (
               <button
                 onClick={onPlay}
-                className="w-full py-3 rounded-xl font-black text-white bg-gradient-to-r from-emerald-400 to-teal-500 shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 text-base"
+                className="w-full py-4 rounded-2xl font-black text-white bg-gradient-to-r from-emerald-400 to-teal-500 shadow-[0_8px_20px_rgba(16,185,129,0.25)] hover:shadow-[0_12px_25px_rgba(16,185,129,0.35)] hover:-translate-y-0.5 active:translate-y-0.5 active:scale-95 transition-all flex items-center justify-center gap-2 text-[17px] border border-emerald-300/50"
               >
-                <Gamepad2 size={20} /> Chơi ngay!
+                <Gamepad2 size={22} /> Chơi ngay!
               </button>
             ) : (
-              <div className="w-full py-3 rounded-xl font-bold text-gray-400 bg-gray-100 text-center text-sm flex items-center justify-center gap-2">
-                <BookOpen size={18} /> Sắp ra mắt
+              <div className="w-full py-4 rounded-2xl font-bold text-gray-500 bg-gray-100 text-center text-[15px] flex items-center justify-center gap-2 border border-gray-200 shadow-inner">
+                <BookOpen size={20} /> Nội dung sắp ra mắt
               </div>
             )
           ) : (
             <button
               onClick={onUpgrade}
-              className="w-full py-3 rounded-xl font-black text-white bg-gradient-to-r from-amber-400 to-orange-500 shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 text-base"
+              className="w-full py-4 rounded-2xl font-black text-white bg-gradient-to-r from-amber-400 to-orange-500 shadow-[0_8px_20px_rgba(245,158,11,0.25)] hover:shadow-[0_12px_25px_rgba(245,158,11,0.35)] hover:-translate-y-0.5 active:translate-y-0.5 active:scale-95 transition-all flex items-center justify-center gap-2 text-[17px] border border-amber-300/50"
             >
-              <Crown size={20} /> Nâng cấp{" "}
+              <Crown size={22} /> Nâng cấp{" "}
               {PLAN_LABELS[lesson.requiredPlan].label}
             </button>
           )}
@@ -375,19 +376,20 @@ function JourneyPath({ nodes }: { nodes: Node3D[] }) {
   useFrame(({ clock }) => {
     if (!tubeRef.current) return;
     const mat = tubeRef.current.material as THREE.MeshStandardMaterial;
-    mat.emissiveIntensity = 0.3 + Math.sin(clock.elapsedTime * 2) * 0.15;
+    mat.emissiveIntensity = 0.4 + Math.sin(clock.elapsedTime * 2.5) * 0.2;
   });
 
   return (
     <mesh ref={tubeRef} geometry={geometry}>
       <meshStandardMaterial
-        color="#fbbf24"
-        emissive="#fbbf24"
-        emissiveIntensity={0.3}
-        roughness={0.3}
-        metalness={0.1}
+        color="#fcd34d"
+        emissive="#f59e0b"
+        emissiveIntensity={0.5}
+        roughness={0.2}
+        metalness={0.4}
         transparent
-        opacity={0.85}
+        opacity={0.9}
+        envMapIntensity={1}
       />
     </mesh>
   );
@@ -458,6 +460,10 @@ function PathParticles({ nodes }: { nodes: Node3D[] }) {
 function TopicIsland({ node }: { node: Node3D }) {
   const meshRef = useRef<THREE.Mesh>(null);
   const color = getTopicColor(node.topicIndex);
+  
+  // Lighter, glowier version of the color
+  const glowColor = new THREE.Color(color).lerp(new THREE.Color("#ffffff"), 0.3).getStyle();
+  const glassColor = new THREE.Color(color).lerp(new THREE.Color("#ffffff"), 0.8).getStyle();
 
   useFrame(({ clock }) => {
     if (meshRef.current)
@@ -467,58 +473,97 @@ function TopicIsland({ node }: { node: Node3D }) {
 
   return (
     <Float
-      speed={1.5}
-      rotationIntensity={0.15}
-      floatIntensity={0.35}
+      speed={2}
+      rotationIntensity={0.2}
+      floatIntensity={0.4}
       position={node.position}
     >
       <group ref={meshRef}>
-        {/* Base cylinder */}
-        <mesh position={[0, -0.25, 0]}>
-          <cylinderGeometry args={[1.4, 1.8, 0.5, 16]} />
-          <meshStandardMaterial color={color} roughness={0.4} metalness={0.1} />
-        </mesh>
-        {/* Top surface */}
-        <mesh position={[0, 0.01, 0]}>
-          <cylinderGeometry args={[1.4, 1.4, 0.12, 16]} />
-          <meshStandardMaterial
-            color={new THREE.Color(color).lerp(new THREE.Color("#ffffff"), 0.3)}
-            roughness={0.6}
+        {/* Base crystal/island */}
+        <mesh position={[0, -0.3, 0]}>
+          <cylinderGeometry args={[1.6, 2.0, 0.6, 16]} />
+          <meshPhysicalMaterial 
+            color={color} 
+            roughness={0.2} 
+            metalness={0.1}
+            clearcoat={0.8}
+            clearcoatRoughness={0.2}
+            emissive={color}
+            emissiveIntensity={0.1}
           />
         </mesh>
-        {/* Glow ring */}
-        <mesh position={[0, 0.08, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[1.5, 1.75, 32]} />
-          <meshBasicMaterial
-            color={color}
+        
+        {/* Top glossy surface */}
+        <mesh position={[0, 0.05, 0]}>
+          <cylinderGeometry args={[1.55, 1.6, 0.15, 16]} />
+          <meshPhysicalMaterial
+            color={glassColor}
+            transmission={0.6}
+            opacity={0.9}
             transparent
-            opacity={0.25}
-            side={THREE.DoubleSide}
+            roughness={0.1}
+            metalness={0.1}
+            thickness={2}
+            ior={1.5}
           />
         </mesh>
+
+        {/* Outer aura/glow ring */}
+        <mesh position={[0, 0.15, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[1.7, 2.1, 32]} />
+          <meshBasicMaterial
+            color={glowColor}
+            transparent
+            opacity={0.3}
+            side={THREE.DoubleSide}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
+        
+        {/* Secondary inner aura */}
+        <mesh position={[0, 0.16, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[1.65, 1.75, 32]} />
+          <meshBasicMaterial
+            color="#ffffff"
+            transparent
+            opacity={0.4}
+            side={THREE.DoubleSide}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
+
         {/* Label */}
         <Html
-          position={[0, 0.7, 0]}
+          position={[0, 1.1, 0]}
           center
-          distanceFactor={10}
+          distanceFactor={12}
           style={{ pointerEvents: "none" }}
         >
           <div
-            className="bg-white/95 backdrop-blur-md rounded-2xl px-3 py-2 shadow-xl border-2 whitespace-nowrap"
-            style={{ borderColor: color }}
+            className="backdrop-blur-xl rounded-2xl px-4 py-2.5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] border-[3px] whitespace-nowrap transform transition-transform"
+            style={{ 
+              borderColor: 'rgba(255,255,255,0.8)',
+              background: `linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85))`,
+              boxShadow: `0 10px 25px ${color}40, inset 0 2px 0 rgba(255,255,255,1)`
+            }}
           >
             <p
-              className="text-[9px] font-black uppercase tracking-wide"
+              className="text-[10px] font-black uppercase tracking-wider mb-0.5"
               style={{ color }}
             >
               Chủ đề {node.topic.topicNumber}
             </p>
-            <p className="text-[11px] font-black text-gray-800 leading-tight max-w-[130px]">
-              {node.topic.emoji} {node.topic.title}
+            <p className="text-[14px] font-black text-slate-800 leading-tight flex items-center gap-1.5 drop-shadow-sm">
+              <span className="text-xl">{node.topic.emoji}</span> 
+              <span>{node.topic.title}</span>
             </p>
-            <p className="text-[8px] text-gray-400 font-bold mt-0.5">
+            <p className="text-[9px] text-slate-500 font-bold mt-1 uppercase tracking-wide">
               {node.topic.lessons.length} bài học
             </p>
+            
+            {/* Little pointer triangle */}
+            <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-4 h-4 bg-white/90 rotate-45 border-b-[3px] border-r-[3px]"
+                 style={{ borderColor: 'rgba(255,255,255,0.8)' }} />
           </div>
         </Html>
       </group>
@@ -582,28 +627,44 @@ function LessonSphere({
           document.body.style.cursor = "auto";
         }}
       >
-        <sphereGeometry args={[0.5, 32, 32]} />
-        <meshStandardMaterial
+        <sphereGeometry args={[isCurrentLesson ? 0.6 : 0.5, 32, 32]} />
+        <meshPhysicalMaterial
           color={baseColor}
           emissive={emissiveColor}
-          emissiveIntensity={hovered ? 0.5 : isCurrentLesson ? 0.35 : 0.12}
-          roughness={0.25}
-          metalness={0.3}
+          emissiveIntensity={hovered ? 0.8 : isCurrentLesson ? 0.6 : 0.2}
+          roughness={0.1}
+          metalness={0.2}
+          clearcoat={1.0}
+          clearcoatRoughness={0.1}
           transparent
-          opacity={isComingSoon ? 0.75 : 0.92}
+          opacity={isComingSoon ? 0.6 : 1}
         />
+        
+        {/* Inner glow for accessible lessons */}
+        {!isLocked && (
+          <mesh scale={1.05}>
+            <sphereGeometry args={[isCurrentLesson ? 0.6 : 0.5, 32, 32]} />
+            <meshBasicMaterial
+              color="#ffffff"
+              transparent
+              opacity={hovered ? 0.4 : isCurrentLesson ? 0.3 : 0.1}
+              blending={THREE.AdditiveBlending}
+              side={THREE.BackSide}
+            />
+          </mesh>
+        )}
       </mesh>
 
       {/* Lesson number / lock */}
       <Text
-        position={[node.position[0], node.position[1], node.position[2] + 0.52]}
-        fontSize={0.32}
+        position={[node.position[0], node.position[1], node.position[2] + (isCurrentLesson ? 0.62 : 0.52)]}
+        fontSize={isCurrentLesson ? 0.4 : 0.32}
         fontWeight={900}
         color="white"
         anchorX="center"
         anchorY="middle"
-        outlineWidth={0.02}
-        outlineColor="#000000"
+        outlineWidth={0.03}
+        outlineColor={isLocked ? "#4b5563" : new THREE.Color(color).lerp(new THREE.Color("#000"), 0.4).getStyle()}
       >
         {isLocked ? "🔒" : String(lesson.lessonNumber)}
       </Text>
@@ -642,8 +703,8 @@ function LessonSphere({
           distanceFactor={10}
           style={{ pointerEvents: "none" }}
         >
-          <div className="animate-bounce bg-white rounded-full px-2.5 py-0.5 shadow-lg border-2 border-sky-400 whitespace-nowrap">
-            <span className="text-[10px] font-black text-sky-500 whitespace-nowrap">
+          <div className="animate-bounce bg-white/95 backdrop-blur-md rounded-full px-3 py-1 shadow-[0_8px_20px_rgba(56,189,248,0.4)] border-[3px] border-sky-300 whitespace-nowrap">
+            <span className="text-[12px] font-black text-sky-500 whitespace-nowrap drop-shadow-sm">
               Bắt đầu nào! 🌟
             </span>
           </div>
@@ -772,29 +833,45 @@ function CameraAnimator({
 function SceneEnvironment() {
   return (
     <>
-      <color attach="background" args={["#0f1847"]} />
-      <fog attach="fog" args={["#0f1847", 25, 70]} />
-      <ambientLight intensity={0.7} />
-      <directionalLight position={[10, 15, 10]} intensity={1.1} castShadow />
-      <pointLight position={[-10, 5, 5]} intensity={0.5} color="#38bdf8" />
-      <pointLight position={[10, 5, -5]} intensity={0.4} color="#f472b6" />
-      <hemisphereLight args={["#7dd3fc", "#1e1b4b", 0.5]} />
-      <Stars
-        radius={60}
-        depth={30}
-        count={800}
-        factor={2.2}
-        saturation={0.7}
-        fade
-        speed={0.3}
+      <color attach="background" args={["#0c1033"]} />
+      <fog attach="fog" args={["#0c1033", 20, 80]} />
+      
+      <ambientLight intensity={0.6} color="#e0e7ff" />
+      <directionalLight 
+        position={[15, 20, 10]} 
+        intensity={1.2} 
+        color="#ffffff" 
+        castShadow 
       />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -3.5, 0]}>
-        <planeGeometry args={[500, 50]} />
+      <directionalLight 
+        position={[-15, -5, -10]} 
+        intensity={0.4} 
+        color="#818cf8" 
+      />
+      
+      <pointLight position={[-10, 8, 5]} intensity={0.8} color="#38bdf8" />
+      <pointLight position={[10, 6, -5]} intensity={0.6} color="#f472b6" />
+      <pointLight position={[0, -5, 10]} intensity={0.5} color="#8b5cf6" />
+      
+      <hemisphereLight args={["#e0e7ff", "#0f172a", 0.6]} />
+      
+      <Stars
+        radius={70}
+        depth={40}
+        count={1200}
+        factor={3}
+        saturation={0.8}
+        fade
+        speed={0.4}
+      />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -4, 0]}>
+        <planeGeometry args={[1000, 100]} />
         <meshStandardMaterial
-          color="#161240"
+          color="#0a0d26"
           transparent
-          opacity={0.5}
-          roughness={1}
+          opacity={0.8}
+          roughness={0.8}
+          metalness={0.2}
         />
       </mesh>
     </>
@@ -898,23 +975,29 @@ function NavigationHUD({
   topicName: string;
 }) {
   return (
-    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3">
+    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-4">
       <button
         onClick={onPrev}
         disabled={currentTopicIndex <= 0}
-        className="w-10 h-10 rounded-full bg-white/90 shadow-lg flex items-center justify-center hover:scale-110 active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none backdrop-blur-sm"
+        className="w-12 h-12 rounded-full bg-white/10 border border-white/20 shadow-[0_4px_15px_rgba(0,0,0,0.2)] flex items-center justify-center hover:bg-white/20 hover:scale-110 active:scale-95 transition-all disabled:opacity-20 disabled:pointer-events-none backdrop-blur-xl group"
       >
-        <ChevronLeft size={22} className="text-amber-500" />
+        <ChevronLeft size={26} className="text-white group-hover:text-amber-300 transition-colors" />
       </button>
-      <div className="bg-white/90 backdrop-blur-md rounded-2xl px-4 py-2 shadow-lg">
-        <p className="text-xs font-black text-gray-800 text-center whitespace-nowrap">
+      <div className="bg-white/10 border border-white/20 backdrop-blur-xl rounded-full px-6 py-2.5 shadow-[0_4px_15px_rgba(0,0,0,0.2)]">
+        <p className="text-sm font-black text-white text-center whitespace-nowrap drop-shadow-md">
           📐 {topicName}
         </p>
-        <div className="flex items-center gap-1.5 mt-1 justify-center">
+        <div className="flex items-center gap-2 mt-1.5 justify-center">
           {Array.from({ length: totalTopics }).map((_, i) => (
             <div
               key={i}
-              className={`w-2 h-2 rounded-full transition-all ${i === currentTopicIndex ? "bg-amber-400 scale-125" : i < currentTopicIndex ? "bg-emerald-400" : "bg-gray-300"}`}
+              className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                i === currentTopicIndex 
+                  ? "bg-amber-400 scale-125 shadow-[0_0_8px_rgba(251,191,36,0.8)]" 
+                  : i < currentTopicIndex 
+                    ? "bg-emerald-400 opacity-80" 
+                    : "bg-white/30"
+              }`}
             />
           ))}
         </div>
@@ -922,9 +1005,9 @@ function NavigationHUD({
       <button
         onClick={onNext}
         disabled={currentTopicIndex >= totalTopics - 1}
-        className="w-10 h-10 rounded-full bg-white/90 shadow-lg flex items-center justify-center hover:scale-110 active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none backdrop-blur-sm"
+        className="w-12 h-12 rounded-full bg-white/10 border border-white/20 shadow-[0_4px_15px_rgba(0,0,0,0.2)] flex items-center justify-center hover:bg-white/20 hover:scale-110 active:scale-95 transition-all disabled:opacity-20 disabled:pointer-events-none backdrop-blur-xl group"
       >
-        <ChevronRight size={22} className="text-amber-500" />
+        <ChevronRight size={26} className="text-white group-hover:text-amber-300 transition-colors" />
       </button>
     </div>
   );
@@ -940,6 +1023,8 @@ export function Math2TableOfContents() {
   const [currentTopicIndex, setCurrentTopicIndex] = useState(0);
   const [canvasKey, setCanvasKey] = useState(0);
   const [webglFailed, setWebglFailed] = useState(false);
+  const [showAd, setShowAd] = useState(false);
+  const [pendingLessonRoute, setPendingLessonRoute] = useState<string | null>(null);
   const controlsRef = useRef<any>(null);
   const webglLossCountRef = useRef(0);
 
@@ -987,14 +1072,32 @@ export function Math2TableOfContents() {
   const handlePlay = useCallback(
     (lesson: Math2Lesson) => {
       setSelectedLesson(null);
+      let targetRoute = "";
       if (lesson.gameType === "number-sequence-chart") {
-        navigate("/student/game/number-sequence");
+        targetRoute = "/student/game/number-sequence";
       } else if (lesson.gameType === "math2-quiz-3d") {
-        navigate("/student/game/math2-quiz-3d");
+        targetRoute = "/student/game/math2-quiz-3d";
+      }
+      
+      if (targetRoute) {
+        if (userPlan === "FREE") {
+          setPendingLessonRoute(targetRoute);
+          setShowAd(true);
+        } else {
+          navigate(targetRoute);
+        }
       }
     },
-    [navigate],
+    [userPlan, navigate],
   );
+
+  const handleAdComplete = useCallback(() => {
+    setShowAd(false);
+    if (pendingLessonRoute) {
+      navigate(pendingLessonRoute);
+      setPendingLessonRoute(null);
+    }
+  }, [pendingLessonRoute, navigate]);
 
   const handleCanvasCreated = useCallback(
     ({ gl }: { gl: THREE.WebGLRenderer }) => {
@@ -1021,6 +1124,12 @@ export function Math2TableOfContents() {
 
   return (
     <div className="relative h-[calc(100vh-5rem)] overflow-hidden bg-gradient-to-b from-indigo-950 via-indigo-900 to-slate-900">
+      <PreRollAdModal 
+        isOpen={showAd} 
+        onClose={() => setShowAd(false)} 
+        onAdComplete={handleAdComplete} 
+      />
+      
       {/* Title overlay */}
       <div className="absolute top-3 left-4 z-30 flex items-center gap-2">
         <span className="text-3xl">📐</span>

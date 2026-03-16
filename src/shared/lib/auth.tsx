@@ -19,6 +19,7 @@ export interface User {
   nickname: string;
   email: string;
   avatarId: string;
+  tier?: "free" | "premium";
 }
 
 /** Currently active role: child learning or parent dashboard */

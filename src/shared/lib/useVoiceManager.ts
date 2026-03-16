@@ -117,7 +117,7 @@ export interface VoiceManagerAPI {
   /** Phát 1 voice line tùy ý */
   playVoice: (event: keyof VoiceConfig) => string;
   /** Nói text tùy ý bằng TTS (giọng cute tiếng Việt) */
-  speakText: (text: string) => void;
+  speakText: (text: string, onEnd?: () => void) => void;
   /** Dừng tất cả giọng nói */
   stopVoice: () => void;
   /** Bật/tắt voice — trả về trạng thái mới */
@@ -172,10 +172,44 @@ export function useVoiceManager(config: VoiceConfig = defaultVoiceConfig): Voice
     return enabledRef.current;
   }, []);
 
-  const speakText = useCallback((text: string) => {
-    if (enabledRef.current) {
-      void text;
+  const speakText = useCallback((text: string, onEnd?: () => void) => {
+    if (!enabledRef.current || !("speechSynthesis" in window)) {
+      if (onEnd) onEnd();
+      return;
     }
+
+    // Stop any currently playing TTS
+    window.speechSynthesis.cancel();
+    // Stop MP3s so they don't overlap
+    stopAllAudio();
+
+    // Playful text processing
+    let processedText = text;
+    if (processedText.startsWith("Câu ")) {
+      processedText = processedText.replace("Câu ", "Câu số ") + " nè bé ơi!";
+    }
+    if (processedText.includes("!") && !processedText.includes("nha!")) {
+      processedText = processedText.replace("!", " nha!");
+    }
+    if (processedText.includes("?") && !processedText.includes("nhỉ?")) {
+      processedText = processedText.replace("?", " nhỉ?");
+    }
+
+    const utterance = new SpeechSynthesisUtterance(processedText);
+    utterance.lang = "vi-VN";
+    
+    // Playful, cartoonish voice settings
+    utterance.rate = 1.35;
+    utterance.pitch = 2.0;
+    utterance.volume = 1.0;
+
+    // Handle callbacks
+    if (onEnd) {
+      utterance.onend = onEnd;
+      utterance.onerror = onEnd;
+    }
+
+    window.speechSynthesis.speak(utterance);
   }, []);
 
   const isEnabled = useCallback(() => enabledRef.current, []);

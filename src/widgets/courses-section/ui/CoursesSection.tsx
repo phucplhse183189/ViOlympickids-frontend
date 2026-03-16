@@ -8,7 +8,7 @@ export function CoursesSection() {
 
   return (
     <section id="courses" ref={ref} className="py-24 bg-blue-50">
-      <div className="container mx-auto px-6">
+      <div className="container mx-auto px-6 max-w-6xl">
         {/* Header */}
         <div
           className={`reveal ${inView ? "visible" : ""} text-center max-w-2xl mx-auto mb-16`}

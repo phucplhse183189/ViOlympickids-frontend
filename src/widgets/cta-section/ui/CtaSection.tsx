@@ -25,7 +25,7 @@ export function CtaSection() {
         style={{ animationDelay: "1s" }}
       />
 
-      <div className="container mx-auto px-6 text-center relative z-10">
+      <div className="container mx-auto px-6 max-w-6xl text-center relative z-10">
         <h2
           className={`reveal scale-up ${inView ? "visible" : ""} text-4xl md:text-5xl font-bold text-white mb-6`}
         >
