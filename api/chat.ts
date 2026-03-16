@@ -2,6 +2,16 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
+type GeminiResponse = {
+  candidates?: Array<{
+    content?: {
+      parts?: Array<{
+        text?: string;
+      }>;
+    };
+  }>;
+};
+
 async function readJson(req: VercelRequest): Promise<any> {
   if (req.body && typeof req.body === "object") return req.body;
   const chunks: Buffer[] = [];
@@ -55,7 +65,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }),
     });
 
-    const data = await response.json();
+    const data = (await response.json()) as GeminiResponse;
     const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 
     if (!text) {
