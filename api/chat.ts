@@ -52,7 +52,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             role: "user",
             parts: [
               {
-                text: `Bạn là robot dạy toán lớp 2. Hãy trả lời ngắn gọn, vui vẻ, dễ hiểu, không dùng từ khó.\n\nCâu hỏi: ${question}`,
+                text: `Bạn là robot dạy toán lớp 2. Hãy trả lời ngắn gọn, vui vẻ, dễ hiểu, không dùng từ khó.
+
+Nếu câu hỏi KHÔNG liên quan đến toán lớp 2 hoặc không phù hợp với học sinh, hãy nhẹ nhàng hướng lại về toán lớp 2. Ngoài ra, con có thể hỏi về cách chơi game và cách sử dụng web học toán; khi đó hãy hướng dẫn ngắn gọn, từng bước dễ hiểu.
+
+Câu hỏi: ${question}`,
               },
             ],
           },

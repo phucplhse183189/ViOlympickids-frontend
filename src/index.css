@@ -494,6 +494,14 @@
   }
 }
 
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 .animate-kids-bounce-in {
   animation: kids-bounce-in 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }

@@ -64,16 +64,23 @@ export default NumberSequenceGame;
 function RobotCharacter({
   message,
   size = "md",
+  onClick,
 }: Readonly<{
   message: string;
   size?: "sm" | "md" | "lg";
+  onClick?: () => void;
 }>) {
   const sizeMap = { sm: "w-16 h-16", md: "w-24 h-24", lg: "w-32 h-32" };
 
   return (
     <div className="flex items-end gap-2">
       {/* Robot body */}
-      <div className={`${sizeMap[size]} relative robot-idle flex-shrink-0`}>
+      <button
+        type="button"
+        onClick={onClick}
+        className={`${sizeMap[size]} relative robot-idle flex-shrink-0 focus:outline-none`}
+        aria-label="Mở trợ lý robot"
+      >
         <video
           className="w-full h-full object-cover rounded-2xl border-2 border-sky-300 shadow-lg bg-sky-100"
           src="/videos/VideoRobotHoatDong.mp4"
@@ -86,17 +93,56 @@ function RobotCharacter({
           disablePictureInPicture
           controlsList="nodownload noplaybackrate noremoteplayback nofullscreen"
         />
-      </div>
+      </button>
 
       {/* Speech bubble */}
       {message && (
         <div className="relative bg-white rounded-2xl shadow-lg px-4 py-2.5 max-w-[260px] animate-fade-in-up">
           <div className="absolute -left-2 bottom-3 w-4 h-4 bg-white rotate-45" />
-          <p className="text-sm font-bold text-gray-700 relative z-10">
-            {message}
-          </p>
+          <div className="max-h-[92px] overflow-y-auto scrollbar-hide">
+            <p className="text-sm font-bold text-gray-700 relative z-10">
+              {message}
+            </p>
+          </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function RobotAskBar({
+  value,
+  onChange,
+  onSend,
+  loading,
+}: Readonly<{
+  value: string;
+  onChange: (value: string) => void;
+  onSend: () => void;
+  loading: boolean;
+}>) {
+  return (
+    <div className="bg-white/90 backdrop-blur rounded-full shadow-lg border-2 border-amber-200 px-3 py-2 flex items-center gap-2">
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            onSend();
+          }
+        }}
+        placeholder="Nhập câu hỏi toán lớp 2..."
+        className="flex-1 bg-transparent text-sm sm:text-base font-bold text-gray-700 outline-none placeholder:text-gray-400"
+      />
+      <button
+        type="button"
+        onClick={onSend}
+        className="px-4 py-2 rounded-full bg-amber-400 text-white text-sm font-extrabold shadow active:scale-95 transition"
+        disabled={loading}
+      >
+        Gửi
+      </button>
     </div>
   );
 }
@@ -231,9 +277,11 @@ function VictoryModal({
 function AppleGardenMap({
   onComplete,
   difficulty,
+  initialInstruction,
 }: Readonly<{
   onComplete: (stars: number) => void;
   difficulty: number;
+  initialInstruction: string;
 }>) {
   const fixedNumberLine = [1, 2, null, 4, null, 6, null];
   const fixedMissingIndices = [2, 4, 6];
@@ -242,9 +290,10 @@ function AppleGardenMap({
   const [placed, setPlaced] = useState<Record<number, number | null>>({});
   const [remaining, setRemaining] = useState<number[]>([]);
   const [dragging, setDragging] = useState<number | null>(null);
-  const [robotMsg, setRobotMsg] = useState(
-    "Kéo quả táo vào ô trống trên tia số nhé! 🍎",
-  );
+  const [robotMsg, setRobotMsg] = useState(initialInstruction);
+  const [robotInput, setRobotInput] = useState("");
+  const [robotLoading, setRobotLoading] = useState(false);
+  const [robotChatOpen, setRobotChatOpen] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const [shake, setShake] = useState<number | null>(null);
   const [touchDragValue, setTouchDragValue] = useState<number | null>(null);
@@ -258,10 +307,41 @@ function AppleGardenMap({
     setRemaining([3, 5, 7]);
     setPlaced({ 2: null, 4: null, 6: null });
     setAttempts(0);
+    setRobotMsg(initialInstruction);
     completedRef.current = false;
-  }, [difficulty]);
+  }, [difficulty, initialInstruction]);
 
   const sound = useSounds();
+
+  const sendRobotQuestion = useCallback(async () => {
+    const trimmed = robotInput.trim();
+    if (!trimmed || robotLoading) return;
+
+    setRobotInput("");
+    setRobotLoading(true);
+    setRobotMsg("Tí Tách đang suy nghĩ...");
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: trimmed }),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText || "AI error");
+      }
+
+      const data = await res.json();
+      const answer = data?.answer ?? "";
+      setRobotMsg(answer || "Robot chưa nghe rõ. Con hỏi lại được không?");
+    } catch {
+      setRobotMsg("Robot đang bận một chút, con thử lại nhé!");
+    } finally {
+      setRobotLoading(false);
+    }
+  }, [robotInput, robotLoading]);
 
   const tryDrop = useCallback(
     (targetIdx: number, value: number) => {
@@ -358,16 +438,35 @@ function AppleGardenMap({
           <img src="/bang.png" alt="Tiêu đề" className="w-full object-contain" />
         </div>
 
-        <div className="absolute left-[8%] top-[34%] w-[19%] min-w-[88px] max-w-[160px]">
-          <img src="/robot%20(1).png" alt="Robot" className="w-full object-contain drop-shadow" />
-        </div>
+        <button
+          type="button"
+          onClick={() => setRobotChatOpen((v) => !v)}
+          className="absolute left-[8%] top-[34%] w-[19%] min-w-[88px] max-w-[160px] focus:outline-none"
+          aria-label="Mở khung chat robot"
+        >
+          <img
+            src="/robot%20(1).png"
+            alt="Robot"
+            className="w-full object-contain drop-shadow"
+          />
+        </button>
 
-        <div className="absolute left-1/2 -translate-x-1/2 top-[25%] w-[40%] min-w-[220px] max-w-[370px]">
-          <img src="/khungThoai.png" alt="Khung thoại" className="w-full object-contain" />
-          <p className="absolute left-[15%] right-[15%] top-[22%] bottom-[22%] flex items-center justify-center text-[13px] sm:text-[16px] font-black text-gray-800 text-center leading-tight">
-            {robotMsg}
-          </p>
-        </div>
+        {robotChatOpen && (
+          <div className="absolute left-1/2 -translate-x-1/2 top-[25%] w-[40%] min-w-[220px] max-w-[370px]">
+            <img
+              src="/khungThoai.png"
+              alt="Khung thoại"
+              className="w-full object-contain"
+            />
+            <div className="absolute left-[14%] right-[14%] top-[18%] bottom-[28%] flex flex-col justify-center">
+              <div className="max-h-[96px] overflow-y-auto scrollbar-hide p-4 flex flex-col justify-center">
+                <p className="text-[13px] sm:text-[16px] font-black text-gray-800 text-center leading-tight whitespace-pre-line">
+                  {robotMsg}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="absolute left-1/2 -translate-x-1/2 top-[56%] w-[78%]">
           <div className="h-[7px] bg-amber-500 rounded-full shadow-[inset_0_1px_2px_rgba(0,0,0,0.25)]" />
@@ -437,7 +536,16 @@ function AppleGardenMap({
           ))}
         </div>
 
-        <div className="absolute left-1/2 -translate-x-1/2 bottom-[8%]" />
+          {robotChatOpen && (
+          <div className="absolute left-1/2 -translate-x-1/2 bottom-[8%] w-[78%] max-w-[520px]">
+            <RobotAskBar
+              value={robotInput}
+              onChange={setRobotInput}
+              onSend={() => void sendRobotQuestion()}
+              loading={robotLoading}
+            />
+          </div>
+        )}
       </div>
 
       {touchDragValue !== null && touchPos && (
@@ -466,15 +574,20 @@ function AppleGardenMap({
 function BridgeMap({
   onComplete,
   difficulty,
+  initialInstruction,
 }: Readonly<{
   onComplete: (stars: number) => void;
   difficulty: number;
+  initialInstruction: string;
 }>) {
   const [puzzle, setPuzzle] = useState(() => generateBridgePuzzle(difficulty));
   const [robotPos, setRobotPos] = useState(0);
   const [answered, setAnswered] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
   const [robotMsg, setRobotMsg] = useState("");
+  const [robotInput, setRobotInput] = useState("");
+  const [robotLoading, setRobotLoading] = useState(false);
+  const [robotChatOpen, setRobotChatOpen] = useState(false);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [attempts, setAttempts] = useState(0);
 
@@ -486,12 +599,40 @@ function BridgeMap({
     setSelected(null);
     setIsCorrect(null);
     setAttempts(0);
-    setRobotMsg(
-      `Tìm số liền ${p.type === "next" ? "sau" : "trước"} rồi giúp mình nhảy qua cầu nhé! 🌉`,
-    );
-  }, [difficulty]);
+    setRobotMsg(initialInstruction);
+  }, [difficulty, initialInstruction]);
 
   const sound = useSounds();
+
+  const sendRobotQuestion = useCallback(async () => {
+    const trimmed = robotInput.trim();
+    if (!trimmed || robotLoading) return;
+
+    setRobotInput("");
+    setRobotLoading(true);
+    setRobotMsg("Tí Tách đang suy nghĩ...");
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: trimmed }),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText || "AI error");
+      }
+
+      const data = await res.json();
+      const answer = data?.answer ?? "";
+      setRobotMsg(answer || "Robot chưa nghe rõ. Con hỏi lại được không?");
+    } catch {
+      setRobotMsg("Robot đang bận một chút, con thử lại nhé!");
+    } finally {
+      setRobotLoading(false);
+    }
+  }, [robotInput, robotLoading]);
 
   const handleSelect = (value: number) => {
     if (answered) return;
@@ -539,7 +680,20 @@ function BridgeMap({
 
   return (
     <div className="space-y-6">
-      <RobotCharacter message={robotMsg} size="sm" />
+      <RobotCharacter
+        message={robotMsg}
+        size="sm"
+        onClick={() => setRobotChatOpen((v) => !v)}
+      />
+
+      {robotChatOpen && (
+        <RobotAskBar
+          value={robotInput}
+          onChange={setRobotInput}
+          onSend={() => void sendRobotQuestion()}
+          loading={robotLoading}
+        />
+      )}
 
       {/* Bridge scene */}
       <div className="relative bg-gradient-to-b from-sky-200 to-blue-300 rounded-3xl p-4 sm:p-6 shadow-inner min-h-[220px] overflow-hidden">
@@ -649,17 +803,20 @@ function BridgeMap({
 function TrainMap({
   onComplete,
   difficulty,
+  initialInstruction,
 }: Readonly<{
   onComplete: (stars: number) => void;
   difficulty: number;
+  initialInstruction: string;
 }>) {
   const [puzzle, setPuzzle] = useState(() => generateTrainPuzzle(difficulty));
   const [placed, setPlaced] = useState<Record<number, number | null>>({});
   const [remaining, setRemaining] = useState<number[]>([]);
   const [dragging, setDragging] = useState<number | null>(null);
-  const [robotMsg, setRobotMsg] = useState(
-    "Kéo toa tàu vào đúng vị trí trên đường ray! 🚂",
-  );
+  const [robotMsg, setRobotMsg] = useState(initialInstruction);
+  const [robotInput, setRobotInput] = useState("");
+  const [robotLoading, setRobotLoading] = useState(false);
+  const [robotChatOpen, setRobotChatOpen] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const [shake, setShake] = useState<number | null>(null);
   const [touchDragValue, setTouchDragValue] = useState<number | null>(null);
@@ -677,10 +834,41 @@ function TrainMap({
     p.missingIndices.forEach((i) => (init[i] = null));
     setPlaced(init);
     setAttempts(0);
+    setRobotMsg(initialInstruction);
     completedRef.current = false;
-  }, [difficulty]);
+  }, [difficulty, initialInstruction]);
 
   const sound = useSounds();
+
+  const sendRobotQuestion = useCallback(async () => {
+    const trimmed = robotInput.trim();
+    if (!trimmed || robotLoading) return;
+
+    setRobotInput("");
+    setRobotLoading(true);
+    setRobotMsg("Tí Tách đang suy nghĩ...");
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: trimmed }),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText || "AI error");
+      }
+
+      const data = await res.json();
+      const answer = data?.answer ?? "";
+      setRobotMsg(answer || "Robot chưa nghe rõ. Con hỏi lại được không?");
+    } catch {
+      setRobotMsg("Robot đang bận một chút, con thử lại nhé!");
+    } finally {
+      setRobotLoading(false);
+    }
+  }, [robotInput, robotLoading]);
 
   const tryDrop = useCallback(
     (targetIdx: number, value: number) => {
@@ -760,7 +948,22 @@ function TrainMap({
 
   return (
     <div className="space-y-6">
-      <RobotCharacter message={robotMsg} size="sm" />
+      <RobotCharacter
+        message={robotMsg}
+        size="sm"
+        onClick={() => setRobotChatOpen((v) => !v)}
+      />
+
+      {robotChatOpen && (
+        <div className="mb-4">
+          <RobotAskBar
+            value={robotInput}
+            onChange={setRobotInput}
+            onSend={() => void sendRobotQuestion()}
+            loading={robotLoading}
+          />
+        </div>
+      )}
 
       <div className="bg-gradient-to-b from-amber-100 to-yellow-200 rounded-3xl p-4 sm:p-6 shadow-inner">
         <p className="text-center text-amber-700 font-extrabold text-sm mb-4">
@@ -901,17 +1104,20 @@ function TrainMap({
 function BalloonCityMap({
   onComplete,
   difficulty,
+  initialInstruction,
 }: Readonly<{
   onComplete: (stars: number) => void;
   difficulty: number;
+  initialInstruction: string;
 }>) {
   const [puzzle, setPuzzle] = useState(() => generateBalloonPuzzle(difficulty));
   const [placed, setPlaced] = useState<Record<number, number | null>>({});
   const [remaining, setRemaining] = useState<typeof puzzle.balloons>([]);
   const [dragging, setDragging] = useState<number | null>(null);
-  const [robotMsg, setRobotMsg] = useState(
-    "Bắt bóng bay và kéo về đúng ô trống! 🎈",
-  );
+  const [robotMsg, setRobotMsg] = useState(initialInstruction);
+  const [robotInput, setRobotInput] = useState("");
+  const [robotLoading, setRobotLoading] = useState(false);
+  const [robotChatOpen, setRobotChatOpen] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const [shake, setShake] = useState<number | null>(null);
   const [touchDragValue, setTouchDragValue] = useState<number | null>(null);
@@ -929,10 +1135,41 @@ function BalloonCityMap({
     p.missingIndices.forEach((i) => (init[i] = null));
     setPlaced(init);
     setAttempts(0);
+    setRobotMsg(initialInstruction);
     completedRef.current = false;
-  }, [difficulty]);
+  }, [difficulty, initialInstruction]);
 
   const sound = useSounds();
+
+  const sendRobotQuestion = useCallback(async () => {
+    const trimmed = robotInput.trim();
+    if (!trimmed || robotLoading) return;
+
+    setRobotInput("");
+    setRobotLoading(true);
+    setRobotMsg("Tí Tách đang suy nghĩ...");
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: trimmed }),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText || "AI error");
+      }
+
+      const data = await res.json();
+      const answer = data?.answer ?? "";
+      setRobotMsg(answer || "Robot chưa nghe rõ. Con hỏi lại được không?");
+    } catch {
+      setRobotMsg("Robot đang bận một chút, con thử lại nhé!");
+    } finally {
+      setRobotLoading(false);
+    }
+  }, [robotInput, robotLoading]);
 
   const tryDrop = useCallback(
     (targetIdx: number, value: number) => {
@@ -1009,13 +1246,35 @@ function BalloonCityMap({
 
   return (
     <div className="space-y-6">
-      <RobotCharacter message={robotMsg} size="sm" />
+      <RobotCharacter
+        message={robotMsg}
+        size="sm"
+        onClick={() => setRobotChatOpen((v) => !v)}
+      />
+
+      {robotChatOpen && (
+        <RobotAskBar
+          value={robotInput}
+          onChange={setRobotInput}
+          onSend={() => void sendRobotQuestion()}
+          loading={robotLoading}
+        />
+      )}
 
       {/* Floating balloons */}
       <div className="text-center">
         <p className="text-pink-700 font-extrabold text-sm mb-3">
           🎈 Kéo bóng bay về đúng vị trí:
         </p>
+
+        <div className="mb-4">
+          <RobotAskBar
+            value={robotInput}
+            onChange={setRobotInput}
+            onSend={() => void sendRobotQuestion()}
+            loading={robotLoading}
+          />
+        </div>
         <div className="flex justify-center gap-4 flex-wrap">
           {remaining.map((balloon) => (
             <div
@@ -1139,15 +1398,18 @@ function BalloonCityMap({
 function RabbitRaceMap({
   onComplete,
   difficulty,
+  initialInstruction,
 }: Readonly<{
   onComplete: (stars: number) => void;
   difficulty: number;
+  initialInstruction: string;
 }>) {
   const [puzzle, setPuzzle] = useState(() => generateRabbitPuzzle(difficulty));
   const [order, setOrder] = useState<number[]>([]);
-  const [robotMsg, setRobotMsg] = useState(
-    "Sắp xếp các bạn thỏ theo thứ tự từ bé đến lớn! 🐰",
-  );
+  const [robotMsg, setRobotMsg] = useState(initialInstruction);
+  const [robotInput, setRobotInput] = useState("");
+  const [robotLoading, setRobotLoading] = useState(false);
+  const [robotChatOpen, setRobotChatOpen] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const [checked, setChecked] = useState(false);
 
@@ -1163,10 +1425,39 @@ function RabbitRaceMap({
     setOrder([]);
     setChecked(false);
     setAttempts(0);
-    const msg = "Sắp xếp các bạn thỏ theo thứ tự từ bé đến lớn! 🐰";
-    setRobotMsg(msg);
-    sound.speak(msg);
-  }, [difficulty, sound]);
+    setRobotMsg(initialInstruction);
+    sound.speak(initialInstruction);
+  }, [difficulty, sound, initialInstruction]);
+
+  const sendRobotQuestion = useCallback(async () => {
+    const trimmed = robotInput.trim();
+    if (!trimmed || robotLoading) return;
+
+    setRobotInput("");
+    setRobotLoading(true);
+    setRobotMsg("Tí Tách đang suy nghĩ...");
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: trimmed }),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText || "AI error");
+      }
+
+      const data = await res.json();
+      const answer = data?.answer ?? "";
+      setRobotMsg(answer || "Robot chưa nghe rõ. Con hỏi lại được không?");
+    } catch {
+      setRobotMsg("Robot đang bận một chút, con thử lại nhé!");
+    } finally {
+      setRobotLoading(false);
+    }
+  }, [robotInput, robotLoading]);
 
   const handleTapRabbit = (value: number) => {
     if (checked) return;
@@ -1202,10 +1493,32 @@ function RabbitRaceMap({
 
   return (
     <div className="space-y-6">
-      <RobotCharacter message={robotMsg} size="sm" />
+      <RobotCharacter
+        message={robotMsg}
+        size="sm"
+        onClick={() => setRobotChatOpen((v) => !v)}
+      />
+
+      {robotChatOpen && (
+        <RobotAskBar
+          value={robotInput}
+          onChange={setRobotInput}
+          onSend={() => void sendRobotQuestion()}
+          loading={robotLoading}
+        />
+      )}
 
       {/* Race track */}
       <div className="bg-gradient-to-r from-violet-100 via-purple-50 to-fuchsia-100 rounded-3xl p-4 sm:p-6 shadow-inner relative overflow-hidden">
+        <div className="mb-4">
+          <RobotAskBar
+            value={robotInput}
+            onChange={setRobotInput}
+            onSend={() => void sendRobotQuestion()}
+            loading={robotLoading}
+          />
+        </div>
+
         {/* Track lines */}
         <div className="absolute top-0 left-0 right-0 bottom-0 flex flex-col justify-around opacity-10">
           {[0, 1, 2].map((i) => (
@@ -1721,7 +2034,6 @@ export function NumberSequenceGame() {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (gameState === "playing") {
         e.preventDefault();
-        e.returnValue = ""; // Required for Chrome to show the prompt
       }
     };
 
@@ -2083,6 +2395,7 @@ export function NumberSequenceGame() {
                     key={mapKey}
                     onComplete={handleMapComplete}
                     difficulty={difficulty}
+                    initialInstruction="Kéo quả táo vào ô trống trên tia số nhé! 🍎"
                   />
                 )}
                 {activeMap === 2 && (
@@ -2090,6 +2403,7 @@ export function NumberSequenceGame() {
                     key={mapKey}
                     onComplete={handleMapComplete}
                     difficulty={difficulty}
+                    initialInstruction="Tìm số liền trước hoặc liền sau để giúp robot nhảy qua cầu nhé! 🌉"
                   />
                 )}
                 {activeMap === 3 && (
@@ -2097,6 +2411,7 @@ export function NumberSequenceGame() {
                     key={mapKey}
                     onComplete={handleMapComplete}
                     difficulty={difficulty}
+                    initialInstruction="Kéo toa tàu vào đúng vị trí trên đường ray nhé! 🚂"
                   />
                 )}
                 {activeMap === 4 && (
@@ -2104,6 +2419,7 @@ export function NumberSequenceGame() {
                     key={mapKey}
                     onComplete={handleMapComplete}
                     difficulty={difficulty}
+                    initialInstruction="Bắt bóng bay và kéo về đúng ô trống! 🎈"
                   />
                 )}
                 {activeMap === 5 && (
@@ -2111,6 +2427,7 @@ export function NumberSequenceGame() {
                     key={mapKey}
                     onComplete={handleMapComplete}
                     difficulty={difficulty}
+                    initialInstruction="Sắp xếp các bạn thỏ theo thứ tự từ bé đến lớn! 🐰"
                   />
                 )}
               </div>
