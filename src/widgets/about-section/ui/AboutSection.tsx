@@ -28,7 +28,7 @@ export function AboutSection() {
   const { ref, inView } = useInView<HTMLElement>();
   return (
     <section id="about" ref={ref} className="py-24 bg-white">
-      <div className="container mx-auto px-6">
+      <div className="container mx-auto max-w-6xl px-6">
         {/* Header */}
         <div
           className={`reveal ${inView ? "visible" : ""} text-center max-w-3xl mx-auto mb-16`}
