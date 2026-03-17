@@ -115,34 +115,186 @@ function RobotAskBar({
   onChange,
   onSend,
   loading,
+  autoSendOnVoice = true,
 }: Readonly<{
   value: string;
   onChange: (value: string) => void;
   onSend: () => void;
   loading: boolean;
+  autoSendOnVoice?: boolean;
 }>) {
-  return (
-    <div className="bg-white/90 backdrop-blur rounded-full shadow-lg border-2 border-amber-200 px-3 py-2 flex items-center gap-2">
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            onSend();
+  const [listening, setListening] = useState(false);
+  const [voiceOptions, setVoiceOptions] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoice, setSelectedVoice] = useState<string>("");
+  const recognitionRef = useRef<any>(null);
+
+  const supportsVoice =
+    typeof window !== "undefined" &&
+    ((window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition);
+
+  const resolvedVoiceName =
+    selectedVoice ||
+    (typeof window !== "undefined" &&
+    (() => {
+      try {
+        return localStorage.getItem("robotVoiceName") || "";
+      } catch {
+        return "";
+      }
+    })()) ||
+    "";
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+
+    const loadVoices = () => {
+      const voices = window.speechSynthesis.getVoices();
+      setVoiceOptions(voices);
+
+      if (!selectedVoice) {
+        const pick =
+          voices.find((v) =>
+            /vi/i.test(v.lang) && /(female|woman|girl|nữ|nu)/i.test(v.name),
+          ) ||
+          voices.find((v) => /vi/i.test(v.lang)) ||
+          voices.find((v) =>
+            /(female|woman|girl|nữ|nu)/i.test(v.name),
+          ) ||
+          voices[0];
+
+        if (pick) {
+          setSelectedVoice(pick.name);
+          try {
+            localStorage.setItem("robotVoiceName", pick.name);
+          } catch {
+            // ignore storage errors
           }
-        }}
-        placeholder="Nhập câu hỏi toán lớp 2..."
-        className="flex-1 bg-transparent text-sm sm:text-base font-bold text-gray-700 outline-none placeholder:text-gray-400"
-      />
-      <button
-        type="button"
-        onClick={onSend}
-        className="px-4 py-2 rounded-full bg-amber-400 text-white text-sm font-extrabold shadow active:scale-95 transition"
-        disabled={loading}
-      >
-        Gửi
-      </button>
+        }
+      }
+    };
+
+    loadVoices();
+    const prevHandler = window.speechSynthesis.onvoiceschanged;
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+
+    return () => {
+      window.speechSynthesis.onvoiceschanged = prevHandler ?? null;
+    };
+  }, [selectedVoice]);
+
+  useEffect(() => {
+    return () => {
+      recognitionRef.current?.stop();
+      recognitionRef.current = null;
+    };
+  }, []);
+
+  const handleToggleVoice = () => {
+    if (!supportsVoice || loading) return;
+
+    if (listening) {
+      recognitionRef.current?.stop();
+      setListening(false);
+      return;
+    }
+
+    const SpeechRecognitionCtor =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognitionCtor) return;
+
+    const recognition = new SpeechRecognitionCtor();
+    recognitionRef.current = recognition;
+    recognition.lang = "vi-VN";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event: any) => {
+      const transcript = event?.results?.[0]?.[0]?.transcript?.trim();
+      if (!transcript) return;
+      onChange(transcript);
+      if (autoSendOnVoice) {
+        onSend();
+      }
+    };
+
+    recognition.onerror = () => {
+      setListening(false);
+    };
+
+    recognition.onend = () => {
+      setListening(false);
+    };
+
+    recognition.start();
+    setListening(true);
+  };
+
+  return (
+    <div className="bg-white/90 backdrop-blur rounded-3xl shadow-lg border-2 border-amber-200 px-3 py-2 flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              onSend();
+            }
+          }}
+          placeholder="Nhập câu hỏi toán lớp 2..."
+          className="flex-1 bg-transparent text-sm sm:text-base font-bold text-gray-700 outline-none placeholder:text-gray-400"
+        />
+        <button
+          type="button"
+          onClick={handleToggleVoice}
+          className={`w-10 h-10 rounded-full flex items-center justify-center shadow transition active:scale-95 ${
+            listening
+              ? "bg-rose-400 text-white"
+              : "bg-white text-amber-500 border border-amber-200"
+          }`}
+          aria-label={listening ? "Đang nghe" : "Nói câu hỏi"}
+          disabled={!supportsVoice || loading}
+        >
+          {listening ? <MicOff size={16} /> : <Mic size={16} />}
+        </button>
+        <button
+          type="button"
+          onClick={onSend}
+          className="px-4 py-2 rounded-full bg-amber-400 text-white text-sm font-extrabold shadow active:scale-95 transition"
+          disabled={loading}
+        >
+          Gửi
+        </button>
+      </div>
+      <div className="flex items-center gap-2">
+        <label className="text-[11px] font-bold text-gray-500 whitespace-nowrap">
+          Giọng đọc:
+        </label>
+        <select
+          value={resolvedVoiceName}
+          onChange={(e) => {
+            const next = e.target.value;
+            setSelectedVoice(next);
+            try {
+              localStorage.setItem("robotVoiceName", next);
+            } catch {
+              // ignore storage errors
+            }
+          }}
+          className="flex-1 bg-white/80 text-[11px] sm:text-xs font-bold text-gray-600 border border-amber-200 rounded-full px-3 py-1 outline-none focus:ring-2 focus:ring-amber-200"
+        >
+          {voiceOptions.length === 0 && (
+            <option value="">Mặc định</option>
+          )}
+          {voiceOptions.map((voice) => (
+            <option key={voice.name} value={voice.name}>
+              {voice.name} ({voice.lang})
+            </option>
+          ))}
+        </select>
+      </div>
     </div>
   );
 }
@@ -294,6 +446,8 @@ function AppleGardenMap({
   const [robotInput, setRobotInput] = useState("");
   const [robotLoading, setRobotLoading] = useState(false);
   const [robotChatOpen, setRobotChatOpen] = useState(false);
+
+
   const [attempts, setAttempts] = useState(0);
   const [shake, setShake] = useState<number | null>(null);
   const [touchDragValue, setTouchDragValue] = useState<number | null>(null);
@@ -312,6 +466,47 @@ function AppleGardenMap({
   }, [difficulty, initialInstruction]);
 
   const sound = useSounds();
+
+  const speakRobotAnswer = useCallback((text: string) => {
+    if (typeof window === "undefined") return;
+    if (!text) return;
+    if (!("speechSynthesis" in window)) return;
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    const voices = window.speechSynthesis.getVoices();
+    let preferredName = "";
+
+    try {
+      preferredName = localStorage.getItem("robotVoiceName") || "";
+    } catch {
+      preferredName = "";
+    }
+
+    const preferred = preferredName
+      ? voices.find((v) => v.name === preferredName)
+      : undefined;
+
+    const fallback =
+      voices.find((v) =>
+        /vi/i.test(v.lang) && /(female|woman|girl|nữ|nu)/i.test(v.name),
+      ) ||
+      voices.find((v) => /vi/i.test(v.lang)) ||
+      voices.find((v) => /(female|woman|girl|nữ|nu)/i.test(v.name)) ||
+      voices[0];
+
+    const finalVoice = preferred || fallback;
+    if (finalVoice) {
+      utterance.voice = finalVoice;
+      utterance.lang = finalVoice.lang || "vi-VN";
+    } else {
+      utterance.lang = "vi-VN";
+    }
+
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+  }, []);
 
   const sendRobotQuestion = useCallback(async () => {
     const trimmed = robotInput.trim();
@@ -335,13 +530,18 @@ function AppleGardenMap({
 
       const data = await res.json();
       const answer = data?.answer ?? "";
-      setRobotMsg(answer || "Robot chưa nghe rõ. Con hỏi lại được không?");
+      const finalAnswer =
+        answer || "Robot chưa nghe rõ. Con hỏi lại được không?";
+      setRobotMsg(finalAnswer);
+      speakRobotAnswer(finalAnswer);
     } catch {
-      setRobotMsg("Robot đang bận một chút, con thử lại nhé!");
+      const fallback = "Robot đang bận một chút, con thử lại nhé!";
+      setRobotMsg(fallback);
+      speakRobotAnswer(fallback);
     } finally {
       setRobotLoading(false);
     }
-  }, [robotInput, robotLoading]);
+  }, [robotInput, robotLoading, speakRobotAnswer]);
 
   const tryDrop = useCallback(
     (targetIdx: number, value: number) => {
@@ -604,6 +804,39 @@ function BridgeMap({
 
   const sound = useSounds();
 
+  const speakRobotAnswer = useCallback((text: string, voiceName?: string) => {
+    if (typeof window === "undefined") return;
+    if (!text) return;
+    if (!("speechSynthesis" in window)) return;
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    const voices = window.speechSynthesis.getVoices();
+    const preferred = voiceName
+      ? voices.find((v) => v.name === voiceName)
+      : undefined;
+
+    const fallback =
+      voices.find((v) =>
+        /vi/i.test(v.lang) && /(female|woman|girl|nữ|nu)/i.test(v.name),
+      ) ||
+      voices.find((v) => /vi/i.test(v.lang)) ||
+      voices.find((v) => /(female|woman|girl|nữ|nu)/i.test(v.name)) ||
+      voices[0];
+
+    const finalVoice = preferred || fallback;
+    if (finalVoice) {
+      utterance.voice = finalVoice;
+      utterance.lang = finalVoice.lang || "vi-VN";
+    } else {
+      utterance.lang = "vi-VN";
+    }
+
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+  }, []);
+
   const sendRobotQuestion = useCallback(async () => {
     const trimmed = robotInput.trim();
     if (!trimmed || robotLoading) return;
@@ -626,13 +859,18 @@ function BridgeMap({
 
       const data = await res.json();
       const answer = data?.answer ?? "";
-      setRobotMsg(answer || "Robot chưa nghe rõ. Con hỏi lại được không?");
+      const finalAnswer =
+        answer || "Robot chưa nghe rõ. Con hỏi lại được không?";
+      setRobotMsg(finalAnswer);
+      speakRobotAnswer(finalAnswer);
     } catch {
-      setRobotMsg("Robot đang bận một chút, con thử lại nhé!");
+      const fallback = "Robot đang bận một chút, con thử lại nhé!";
+      setRobotMsg(fallback);
+      speakRobotAnswer(fallback);
     } finally {
       setRobotLoading(false);
     }
-  }, [robotInput, robotLoading]);
+  }, [robotInput, robotLoading, speakRobotAnswer]);
 
   const handleSelect = (value: number) => {
     if (answered) return;
@@ -840,6 +1078,30 @@ function TrainMap({
 
   const sound = useSounds();
 
+  const speakRobotAnswer = useCallback(
+    (text: string, voiceName?: string) => {
+      if (typeof window === "undefined") return;
+      if (!text) return;
+      if (!("speechSynthesis" in window)) return;
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      const voices = window.speechSynthesis.getVoices();
+      const preferred = voiceName
+        ? voices.find((v) => v.name === voiceName)
+        : undefined;
+      const viVoice = voices.find((v) =>
+        v.lang?.toLowerCase().startsWith("vi"),
+      );
+      utterance.voice = preferred || viVoice || voices[0];
+      utterance.lang = utterance.voice?.lang || "vi-VN";
+      utterance.rate = 1;
+      utterance.pitch = 1;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utterance);
+    },
+    [],
+  );
+
   const sendRobotQuestion = useCallback(async () => {
     const trimmed = robotInput.trim();
     if (!trimmed || robotLoading) return;
@@ -862,13 +1124,18 @@ function TrainMap({
 
       const data = await res.json();
       const answer = data?.answer ?? "";
-      setRobotMsg(answer || "Robot chưa nghe rõ. Con hỏi lại được không?");
+      const finalAnswer =
+        answer || "Robot chưa nghe rõ. Con hỏi lại được không?";
+      setRobotMsg(finalAnswer);
+      speakRobotAnswer(finalAnswer);
     } catch {
-      setRobotMsg("Robot đang bận một chút, con thử lại nhé!");
+      const fallback = "Robot đang bận một chút, con thử lại nhé!";
+      setRobotMsg(fallback);
+      speakRobotAnswer(fallback);
     } finally {
       setRobotLoading(false);
     }
-  }, [robotInput, robotLoading]);
+  }, [robotInput, robotLoading, speakRobotAnswer]);
 
   const tryDrop = useCallback(
     (targetIdx: number, value: number) => {
@@ -1266,15 +1533,6 @@ function BalloonCityMap({
         <p className="text-pink-700 font-extrabold text-sm mb-3">
           🎈 Kéo bóng bay về đúng vị trí:
         </p>
-
-        <div className="mb-4">
-          <RobotAskBar
-            value={robotInput}
-            onChange={setRobotInput}
-            onSend={() => void sendRobotQuestion()}
-            loading={robotLoading}
-          />
-        </div>
         <div className="flex justify-center gap-4 flex-wrap">
           {remaining.map((balloon) => (
             <div
