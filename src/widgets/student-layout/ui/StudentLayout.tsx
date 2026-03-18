@@ -3,6 +3,8 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { KidsTopbar } from "@/widgets/kids-topbar";
 import { ParentGate } from "@/shared/ui/ParentGate";
 
+import { ActiveChildProvider } from "@/shared/lib/activeChild";
+
 function isProtectedStudentRoute(pathname: string) {
   return (
     pathname.startsWith("/student/game/") ||
@@ -121,22 +123,24 @@ export function StudentLayout() {
   ]);
 
   return (
-    <div className="min-h-screen bg-sky-100 font-kids overflow-x-hidden">
-      {!protectedRoute && <KidsTopbar />}
+    <ActiveChildProvider>
+      <div className="min-h-screen bg-sky-100 font-kids overflow-x-hidden">
+        {!protectedRoute && <KidsTopbar />}
 
-      <div className={protectedRoute ? "" : "pt-20"}>
-        <Outlet />
+        <div className={protectedRoute ? "" : "pt-20"}>
+          <Outlet />
+        </div>
+
+        {showExitGate && protectedRoute && (
+          <ParentGate
+            onSuccess={handleExitSuccess}
+            onClose={handleExitCancel}
+            onInteract={() => {
+              void ensureFullscreen();
+            }}
+          />
+        )}
       </div>
-
-      {showExitGate && protectedRoute && (
-        <ParentGate
-          onSuccess={handleExitSuccess}
-          onClose={handleExitCancel}
-          onInteract={() => {
-            void ensureFullscreen();
-          }}
-        />
-      )}
-    </div>
+    </ActiveChildProvider>
   );
 }

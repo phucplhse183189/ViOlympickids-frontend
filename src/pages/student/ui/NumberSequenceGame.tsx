@@ -355,15 +355,27 @@ function AppleGardenMap({
 
       <div className="relative z-10 max-w-5xl mx-auto px-4 py-5 sm:py-6 min-h-[560px] sm:min-h-[620px]">
         <div className="absolute left-1/2 -translate-x-1/2 top-5 sm:top-6 w-[76%] max-w-[620px]">
-          <img src="/bang.png" alt="Tiêu đề" className="w-full object-contain" />
+          <img
+            src="/bang.png"
+            alt="Tiêu đề"
+            className="w-full object-contain"
+          />
         </div>
 
         <div className="absolute left-[8%] top-[34%] w-[19%] min-w-[88px] max-w-[160px]">
-          <img src="/robot%20(1).png" alt="Robot" className="w-full object-contain drop-shadow" />
+          <img
+            src="/robot%20(1).png"
+            alt="Robot"
+            className="w-full object-contain drop-shadow"
+          />
         </div>
 
         <div className="absolute left-1/2 -translate-x-1/2 top-[25%] w-[40%] min-w-[220px] max-w-[370px]">
-          <img src="/khungThoai.png" alt="Khung thoại" className="w-full object-contain" />
+          <img
+            src="/khungThoai.png"
+            alt="Khung thoại"
+            className="w-full object-contain"
+          />
           <p className="absolute left-[15%] right-[15%] top-[22%] bottom-[22%] flex items-center justify-center text-[13px] sm:text-[16px] font-black text-gray-800 text-center leading-tight">
             {robotMsg}
           </p>
@@ -405,7 +417,11 @@ function AppleGardenMap({
                           : "bg-[#f1e9c9]/95 text-stone-700 border-2 border-amber-700/55"
                     }`}
                   >
-                    {isMissing ? (placedValue !== null ? placedValue : "?") : num}
+                    {isMissing
+                      ? placedValue !== null
+                        ? placedValue
+                        : "?"
+                      : num}
                   </div>
                   <div className="w-1 h-2 bg-amber-800/70 rounded-full mt-1" />
                 </div>
@@ -429,7 +445,13 @@ function AppleGardenMap({
               className={`cursor-grab active:cursor-grabbing select-none hover:scale-105 active:scale-95 transition-transform ${dragging === num ? "opacity-50 scale-90" : ""}`}
             >
               <img
-                src={num === 3 ? "/tao3.png" : num === 5 ? "/tao5.png" : "/tao7.png"}
+                src={
+                  num === 3
+                    ? "/tao3.png"
+                    : num === 5
+                      ? "/tao5.png"
+                      : "/tao7.png"
+                }
                 alt={`Táo số ${num}`}
                 className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow"
               />
@@ -441,7 +463,10 @@ function AppleGardenMap({
       </div>
 
       {touchDragValue !== null && touchPos && (
-        <div className="fixed z-50 pointer-events-none" style={{ left: touchPos.x - 32, top: touchPos.y - 32 }}>
+        <div
+          className="fixed z-50 pointer-events-none"
+          style={{ left: touchPos.x - 32, top: touchPos.y - 32 }}
+        >
           <img
             src={
               touchDragValue === 3
@@ -1327,9 +1352,16 @@ function IntroScreen({ onStart }: Readonly<{ onStart: () => void }>) {
         <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-sky-400 via-amber-400 to-emerald-400"></div>
         <p className="text-gray-700 font-extrabold text-sm md:text-base leading-relaxed">
           <span className="text-xl inline-block mr-2 animate-bounce">🌪️</span>
-          Một cơn bão toán học đã xáo trộn tất cả các số!
-          Hãy giúp robot <span className="text-sky-600 font-black relative px-1">Tí Tách<span className="absolute -bottom-0.5 left-0 w-full h-1 bg-sky-300/50 rounded-full"></span></span> vượt qua
-          <span className="text-amber-600 font-black text-lg mx-1.5 bg-amber-100/80 px-2.5 py-0.5 rounded-lg border-2 border-amber-200/60 shadow-sm inline-block transform hover:scale-105 transition-transform"> 5 vùng đất </span>
+          Một cơn bão toán học đã xáo trộn tất cả các số! Hãy giúp robot{" "}
+          <span className="text-sky-600 font-black relative px-1">
+            Tí Tách
+            <span className="absolute -bottom-0.5 left-0 w-full h-1 bg-sky-300/50 rounded-full"></span>
+          </span>{" "}
+          vượt qua
+          <span className="text-amber-600 font-black text-lg mx-1.5 bg-amber-100/80 px-2.5 py-0.5 rounded-lg border-2 border-amber-200/60 shadow-sm inline-block transform hover:scale-105 transition-transform">
+            {" "}
+            5 vùng đất{" "}
+          </span>
           để thu thập và sắp xếp lại nào! 🤖
         </p>
       </div>
@@ -1342,7 +1374,9 @@ function IntroScreen({ onStart }: Readonly<{ onStart: () => void }>) {
             className="group flex items-center gap-3 bg-white/60 hover:bg-white rounded-xl px-4 py-2.5
                        border border-white/60 hover:border-sky-300 shadow-sm hover:shadow-[0_4px_15px_rgba(56,189,248,0.15)] 
                        transition-all duration-300 transform hover:-translate-y-0.5 cursor-default"
-            style={{ animation: `fade-in-up 0.4s ease-out ${index * 0.08}s both` }}
+            style={{
+              animation: `fade-in-up 0.4s ease-out ${index * 0.08}s both`,
+            }}
           >
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-white to-sky-50 flex items-center justify-center text-xl shadow-inner border border-sky-100 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
               {map.emoji}
@@ -1356,7 +1390,10 @@ function IntroScreen({ onStart }: Readonly<{ onStart: () => void }>) {
               </p>
             </div>
             <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-sky-100 group-hover:shadow-inner transition-colors duration-300">
-               <MapPin size={14} className="text-gray-400 group-hover:text-sky-500 transition-colors duration-300" />
+              <MapPin
+                size={14}
+                className="text-gray-400 group-hover:text-sky-500 transition-colors duration-300"
+              />
             </div>
           </div>
         ))}
@@ -1372,8 +1409,10 @@ function IntroScreen({ onStart }: Readonly<{ onStart: () => void }>) {
         >
           <div className="absolute inset-0 bg-white/20 group-hover:translate-x-full -translate-x-full transition-transform duration-700 ease-in-out skew-x-12"></div>
           <span className="relative flex items-center justify-center gap-2">
-             <span className="text-2xl group-hover:animate-bounce drop-shadow-md">🚀</span> 
-             <span>Bắt đầu phiêu lưu!</span>
+            <span className="text-2xl group-hover:animate-bounce drop-shadow-md">
+              🚀
+            </span>
+            <span>Bắt đầu phiêu lưu!</span>
           </span>
         </button>
       </div>
@@ -1676,7 +1715,9 @@ export function NumberSequenceGame() {
   const [showPinGate, setShowPinGate] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   // State to track if we're asking for PIN specifically to exit fullscreen
-  const [pinActionTarget, setPinActionTarget] = useState<"menu" | "fullscreen" | null>(null);
+  const [pinActionTarget, setPinActionTarget] = useState<
+    "menu" | "fullscreen" | null
+  >(null);
   const gameContainerRef = useRef<HTMLDivElement>(null);
 
   const totalStars = Object.values(completedMaps).reduce((a, b) => a + b, 0);
@@ -1738,7 +1779,11 @@ export function NumberSequenceGame() {
 
       // If the browser forced an exit (e.g. user pressed ESC) while playing
       // and we didn't explicitly authorize it via PIN success (pinActionTarget is null)
-      if (!currentlyFullscreen && gameState === "playing" && pinActionTarget === null) {
+      if (
+        !currentlyFullscreen &&
+        gameState === "playing" &&
+        pinActionTarget === null
+      ) {
         // We immediately show the PIN gate
         setPinActionTarget("fullscreen");
         setShowPinGate(true);
@@ -1748,7 +1793,11 @@ export function NumberSequenceGame() {
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && gameState === "playing" && document.fullscreenElement) {
+      if (
+        e.key === "Escape" &&
+        gameState === "playing" &&
+        document.fullscreenElement
+      ) {
         e.preventDefault();
         e.stopPropagation();
       }
@@ -1757,7 +1806,7 @@ export function NumberSequenceGame() {
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     // Use capture phase to intercept before native browser handlers if possible
     window.addEventListener("keydown", handleKeyDown, { capture: true });
-    
+
     return () => {
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
       window.removeEventListener("keydown", handleKeyDown, { capture: true });
@@ -1779,7 +1828,7 @@ export function NumberSequenceGame() {
 
   const handlePinSuccess = () => {
     setShowPinGate(false);
-    
+
     if (pinActionTarget === "menu") {
       if (document.fullscreenElement) {
         if ("keyboard" in navigator && (navigator as any).keyboard?.unlock) {
@@ -1796,7 +1845,7 @@ export function NumberSequenceGame() {
         document.exitFullscreen().catch(console.error);
       }
     }
-    
+
     setPinActionTarget(null);
   };
 
@@ -1909,7 +1958,10 @@ export function NumberSequenceGame() {
 
   return (
     <GameSoundContext.Provider value={sound}>
-      <div ref={gameContainerRef} className="min-h-screen relative overflow-hidden flex flex-col">
+      <div
+        ref={gameContainerRef}
+        className="min-h-screen relative overflow-hidden flex flex-col"
+      >
         {/* Background Base */}
         <div
           className={`absolute inset-0 bg-gradient-to-br ${
@@ -1918,13 +1970,19 @@ export function NumberSequenceGame() {
               : "from-sky-200 via-indigo-100 to-emerald-100"
           } transition-all duration-700`}
         />
-        
+
         {/* Ambient light blobs (Intro only) */}
         {gameState === "intro" && (
           <>
             <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-pink-300/30 rounded-full blur-[80px] animate-pulse-slow mix-blend-multiply pointer-events-none" />
-            <div className="absolute top-[20%] right-[-5%] w-[35%] h-[45%] bg-amber-300/30 rounded-full blur-[80px] animate-pulse-slow mix-blend-multiply pointer-events-none" style={{ animationDelay: '2s' }} />
-            <div className="absolute bottom-[-10%] left-[20%] w-[50%] h-[40%] bg-blue-300/30 rounded-full blur-[100px] animate-pulse-slow mix-blend-multiply pointer-events-none" style={{ animationDelay: '1s' }} />
+            <div
+              className="absolute top-[20%] right-[-5%] w-[35%] h-[45%] bg-amber-300/30 rounded-full blur-[80px] animate-pulse-slow mix-blend-multiply pointer-events-none"
+              style={{ animationDelay: "2s" }}
+            />
+            <div
+              className="absolute bottom-[-10%] left-[20%] w-[50%] h-[40%] bg-blue-300/30 rounded-full blur-[100px] animate-pulse-slow mix-blend-multiply pointer-events-none"
+              style={{ animationDelay: "1s" }}
+            />
           </>
         )}
 
@@ -1942,7 +2000,7 @@ export function NumberSequenceGame() {
           className="absolute bottom-1/4 left-5 text-3xl animate-float-slow opacity-30 pointer-events-none drop-shadow-sm"
           style={{ animationDelay: "2.5s" }}
         >
-           ☁️
+          ☁️
         </div>
         <div
           className="absolute top-10 right-1/3 text-3xl animate-float-slow opacity-50 pointer-events-none drop-shadow-sm"
@@ -2052,120 +2110,119 @@ export function NumberSequenceGame() {
 
           {/* ── Content ── */}
           <div className="flex-1 flex flex-col justify-center w-full relative">
-          {gameState === "intro" && <IntroScreen onStart={handleStart} />}
+            {gameState === "intro" && <IntroScreen onStart={handleStart} />}
 
-          {gameState === "finished" && (
-            <FinalVictoryScreen
-              totalStars={totalStars}
-              mapStars={completedMaps}
-              onRestart={handleRestart}
-              onBack={() => {
-                sound.click();
-                navigate("/student");
-              }}
-              onNextLesson={() => {
-                sound.click();
-                navigate("/student/quiz/math2-b2");
-              }}
-            />
-          )}
-
-          {gameState === "playing" && (
-            <>
-              <MapProgressBar
-                activeMap={activeMap}
-                completedMaps={completedMaps}
+            {gameState === "finished" && (
+              <FinalVictoryScreen
+                totalStars={totalStars}
+                mapStars={completedMaps}
+                onRestart={handleRestart}
+                onBack={() => {
+                  sound.click();
+                  navigate("/student");
+                }}
+                onNextLesson={() => {
+                  sound.click();
+                  navigate("/student/quiz/math2-b2");
+                }}
               />
+            )}
 
-              <div className="bg-white/40 backdrop-blur-sm rounded-3xl shadow-lg border-2 border-white/60 p-4 sm:p-6">
-                {activeMap === 1 && (
-                  <AppleGardenMap
-                    key={mapKey}
-                    onComplete={handleMapComplete}
-                    difficulty={difficulty}
-                  />
-                )}
-                {activeMap === 2 && (
-                  <BridgeMap
-                    key={mapKey}
-                    onComplete={handleMapComplete}
-                    difficulty={difficulty}
-                  />
-                )}
-                {activeMap === 3 && (
-                  <TrainMap
-                    key={mapKey}
-                    onComplete={handleMapComplete}
-                    difficulty={difficulty}
-                  />
-                )}
-                {activeMap === 4 && (
-                  <BalloonCityMap
-                    key={mapKey}
-                    onComplete={handleMapComplete}
-                    difficulty={difficulty}
-                  />
-                )}
-                {activeMap === 5 && (
-                  <RabbitRaceMap
-                    key={mapKey}
-                    onComplete={handleMapComplete}
-                    difficulty={difficulty}
-                  />
-                )}
-              </div>
-            </>
-          )}
+            {gameState === "playing" && (
+              <>
+                <MapProgressBar
+                  activeMap={activeMap}
+                  completedMaps={completedMaps}
+                />
 
-          {/* Victory modal */}
-          {showVictory && (
-            <VictoryModal
-              stars={lastStars}
-              onNext={handleNextMap}
-              onReplay={handleReplay}
-              message={
-                lastStars === 3
-                  ? "Tuyệt vời! Bạn đạt 3 sao! ⭐⭐⭐"
-                  : lastStars === 2
-                    ? "Giỏi lắm! Thử lại để đạt 3 sao nhé!"
-                    : "Hoàn thành rồi! Cố gắng thêm nhé!"
-              }
-              isLastMap={activeMap === MAPS.length}
-            />
-          )}
+                <div className="bg-white/40 backdrop-blur-sm rounded-3xl shadow-lg border-2 border-white/60 p-4 sm:p-6">
+                  {activeMap === 1 && (
+                    <AppleGardenMap
+                      key={mapKey}
+                      onComplete={handleMapComplete}
+                      difficulty={difficulty}
+                    />
+                  )}
+                  {activeMap === 2 && (
+                    <BridgeMap
+                      key={mapKey}
+                      onComplete={handleMapComplete}
+                      difficulty={difficulty}
+                    />
+                  )}
+                  {activeMap === 3 && (
+                    <TrainMap
+                      key={mapKey}
+                      onComplete={handleMapComplete}
+                      difficulty={difficulty}
+                    />
+                  )}
+                  {activeMap === 4 && (
+                    <BalloonCityMap
+                      key={mapKey}
+                      onComplete={handleMapComplete}
+                      difficulty={difficulty}
+                    />
+                  )}
+                  {activeMap === 5 && (
+                    <RabbitRaceMap
+                      key={mapKey}
+                      onComplete={handleMapComplete}
+                      difficulty={difficulty}
+                    />
+                  )}
+                </div>
+              </>
+            )}
 
-          {/* Round transition overlay */}
-          {showRoundTransition && (
-            <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/20 backdrop-blur-sm">
-              <div className="bg-white rounded-3xl shadow-2xl p-8 text-center animate-kids-bounce-in">
-                <div className="text-5xl mb-3">🎉</div>
-                <h3 className="text-xl font-extrabold text-emerald-600 mb-1">
-                  Lượt {currentRound}/{totalRounds} hoàn thành!
-                </h3>
-                <p className="text-gray-500 font-bold text-sm">
-                  Chuẩn bị lượt tiếp theo...
-                </p>
-                <div className="flex justify-center gap-1 mt-2">
-                  {roundStars.map((s, i) => (
-                    <span key={`rs-${i}`} className="text-lg">
-                      {s >= 1 ? "⭐" : "☆"}
-                      {s >= 2 ? "⭐" : "☆"}
-                      {s >= 3 ? "⭐" : "☆"}
-                    </span>
-                  ))}
+            {/* Victory modal */}
+            {showVictory && (
+              <VictoryModal
+                stars={lastStars}
+                onNext={handleNextMap}
+                onReplay={handleReplay}
+                message={
+                  lastStars === 3
+                    ? "Tuyệt vời! Bạn đạt 3 sao! ⭐⭐⭐"
+                    : lastStars === 2
+                      ? "Giỏi lắm! Thử lại để đạt 3 sao nhé!"
+                      : "Hoàn thành rồi! Cố gắng thêm nhé!"
+                }
+                isLastMap={activeMap === MAPS.length}
+              />
+            )}
+
+            {/* Round transition overlay */}
+            {showRoundTransition && (
+              <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/20 backdrop-blur-sm">
+                <div className="bg-white rounded-3xl shadow-2xl p-8 text-center animate-kids-bounce-in">
+                  <div className="text-5xl mb-3">🎉</div>
+                  <h3 className="text-xl font-extrabold text-emerald-600 mb-1">
+                    Lượt {currentRound}/{totalRounds} hoàn thành!
+                  </h3>
+                  <p className="text-gray-500 font-bold text-sm">
+                    Chuẩn bị lượt tiếp theo...
+                  </p>
+                  <div className="flex justify-center gap-1 mt-2">
+                    {roundStars.map((s, i) => (
+                      <span key={`rs-${i}`} className="text-lg">
+                        {s >= 1 ? "⭐" : "☆"}
+                        {s >= 2 ? "⭐" : "☆"}
+                        {s >= 3 ? "⭐" : "☆"}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* PIN Gate Modal */}
-          {showPinGate && (
-            <ParentGate
-              onSuccess={handlePinSuccess}
-              onClose={handlePinCancel}
-            />
-          )}
-
+            {/* PIN Gate Modal */}
+            {showPinGate && (
+              <ParentGate
+                onSuccess={handlePinSuccess}
+                onClose={handlePinCancel}
+              />
+            )}
           </div>
         </div>
       </div>

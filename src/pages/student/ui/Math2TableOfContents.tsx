@@ -1,1247 +1,589 @@
-import {
-  useState,
-  useEffect,
-  useRef,
-  useCallback,
-  useMemo,
-  Suspense,
-} from "react";
-import { useNavigate } from "react-router-dom";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import {
-  Text,
-  Float,
-  MeshWobbleMaterial,
-  Stars,
-  Html,
-  OrbitControls,
-} from "@react-three/drei";
+import { Float, Sphere, Torus, Octahedron, Stars, Text3D, Box, Cone, Dodecahedron } from "@react-three/drei";
+import { MATH2_TOPICS, type Math2Lesson, type Math2Topic } from "@/shared/api/math2Data";
+import { useNavigate } from "react-router-dom";
+import { Play, Lock, Star, Compass } from "lucide-react";
 import * as THREE from "three";
-import {
-  Lock,
-  Crown,
-  X,
-  ChevronLeft,
-  ChevronRight,
-  Gamepad2,
-  BookOpen,
-  Target,
-  Layers,
-  Sparkles,
-  Clock,
-} from "lucide-react";
-import {
-  MATH2_TOPICS,
-  type Math2Lesson,
-  type Math2Topic,
-  getActiveChildPlan,
-  canAccessLesson,
-  PLAN_LABELS,
-} from "@/shared/api/math2Data";
-import type { PlanType } from "@/shared/api/dashboardMockData";
-import ReactDOM from "react-dom";
+import { useActiveChild } from "@/shared/lib/activeChild";
 import { PreRollAdModal } from "@/shared/ui/PreRollAdModal";
 
-// ── Lesson Info Popup ─────────────────────────────────────────────────────────
-
-function LessonPopup({
-  lesson,
-  topic,
-  isAccessible,
-  onClose,
-  onPlay,
-  onUpgrade,
-}: Readonly<{
-  lesson: Math2Lesson;
-  topic: Math2Topic;
-  isAccessible: boolean;
-  onClose: () => void;
-  onPlay: () => void;
-  onUpgrade: () => void;
-}>) {
-  const hasGame = lesson.gameType !== null;
-  const lessonIdx = topic.lessons.findIndex((l) => l.id === lesson.id) + 1;
-  const totalInTopic = topic.lessons.length;
-
-  // Game type label
-  const gameLabel =
-    lesson.gameType === "number-sequence-chart" ? "Biểu đồ dãy số" : null;
-
-  return ReactDOM.createPortal(
-    <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="relative bg-white rounded-3xl shadow-2xl w-[370px] max-w-[92vw] overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header with gradient */}
-        <div
-          className="px-5 pt-5 pb-4 text-white"
-          style={{
-            background: `linear-gradient(135deg, ${isAccessible ? "#f59e0b, #f97316" : "#9ca3af, #6b7280"})`,
-          }}
-        >
-          <button
-            onClick={onClose}
-            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/40 transition-colors"
-          >
-            <X size={16} />
-          </button>
-          <div className="flex items-center gap-1.5 mb-1">
-            <span className="text-base">{topic.emoji}</span>
-            <p className="text-xs font-bold opacity-80">{topic.title}</p>
-          </div>
-          <h2 className="text-xl font-black">Bài {lesson.lessonNumber}</h2>
-          <h3 className="text-sm font-bold opacity-90 leading-snug">
-            {lesson.title}
-          </h3>
-          {/* Progress in topic */}
-          <div className="flex items-center gap-2 mt-2">
-            <div className="flex-1 h-1.5 bg-white/25 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-white/80 rounded-full"
-                style={{ width: `${(lessonIdx / totalInTopic) * 100}%` }}
-              />
-            </div>
-            <span className="text-[10px] font-bold opacity-70">
-              {lessonIdx}/{totalInTopic}
-            </span>
-          </div>
-        </div>
-
-        {/* Body */}
-        <div className="px-6 py-5 space-y-4">
-          {/* Description */}
-          <div className="flex items-start gap-3">
-            <span className="text-3xl mt-0.5 drop-shadow-sm">{lesson.emoji}</span>
-            <p className="text-gray-600 text-[15px] leading-relaxed font-medium">
-              {lesson.description}
-            </p>
-          </div>
-
-          {/* Info chips */}
-          <div className="flex flex-wrap gap-2.5">
-            <div className="flex items-center gap-1.5 px-3 py-1 bg-sky-50 text-sky-700 rounded-full text-xs font-bold shadow-sm border border-sky-100">
-              <Layers size={14} />
-              <span>Chủ đề {topic.topicNumber}</span>
-            </div>
-            {hasGame && gameLabel && (
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold shadow-sm border border-emerald-100">
-                <Gamepad2 size={14} />
-                {gameLabel}
-              </div>
-            )}
-            {!hasGame && (
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-gray-50 text-gray-500 rounded-full text-xs font-bold shadow-sm border border-gray-200">
-                <Clock size={14} />
-                Sắp ra mắt
-              </div>
-            )}
-            <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-bold shadow-sm border border-amber-100">
-              <Target size={14} />
-              Toán lớp 2
-            </div>
-          </div>
-
-          {/* Learning objectives */}
-          <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-2xl p-4 border border-gray-100/80 shadow-[inset_0_2px_10px_rgba(0,0,0,0.02)]">
-            <p className="text-[13px] font-black text-slate-700 mb-2.5 flex items-center gap-1.5">
-              <Sparkles size={14} className="text-amber-500" /> Mục tiêu bài học
-            </p>
-            <ul className="space-y-2">
-              <li className="text-[13px] text-slate-600 flex items-start gap-2 font-medium">
-                <span className="text-emerald-500 mt-0.5">✓</span>
-                {lesson.description}
-              </li>
-              {hasGame && (
-                <li className="text-[13px] text-slate-600 flex items-start gap-2 font-medium">
-                  <span className="text-emerald-500 mt-0.5">✓</span>
-                  Luyện tập qua trò chơi tương tác thú vị
-                </li>
-              )}
-              <li className="text-[13px] text-slate-600 flex items-start gap-2 font-medium">
-                <span className="text-emerald-500 mt-0.5">✓</span>
-                Kiểm tra kiến thức cuối bài
-              </li>
-            </ul>
-          </div>
-
-          {/* Plan requirement note */}
-          {!isAccessible && (
-            <div className="flex items-center gap-2.5 px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl border border-amber-200/60 shadow-inner">
-              <Lock size={16} className="text-amber-600 shrink-0" />
-              <p className="text-[13px] text-amber-800 font-medium">
-                Bài này yêu cầu gói{" "}
-                <span className="font-black text-amber-900 bg-amber-200/40 px-1.5 py-0.5 rounded-md">
-                  {PLAN_LABELS[lesson.requiredPlan].icon}{" "}
-                  {PLAN_LABELS[lesson.requiredPlan].label}
-                </span>{" "}
-                để mở khóa
-              </p>
-            </div>
-          )}
-
-          {/* Action */}
-          {isAccessible ? (
-            hasGame ? (
-              <button
-                onClick={onPlay}
-                className="w-full py-4 rounded-2xl font-black text-white bg-gradient-to-r from-emerald-400 to-teal-500 shadow-[0_8px_20px_rgba(16,185,129,0.25)] hover:shadow-[0_12px_25px_rgba(16,185,129,0.35)] hover:-translate-y-0.5 active:translate-y-0.5 active:scale-95 transition-all flex items-center justify-center gap-2 text-[17px] border border-emerald-300/50"
-              >
-                <Gamepad2 size={22} /> Chơi ngay!
-              </button>
-            ) : (
-              <div className="w-full py-4 rounded-2xl font-bold text-gray-500 bg-gray-100 text-center text-[15px] flex items-center justify-center gap-2 border border-gray-200 shadow-inner">
-                <BookOpen size={20} /> Nội dung sắp ra mắt
-              </div>
-            )
-          ) : (
-            <button
-              onClick={onUpgrade}
-              className="w-full py-4 rounded-2xl font-black text-white bg-gradient-to-r from-amber-400 to-orange-500 shadow-[0_8px_20px_rgba(245,158,11,0.25)] hover:shadow-[0_12px_25px_rgba(245,158,11,0.35)] hover:-translate-y-0.5 active:translate-y-0.5 active:scale-95 transition-all flex items-center justify-center gap-2 text-[17px] border border-amber-300/50"
-            >
-              <Crown size={22} /> Nâng cấp{" "}
-              {PLAN_LABELS[lesson.requiredPlan].label}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>,
-    document.body,
-  );
-}
-
-// ── Upgrade Modal ─────────────────────────────────────────────────────────────
-
-function UpgradeModal({
-  requiredPlan,
-  onClose,
-  onUpgrade,
-}: Readonly<{
-  requiredPlan: PlanType;
-  onClose: () => void;
-  onUpgrade: () => void;
-}>) {
-  const planInfo = PLAN_LABELS[requiredPlan];
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="relative bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 animate-kids-bounce-in">
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
-        >
-          <X size={18} className="text-gray-400" />
-        </button>
-        <div className="text-center">
-          <div className="text-6xl mb-3">🔒</div>
-          <h2 className="text-xl font-extrabold text-gray-800 mb-2">
-            Bài học yêu cầu gói {planInfo.label}
-          </h2>
-          <p className="text-sm text-gray-500 mb-5">
-            Nâng cấp tài khoản để mở khóa bài học này và nhiều nội dung hấp dẫn
-            khác!
-          </p>
-          <div className="bg-gray-50 rounded-2xl p-4 mb-5 space-y-3">
-            {(["FREE", "PRO", "VIP"] as PlanType[]).map((plan) => {
-              const info = PLAN_LABELS[plan];
-              const isRequired = plan === requiredPlan;
-              return (
-                <div
-                  key={plan}
-                  className={`flex items-center justify-between px-3 py-2 rounded-xl transition-all ${
-                    isRequired
-                      ? "bg-white border-2 border-amber-300 shadow-sm scale-[1.02]"
-                      : "opacity-60"
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg">{info.icon}</span>
-                    <span className={`font-extrabold text-sm ${info.color}`}>
-                      {info.label}
-                    </span>
-                  </div>
-                  <span className="text-xs font-bold text-gray-400">
-                    {plan === "FREE"
-                      ? "0₫"
-                      : plan === "PRO"
-                        ? "55,000₫/tháng"
-                        : "89,000₫/tháng"}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-          <button
-            onClick={onUpgrade}
-            className="w-full py-3.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white
-                       font-extrabold text-lg rounded-2xl shadow-lg shadow-orange-200
-                       hover:shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2"
-          >
-            <Crown size={20} />
-            Nâng cấp ngay
-          </button>
-          <button
-            onClick={onClose}
-            className="mt-3 text-sm text-gray-400 font-bold hover:text-gray-600 transition-colors"
-          >
-            Để sau
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Color palette ─────────────────────────────────────────────────────────────
-
-const TOPIC_COLORS = [
-  "#f59e0b",
-  "#38bdf8",
-  "#34d399",
-  "#a78bfa",
-  "#f472b6",
-  "#facc15",
-  "#ef4444",
-  "#2dd4bf",
-  "#818cf8",
-  "#fb923c",
-  "#4ade80",
-  "#e879f9",
-];
-
-function getTopicColor(idx: number) {
-  return TOPIC_COLORS[idx % TOPIC_COLORS.length];
-}
-
-// ── Node data ─────────────────────────────────────────────────────────────────
-
-interface Node3D {
-  type: "topic" | "lesson";
-  position: [number, number, number];
-  topic: Math2Topic;
-  topicIndex: number;
-  lesson?: Math2Lesson;
-  globalIndex: number;
-}
-
-function buildNodes3D(): Node3D[] {
-  const nodes: Node3D[] = [];
-  let cx = 0;
-  let gi = 0;
-
-  MATH2_TOPICS.forEach((topic, ti) => {
-    nodes.push({
-      type: "topic",
-      position: [cx, 0, 0],
-      topic,
-      topicIndex: ti,
-      globalIndex: gi++,
-    });
-    cx += 4;
-
-    topic.lessons.forEach((lesson, li) => {
-      const angle = (li / Math.max(topic.lessons.length - 1, 1)) * Math.PI;
-      const dir = ti % 2 === 0 ? 1 : -1;
-      const y = dir * Math.sin(angle) * 1.8;
-      const z = Math.cos(angle) * 0.4;
-      nodes.push({
-        type: "lesson",
-        position: [cx, y, z],
-        topic,
-        topicIndex: ti,
-        lesson,
-        globalIndex: gi++,
+// --- 3D Design ---
+function FloatingMathShapes() {
+  const group = useRef<THREE.Group>(null);
+  useFrame((state) => {
+    if (group.current) {
+      group.current.rotation.y = state.clock.getElapsedTime() * 0.05;
+      group.current.position.y = Math.sin(state.clock.getElapsedTime() * 0.2) * 1.5;
+      
+      group.current.children.forEach((child, index) => {
+        if (child.type === "Points") return;
+        const speed = (index % 3 + 1) * 0.01;
+        child.position.x += speed;
+        if (child.position.x > 25) {
+          child.position.x = -25;
+          child.position.y = (Math.random() - 0.5) * 15;
+        }
       });
-      cx += 3;
-    });
-    cx += 2;
-  });
-
-  return nodes;
-}
-
-// ── Animated path ─────────────────────────────────────────────────────────────
-
-function JourneyPath({ nodes }: { nodes: Node3D[] }) {
-  const tubeRef = useRef<THREE.Mesh>(null);
-
-  const geometry = useMemo(() => {
-    const pts = nodes.map((n) => new THREE.Vector3(...n.position));
-    const curve = new THREE.CatmullRomCurve3(pts, false, "catmullrom", 0.5);
-    return new THREE.TubeGeometry(curve, nodes.length * 20, 0.07, 8, false);
-  }, [nodes]);
-
-  useFrame(({ clock }) => {
-    if (!tubeRef.current) return;
-    const mat = tubeRef.current.material as THREE.MeshStandardMaterial;
-    mat.emissiveIntensity = 0.4 + Math.sin(clock.elapsedTime * 2.5) * 0.2;
-  });
-
-  return (
-    <mesh ref={tubeRef} geometry={geometry}>
-      <meshStandardMaterial
-        color="#fcd34d"
-        emissive="#f59e0b"
-        emissiveIntensity={0.5}
-        roughness={0.2}
-        metalness={0.4}
-        transparent
-        opacity={0.9}
-        envMapIntensity={1}
-      />
-    </mesh>
-  );
-}
-
-// ── Particles along path ──────────────────────────────────────────────────────
-
-function PathParticles({ nodes }: { nodes: Node3D[] }) {
-  const ref = useRef<THREE.Points>(null);
-  const count = 50;
-
-  const curve = useMemo(() => {
-    return new THREE.CatmullRomCurve3(
-      nodes.map((n) => new THREE.Vector3(...n.position)),
-      false,
-      "catmullrom",
-      0.5,
-    );
-  }, [nodes]);
-
-  const geometry = useMemo(() => {
-    const geo = new THREE.BufferGeometry();
-    const pos = new Float32Array(count * 3);
-    for (let i = 0; i < count; i++) {
-      const p = curve.getPoint(i / count);
-      pos[i * 3] = p.x;
-      pos[i * 3 + 1] = p.y;
-      pos[i * 3 + 2] = p.z;
     }
-    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-    return geo;
-  }, [curve]);
-
-  useFrame(({ clock }) => {
-    if (!ref.current) return;
-    const attr = ref.current.geometry.attributes
-      .position as THREE.BufferAttribute;
-    const t = clock.elapsedTime;
-    for (let i = 0; i < count; i++) {
-      const base = (i / count + t * 0.04) % 1;
-      const p = curve.getPoint(base);
-      attr.setXYZ(
-        i,
-        p.x + Math.sin(t * 2 + i) * 0.08,
-        p.y + Math.cos(t * 3 + i) * 0.12 + 0.25,
-        p.z + Math.sin(t + i * 0.5) * 0.08,
-      );
-    }
-    attr.needsUpdate = true;
   });
 
   return (
-    <points ref={ref} geometry={geometry}>
-      <pointsMaterial
-        color="#fde68a"
-        size={0.12}
-        transparent
-        opacity={0.85}
-        sizeAttenuation
-        depthWrite={false}
-      />
-    </points>
-  );
-}
+    <group ref={group}>
+      <Stars radius={40} depth={50} count={800} factor={6} saturation={1} fade speed={2} />
+      
+      <Float speed={2} rotationIntensity={1.5} floatIntensity={1} position={[-8, 6, -20]}>
+        <Octahedron args={[2]}>
+          <meshStandardMaterial color="#60a5fa" roughness={0.1} metalness={0.2} transparent opacity={0.6} />
+        </Octahedron>
+      </Float>
 
-// ── Topic Island ──────────────────────────────────────────────────────────────
+      <Float speed={1.5} rotationIntensity={2} floatIntensity={1} position={[8, -3, -18]}>
+        <Torus args={[1.5, 0.5, 16, 32]}>
+          <meshStandardMaterial color="#34d399" roughness={0.2} metalness={0.6} transparent opacity={0.6} />
+        </Torus>
+      </Float>
 
-function TopicIsland({ node }: { node: Node3D }) {
-  const meshRef = useRef<THREE.Mesh>(null);
-  const color = getTopicColor(node.topicIndex);
-  
-  // Lighter, glowier version of the color
-  const glowColor = new THREE.Color(color).lerp(new THREE.Color("#ffffff"), 0.3).getStyle();
-  const glassColor = new THREE.Color(color).lerp(new THREE.Color("#ffffff"), 0.8).getStyle();
+      <Float speed={2.5} rotationIntensity={0.5} floatIntensity={1} position={[-6, -8, -25]}>
+        <Sphere args={[2, 32, 32]}>
+          <meshStandardMaterial color="#fbbf24" roughness={0.1} metalness={0.1} transparent opacity={0.6} />
+        </Sphere>
+      </Float>
+      
+      <Float speed={1} rotationIntensity={0.2} floatIntensity={0.5} position={[0, -5, -35]}>
+         <Torus args={[10, 2, 32, 64]}>
+           <meshStandardMaterial color="#e0f2fe" roughness={0.4} metalness={0.1} transparent opacity={0.2} />
+         </Torus>
+      </Float>
 
-  useFrame(({ clock }) => {
-    if (meshRef.current)
-      meshRef.current.rotation.y =
-        Math.sin(clock.elapsedTime * 0.3 + node.topicIndex) * 0.1;
-  });
+      <Float speed={2} rotationIntensity={1} floatIntensity={1} position={[-12, 2, -22]}>
+        <Text3D font="/fonts/Inter_Bold.json" size={2} height={0.5} curveSegments={12}>
+          1
+          <meshStandardMaterial color="#f43f5e" roughness={0.2} metalness={0.5} transparent opacity={0.7} />
+        </Text3D>
+      </Float>
+      
+      <Float speed={1.5} rotationIntensity={0.5} floatIntensity={1} position={[12, 6, -28]}>
+        <Text3D font="/fonts/Inter_Bold.json" size={3} height={0.8} curveSegments={12}>
+          2
+          <meshStandardMaterial color="#eab308" roughness={0.3} metalness={0.2} transparent opacity={0.6} />
+        </Text3D>
+      </Float>
+      
+      <Float speed={2.5} rotationIntensity={1.5} floatIntensity={1} position={[6, -6, -24]}>
+        <Text3D font="/fonts/Inter_Bold.json" size={1.8} height={0.4} curveSegments={12}>
+          3
+          <meshStandardMaterial color="#a855f7" roughness={0.1} metalness={0.6} transparent opacity={0.8} />
+        </Text3D>
+      </Float>
 
-  return (
-    <Float
-      speed={2}
-      rotationIntensity={0.2}
-      floatIntensity={0.4}
-      position={node.position}
-    >
-      <group ref={meshRef}>
-        {/* Base crystal/island */}
-        <mesh position={[0, -0.3, 0]}>
-          <cylinderGeometry args={[1.6, 2.0, 0.6, 16]} />
-          <meshPhysicalMaterial 
-            color={color} 
-            roughness={0.2} 
-            metalness={0.1}
-            clearcoat={0.8}
-            clearcoatRoughness={0.2}
-            emissive={color}
-            emissiveIntensity={0.1}
-          />
-        </mesh>
-        
-        {/* Top glossy surface */}
-        <mesh position={[0, 0.05, 0]}>
-          <cylinderGeometry args={[1.55, 1.6, 0.15, 16]} />
-          <meshPhysicalMaterial
-            color={glassColor}
-            transmission={0.6}
-            opacity={0.9}
-            transparent
-            roughness={0.1}
-            metalness={0.1}
-            thickness={2}
-            ior={1.5}
-          />
-        </mesh>
+      <Float speed={1.8} rotationIntensity={0.8} floatIntensity={1} position={[-4, 8, -30]}>
+        <Text3D font="/fonts/Inter_Bold.json" size={2.5} height={0.6} curveSegments={12}>
+          5
+          <meshStandardMaterial color="#2dd4bf" roughness={0.4} metalness={0.3} transparent opacity={0.5} />
+        </Text3D>
+      </Float>
 
-        {/* Outer aura/glow ring */}
-        <mesh position={[0, 0.15, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[1.7, 2.1, 32]} />
-          <meshBasicMaterial
-            color={glowColor}
-            transparent
-            opacity={0.3}
-            side={THREE.DoubleSide}
-            blending={THREE.AdditiveBlending}
-          />
-        </mesh>
-        
-        {/* Secondary inner aura */}
-        <mesh position={[0, 0.16, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[1.65, 1.75, 32]} />
-          <meshBasicMaterial
-            color="#ffffff"
-            transparent
-            opacity={0.4}
-            side={THREE.DoubleSide}
-            blending={THREE.AdditiveBlending}
-          />
-        </mesh>
+      <Float speed={2.2} rotationIntensity={1.2} floatIntensity={1} position={[14, -2, -26]}>
+        <Text3D font="/fonts/Inter_Bold.json" size={2.2} height={0.5} curveSegments={12}>
+          7
+          <meshStandardMaterial color="#fb923c" roughness={0.3} metalness={0.4} transparent opacity={0.7} />
+        </Text3D>
+      </Float>
 
-        {/* Label */}
-        <Html
-          position={[0, 1.1, 0]}
-          center
-          distanceFactor={12}
-          style={{ pointerEvents: "none" }}
-        >
-          <div
-            className="backdrop-blur-xl rounded-2xl px-4 py-2.5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] border-[3px] whitespace-nowrap transform transition-transform"
-            style={{ 
-              borderColor: 'rgba(255,255,255,0.8)',
-              background: `linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85))`,
-              boxShadow: `0 10px 25px ${color}40, inset 0 2px 0 rgba(255,255,255,1)`
-            }}
-          >
-            <p
-              className="text-[10px] font-black uppercase tracking-wider mb-0.5"
-              style={{ color }}
-            >
-              Chủ đề {node.topic.topicNumber}
-            </p>
-            <p className="text-[14px] font-black text-slate-800 leading-tight flex items-center gap-1.5 drop-shadow-sm">
-              <span className="text-xl">{node.topic.emoji}</span> 
-              <span>{node.topic.title}</span>
-            </p>
-            <p className="text-[9px] text-slate-500 font-bold mt-1 uppercase tracking-wide">
-              {node.topic.lessons.length} bài học
-            </p>
-            
-            {/* Little pointer triangle */}
-            <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 w-4 h-4 bg-white/90 rotate-45 border-b-[3px] border-r-[3px]"
-                 style={{ borderColor: 'rgba(255,255,255,0.8)' }} />
-          </div>
-        </Html>
-      </group>
-    </Float>
-  );
-}
+      <Float speed={1.4} rotationIntensity={2} floatIntensity={1} position={[-10, -5, -28]}>
+        <Text3D font="/fonts/Inter_Bold.json" size={2.8} height={0.6} curveSegments={12}>
+          +
+          <meshStandardMaterial color="#ec4899" roughness={0.2} metalness={0.3} transparent opacity={0.7} />
+        </Text3D>
+      </Float>
 
-// ── Lesson Sphere ─────────────────────────────────────────────────────────────
+      <Float speed={2} rotationIntensity={0.6} floatIntensity={1} position={[8, 9, -32]}>
+        <Text3D font="/fonts/Inter_Bold.json" size={3} height={0.5} curveSegments={12}>
+          =
+          <meshStandardMaterial color="#60a5fa" roughness={0.1} metalness={0.7} transparent opacity={0.5} />
+        </Text3D>
+      </Float>
 
-function LessonSphere({
-  node,
-  isAccessible,
-  isCurrentLesson,
-  onSelect,
-}: {
-  node: Node3D;
-  isAccessible: boolean;
-  isCurrentLesson: boolean;
-  onSelect: (lesson: Math2Lesson) => void;
-}) {
-  const meshRef = useRef<THREE.Mesh>(null);
-  const [hovered, setHovered] = useState(false);
-  const lesson = node.lesson!;
-  const color = getTopicColor(node.topicIndex);
-  const isLocked = !isAccessible;
-  const hasGame = lesson.gameType !== null;
-  const isComingSoon = isAccessible && !hasGame;
+      <Float speed={1.7} rotationIntensity={1.1} floatIntensity={1} position={[-2, -8, -25]}>
+        <Text3D font="/fonts/Inter_Bold.json" size={2.4} height={0.4} curveSegments={12}>
+          9
+          <meshStandardMaterial color="#a3e635" roughness={0.4} metalness={0.2} transparent opacity={0.7} />
+        </Text3D>
+      </Float>
 
-  const baseColor = isLocked
-    ? "#9ca3af"
-    : isComingSoon
-      ? new THREE.Color(color).lerp(new THREE.Color("#9ca3af"), 0.4).getStyle()
-      : color;
-  const emissiveColor = isLocked ? "#6b7280" : color;
+      {/* More Geometry */}
+      <Float speed={1.8} rotationIntensity={2} floatIntensity={1} position={[10, -8, -30]}>
+        <Box args={[2, 2, 2]}>
+          <meshStandardMaterial color="#8b5cf6" roughness={0.1} metalness={0.4} transparent opacity={0.6} />
+        </Box>
+      </Float>
 
-  useFrame(({ clock }) => {
-    if (!meshRef.current) return;
-    const t = clock.elapsedTime;
-    meshRef.current.position.y =
-      node.position[1] + Math.sin(t * 1.5 + node.globalIndex * 0.7) * 0.12;
-    const s = hovered ? 1.1 : isCurrentLesson ? 1.04 : 1;
-    meshRef.current.scale.lerp(new THREE.Vector3(s, s, s), 0.1);
-  });
+      <Float speed={2.5} rotationIntensity={1} floatIntensity={1} position={[-14, 8, -22]}>
+        <Cone args={[1.5, 3, 32]}>
+          <meshStandardMaterial color="#fb7185" roughness={0.3} metalness={0.2} transparent opacity={0.7} />
+        </Cone>
+      </Float>
 
-  return (
-    <group>
-      <mesh
-        ref={meshRef}
-        position={node.position}
-        onClick={(e) => {
-          e.stopPropagation();
-          onSelect(lesson);
-        }}
-        onPointerOver={(e) => {
-          e.stopPropagation();
-          setHovered(true);
-          document.body.style.cursor = "pointer";
-        }}
-        onPointerOut={() => {
-          setHovered(false);
-          document.body.style.cursor = "auto";
-        }}
-      >
-        <sphereGeometry args={[isCurrentLesson ? 0.6 : 0.5, 32, 32]} />
-        <meshPhysicalMaterial
-          color={baseColor}
-          emissive={emissiveColor}
-          emissiveIntensity={hovered ? 0.8 : isCurrentLesson ? 0.6 : 0.2}
-          roughness={0.1}
-          metalness={0.2}
-          clearcoat={1.0}
-          clearcoatRoughness={0.1}
-          transparent
-          opacity={isComingSoon ? 0.6 : 1}
-        />
-        
-        {/* Inner glow for accessible lessons */}
-        {!isLocked && (
-          <mesh scale={1.05}>
-            <sphereGeometry args={[isCurrentLesson ? 0.6 : 0.5, 32, 32]} />
-            <meshBasicMaterial
-              color="#ffffff"
-              transparent
-              opacity={hovered ? 0.4 : isCurrentLesson ? 0.3 : 0.1}
-              blending={THREE.AdditiveBlending}
-              side={THREE.BackSide}
-            />
-          </mesh>
-        )}
-      </mesh>
-
-      {/* Lesson number / lock */}
-      <Text
-        position={[node.position[0], node.position[1], node.position[2] + (isCurrentLesson ? 0.62 : 0.52)]}
-        fontSize={isCurrentLesson ? 0.4 : 0.32}
-        fontWeight={900}
-        color="white"
-        anchorX="center"
-        anchorY="middle"
-        outlineWidth={0.03}
-        outlineColor={isLocked ? "#4b5563" : new THREE.Color(color).lerp(new THREE.Color("#000"), 0.4).getStyle()}
-      >
-        {isLocked ? "🔒" : String(lesson.lessonNumber)}
-      </Text>
-
-      {/* Coming soon / plan badge */}
-      {(isComingSoon || (isLocked && lesson.requiredPlan !== "FREE")) && (
-        <Html
-          position={[
-            node.position[0],
-            node.position[1] - 0.85,
-            node.position[2],
-          ]}
-          center
-          distanceFactor={10}
-          style={{ pointerEvents: "none" }}
-        >
-          <div
-            className={`px-2 py-0.5 rounded-full text-[8px] font-black text-white whitespace-nowrap ${isComingSoon ? "bg-gray-400/90" : "bg-amber-400"}`}
-          >
-            {isComingSoon
-              ? "Sắp ra mắt"
-              : `${PLAN_LABELS[lesson.requiredPlan].icon} ${PLAN_LABELS[lesson.requiredPlan].label}`}
-          </div>
-        </Html>
-      )}
-
-      {/* Current lesson indicator */}
-      {isCurrentLesson && (
-        <Html
-          position={[
-            node.position[0],
-            node.position[1] + 0.9,
-            node.position[2],
-          ]}
-          center
-          distanceFactor={10}
-          style={{ pointerEvents: "none" }}
-        >
-          <div className="animate-bounce bg-white/95 backdrop-blur-md rounded-full px-3 py-1 shadow-[0_8px_20px_rgba(56,189,248,0.4)] border-[3px] border-sky-300 whitespace-nowrap">
-            <span className="text-[12px] font-black text-sky-500 whitespace-nowrap drop-shadow-sm">
-              Bắt đầu nào! 🌟
-            </span>
-          </div>
-        </Html>
-      )}
+      <Float speed={1.2} rotationIntensity={1.5} floatIntensity={1} position={[4, 5, -34]}>
+        <Dodecahedron args={[2]}>
+          <meshStandardMaterial color="#38bdf8" roughness={0.2} metalness={0.5} transparent opacity={0.5} />
+        </Dodecahedron>
+      </Float>
     </group>
   );
 }
 
-// ── Trophy at end ─────────────────────────────────────────────────────────────
-
-function TrophyEnd({ position }: { position: [number, number, number] }) {
-  const ref = useRef<THREE.Mesh>(null);
-  useFrame(({ clock }) => {
-    if (ref.current) ref.current.rotation.y = clock.elapsedTime * 0.5;
-  });
+function Math2Background3D() {
   return (
-    <Float
-      speed={2}
-      rotationIntensity={0.4}
-      floatIntensity={0.5}
-      position={position}
-    >
-      <mesh ref={ref}>
-        <dodecahedronGeometry args={[0.8, 0]} />
-        <MeshWobbleMaterial
-          color="#fbbf24"
-          emissive="#f59e0b"
-          emissiveIntensity={0.5}
-          roughness={0.15}
-          metalness={0.8}
-          factor={0.3}
-          speed={1.5}
-        />
-      </mesh>
-      <Text
-        position={[0, 0, 0.85]}
-        fontSize={0.5}
-        anchorX="center"
-        anchorY="middle"
-      >
-        🏆
-      </Text>
-    </Float>
-  );
-}
-
-// ── Floating decorations ──────────────────────────────────────────────────────
-
-function FloatingDecorations({ totalWidth }: { totalWidth: number }) {
-  const items = useMemo(() => {
-    const emojis = ["⭐", "☁️", "🌈", "🎈", "🦋", "✨", "🌸", "🍀", "💎", "🎀"];
-    const arr: {
-      emoji: string;
-      pos: [number, number, number];
-      size: number;
-    }[] = [];
-    for (let i = 0; i < 14; i++) {
-      const h1 = ((42 + i * 137) % 293) / 293;
-      const h2 = ((42 + i * 251) % 197) / 197;
-      arr.push({
-        emoji: emojis[i % emojis.length],
-        pos: [h1 * totalWidth, 2.5 + h2 * 3.5, -3 - (i % 5) * 0.8],
-        size: 0.14 + (i % 4) * 0.03,
-      });
-    }
-    return arr;
-  }, [totalWidth]);
-
-  return (
-    <>
-      {items.map((d, i) => (
-        <Float key={i} speed={0.8 + i * 0.08} floatIntensity={0.4 + i * 0.03}>
-          <Text
-            position={d.pos}
-            fontSize={d.size}
-            anchorX="center"
-            anchorY="middle"
-          >
-            {d.emoji}
-          </Text>
-        </Float>
-      ))}
-    </>
-  );
-}
-
-// ── Camera animator ───────────────────────────────────────────────────────────
-
-function CameraAnimator({
-  nodes,
-  currentIndex,
-  controlsRef,
-}: {
-  nodes: Node3D[];
-  currentIndex: number;
-  controlsRef: React.RefObject<any>;
-}) {
-  useEffect(() => {
-    const target = nodes[currentIndex];
-    const controls = controlsRef.current;
-    if (!target || !controls) return;
-
-    const startTarget = controls.target.clone();
-    const startPos = controls.object.position.clone();
-    const endTarget = new THREE.Vector3(target.position[0], 0, 0);
-    const endPos = new THREE.Vector3(target.position[0], 3, 14);
-    let t = 0;
-
-    const step = () => {
-      t = Math.min(t + 0.025, 1);
-      const ease = 1 - Math.pow(1 - t, 3);
-      controls.target.lerpVectors(startTarget, endTarget, ease);
-      controls.object.position.lerpVectors(startPos, endPos, ease);
-      controls.update();
-      if (t < 1) requestAnimationFrame(step);
-    };
-    step();
-  }, [currentIndex, nodes, controlsRef]);
-
-  return null;
-}
-
-// ── Scene environment ─────────────────────────────────────────────────────────
-
-function SceneEnvironment() {
-  return (
-    <>
-      <color attach="background" args={["#0c1033"]} />
-      <fog attach="fog" args={["#0c1033", 20, 80]} />
+    <div className="fixed inset-0 z-0 pointer-events-none">
+      <div className="absolute inset-0 bg-gradient-to-br from-[#0f172a] via-[#1e1b4b] to-[#312e81] transition-colors duration-1000" id="dynamic-bg" />
+      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30 mix-blend-overlay" />
+      <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-sky-400/20 to-transparent blur-3xl opacity-50" />
       
-      <ambientLight intensity={0.6} color="#e0e7ff" />
-      <directionalLight 
-        position={[15, 20, 10]} 
-        intensity={1.2} 
-        color="#ffffff" 
-        castShadow 
-      />
-      <directionalLight 
-        position={[-15, -5, -10]} 
-        intensity={0.4} 
-        color="#818cf8" 
-      />
-      
-      <pointLight position={[-10, 8, 5]} intensity={0.8} color="#38bdf8" />
-      <pointLight position={[10, 6, -5]} intensity={0.6} color="#f472b6" />
-      <pointLight position={[0, -5, 10]} intensity={0.5} color="#8b5cf6" />
-      
-      <hemisphereLight args={["#e0e7ff", "#0f172a", 0.6]} />
-      
-      <Stars
-        radius={70}
-        depth={40}
-        count={1200}
-        factor={3}
-        saturation={0.8}
-        fade
-        speed={0.4}
-      />
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -4, 0]}>
-        <planeGeometry args={[1000, 100]} />
-        <meshStandardMaterial
-          color="#0a0d26"
-          transparent
-          opacity={0.8}
-          roughness={0.8}
-          metalness={0.2}
-        />
-      </mesh>
-    </>
-  );
-}
-
-// ── Journey scene content ─────────────────────────────────────────────────────
-
-function JourneyScene({
-  nodes,
-  userPlan,
-  currentLessonIndex,
-  cameraFocusIndex,
-  onSelectLesson,
-  controlsRef,
-}: {
-  nodes: Node3D[];
-  userPlan: PlanType;
-  currentLessonIndex: number;
-  cameraFocusIndex: number;
-  onSelectLesson: (lesson: Math2Lesson) => void;
-  controlsRef: React.RefObject<any>;
-}) {
-  const totalWidth =
-    nodes.length > 0 ? nodes[nodes.length - 1].position[0] + 5 : 50;
-
-  return (
-    <>
-      <SceneEnvironment />
-      <CameraAnimator
-        nodes={nodes}
-        currentIndex={cameraFocusIndex}
-        controlsRef={controlsRef}
-      />
-      <JourneyPath nodes={nodes} />
-      <PathParticles nodes={nodes} />
-      <FloatingDecorations totalWidth={totalWidth} />
-      {nodes.map((node) =>
-        node.type === "topic" ? (
-          <TopicIsland key={node.topic.id} node={node} />
-        ) : (
-          <LessonSphere
-            key={node.lesson!.id}
-            node={node}
-            isAccessible={canAccessLesson(node.lesson!, userPlan)}
-            isCurrentLesson={node.globalIndex === currentLessonIndex}
-            onSelect={onSelectLesson}
-          />
-        ),
-      )}
-      {nodes.length > 0 && (
-        <TrophyEnd position={[nodes[nodes.length - 1].position[0] + 4, 0, 0]} />
-      )}
-      <OrbitControls
-        ref={controlsRef}
-        enablePan
-        enableZoom
-        enableRotate
-        maxPolarAngle={Math.PI / 2.2}
-        minPolarAngle={Math.PI / 6}
-        maxDistance={22}
-        minDistance={6}
-        panSpeed={0.5}
-        zoomSpeed={0.5}
-      />
-    </>
-  );
-}
-
-// ── Loading screen ────────────────────────────────────────────────────────────
-
-function LoadingScreen() {
-  return (
-    <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-b from-indigo-950 via-indigo-900 to-slate-900">
-      <div className="relative">
-        <div className="w-14 h-14 rounded-full border-4 border-indigo-400 border-t-amber-400 animate-spin" />
-        <div className="absolute inset-0 flex items-center justify-center text-2xl">
-          ✨
-        </div>
-      </div>
-      <p className="mt-4 text-sm font-black text-indigo-300 animate-pulse">
-        Đang tải thế giới 3D...
-      </p>
+      <Canvas camera={{ position: [0, 0, 15], fov: 50 }}>
+        <ambientLight intensity={0.9} />
+        <directionalLight position={[10, 15, 10]} intensity={1.5} castShadow />
+        <directionalLight position={[-10, -5, -10]} intensity={0.5} color="#60a5fa" />
+        <FloatingMathShapes />
+      </Canvas>
     </div>
   );
 }
 
-// ── Navigation HUD ────────────────────────────────────────────────────────────
-
-function NavigationHUD({
-  currentTopicIndex,
-  totalTopics,
-  onPrev,
-  onNext,
-  topicName,
-}: {
-  currentTopicIndex: number;
-  totalTopics: number;
-  onPrev: () => void;
-  onNext: () => void;
-  topicName: string;
-}) {
-  return (
-    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-4">
-      <button
-        onClick={onPrev}
-        disabled={currentTopicIndex <= 0}
-        className="w-12 h-12 rounded-full bg-white/10 border border-white/20 shadow-[0_4px_15px_rgba(0,0,0,0.2)] flex items-center justify-center hover:bg-white/20 hover:scale-110 active:scale-95 transition-all disabled:opacity-20 disabled:pointer-events-none backdrop-blur-xl group"
-      >
-        <ChevronLeft size={26} className="text-white group-hover:text-amber-300 transition-colors" />
-      </button>
-      <div className="bg-white/10 border border-white/20 backdrop-blur-xl rounded-full px-6 py-2.5 shadow-[0_4px_15px_rgba(0,0,0,0.2)]">
-        <p className="text-sm font-black text-white text-center whitespace-nowrap drop-shadow-md">
-          📐 {topicName}
-        </p>
-        <div className="flex items-center gap-2 mt-1.5 justify-center">
-          {Array.from({ length: totalTopics }).map((_, i) => (
-            <div
-              key={i}
-              className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
-                i === currentTopicIndex 
-                  ? "bg-amber-400 scale-125 shadow-[0_0_8px_rgba(251,191,36,0.8)]" 
-                  : i < currentTopicIndex 
-                    ? "bg-emerald-400 opacity-80" 
-                    : "bg-white/30"
-              }`}
-            />
-          ))}
-        </div>
-      </div>
-      <button
-        onClick={onNext}
-        disabled={currentTopicIndex >= totalTopics - 1}
-        className="w-12 h-12 rounded-full bg-white/10 border border-white/20 shadow-[0_4px_15px_rgba(0,0,0,0.2)] flex items-center justify-center hover:bg-white/20 hover:scale-110 active:scale-95 transition-all disabled:opacity-20 disabled:pointer-events-none backdrop-blur-xl group"
-      >
-        <ChevronRight size={26} className="text-white group-hover:text-amber-300 transition-colors" />
-      </button>
-    </div>
-  );
-}
-
-// ─── Main Component ───────────────────────────────────────────────────────────
-
+// --- Main Page Component ---
 export function Math2TableOfContents() {
   const navigate = useNavigate();
-  const [userPlan, setUserPlan] = useState<PlanType>(() => getActiveChildPlan());
-  const [upgradeLesson, setUpgradeLesson] = useState<Math2Lesson | null>(null);
-  const [selectedLesson, setSelectedLesson] = useState<Math2Lesson | null>(null);
-  const [currentTopicIndex, setCurrentTopicIndex] = useState(0);
-  const [canvasKey, setCanvasKey] = useState(0);
-  const [webglFailed, setWebglFailed] = useState(false);
+  const { activeChild } = useActiveChild();
+  const [selectedLesson, setSelectedLesson] = useState<{ lesson: Math2Lesson; topic: Math2Topic } | null>(null);
+
   const [showAd, setShowAd] = useState(false);
-  const [pendingLessonRoute, setPendingLessonRoute] = useState<string | null>(null);
-  const controlsRef = useRef<any>(null);
-  const webglLossCountRef = useRef(0);
+  const [pendingRoute, setPendingRoute] = useState<string | null>(null);
 
-  const nodes = useMemo(() => buildNodes3D(), []);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
 
-  const currentLessonIndex = useMemo(() => {
-    const node = nodes.find(
-      (n) =>
-        n.type === "lesson" &&
-        n.lesson?.gameType !== null &&
-        canAccessLesson(n.lesson!, userPlan),
-    );
-    return node?.globalIndex ?? -1;
-  }, [nodes, userPlan]);
+  // For SVG Path
+  const [nodePositions, setNodePositions] = useState<{x: number, y: number}[]>([]);
+  const nodeRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const topicRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  const topicStartIndices = useMemo(() => {
-    return nodes.filter((n) => n.type === "topic").map((n) => nodes.indexOf(n));
-  }, [nodes]);
-
-  const cameraFocusIndex = topicStartIndices[currentTopicIndex] ?? 0;
-
-  useEffect(() => {
-    const refresh = () => setUserPlan(getActiveChildPlan());
-    window.addEventListener("focus", refresh);
-    return () => window.removeEventListener("focus", refresh);
-  }, []);
-
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "ArrowLeft")
-        setCurrentTopicIndex((p) => Math.max(0, p - 1));
-      else if (e.key === "ArrowRight")
-        setCurrentTopicIndex((p) => Math.min(MATH2_TOPICS.length - 1, p + 1));
+  // Smooth dragging
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    if (scrollRef.current) {
+      setStartX(e.pageX - scrollRef.current.offsetLeft);
+      setScrollLeft(scrollRef.current.scrollLeft);
     }
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  };
+  const handleMouseLeave = () => setIsDragging(false);
+  const handleMouseUp = () => setIsDragging(false);
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !scrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollRef.current.offsetLeft;
+    const walk = (x - startX) * 2; 
+    scrollRef.current.scrollLeft = scrollLeft - walk;
+  };
 
+  // Update SVG line positions
+  const updatePositions = useCallback(() => {
+    if (!scrollRef.current) return;
+    const container = scrollRef.current;
+    
+    // Create an inner wrapper to track coordinates relative to the scroll content width
+    const scrollContent = container.firstChild as HTMLDivElement;
+    if (!scrollContent) return;
 
-  const handleSelectLesson = useCallback(
-    (lesson: Math2Lesson) => setSelectedLesson(lesson),
-    [],
-  );
-
-  const handlePlay = useCallback(
-    (lesson: Math2Lesson) => {
-      setSelectedLesson(null);
-      let targetRoute = "";
-      if (lesson.gameType === "number-sequence-chart") {
-        targetRoute = "/student/game/number-sequence";
-      } else if (lesson.gameType === "math2-quiz-3d") {
-        targetRoute = "/student/game/math2-quiz-3d";
-      }
-      
-      if (targetRoute) {
-        if (userPlan === "FREE") {
-          setPendingLessonRoute(targetRoute);
-          setShowAd(true);
-        } else {
-          navigate(targetRoute);
-        }
-      }
-    },
-    [userPlan, navigate],
-  );
-
-  const handleAdComplete = useCallback(() => {
-    setShowAd(false);
-    if (pendingLessonRoute) {
-      navigate(pendingLessonRoute);
-      setPendingLessonRoute(null);
-    }
-  }, [pendingLessonRoute, navigate]);
-
-  const handleCanvasCreated = useCallback(
-    ({ gl }: { gl: THREE.WebGLRenderer }) => {
-      gl.setClearColor("#0f1847", 1);
-      const canvas = gl.domElement;
-      const onContextLost = (event: Event) => {
-        event.preventDefault();
-        webglLossCountRef.current += 1;
-
-        if (webglLossCountRef.current >= 3) {
-          setWebglFailed(true);
-          return;
-        }
-
-        setCanvasKey((k) => k + 1);
+    const containerRect = scrollContent.getBoundingClientRect();
+    
+    const positions = nodeRefs.current.map(el => {
+      if (!el) return null;
+      const rect = el.getBoundingClientRect();
+      // Relative to the scroll content itself (0 is the very left edge of the entire scrollable area)
+      return {
+        x: rect.left + rect.width / 2 - containerRect.left,
+        y: rect.top + rect.height / 2 - containerRect.top
       };
+    }).filter(Boolean) as {x: number, y: number}[];
+    
+    setNodePositions(positions);
+  }, []);
 
-      canvas.addEventListener("webglcontextlost", onContextLost, {
-        passive: false,
-      });
-    },
-    [],
-  );
+  useEffect(() => {
+    updatePositions();
+    window.addEventListener('resize', updatePositions);
+    // Observe DOM changes (like images loading or fonts rendering causing shifts)
+    const observer = new ResizeObserver(updatePositions);
+    if (scrollRef.current?.firstChild) {
+      observer.observe(scrollRef.current.firstChild as Element);
+    }
+    const timeout = setTimeout(updatePositions, 500); // safety fallback
+
+    return () => {
+      window.removeEventListener('resize', updatePositions);
+      observer.disconnect();
+      clearTimeout(timeout);
+    };
+  }, [updatePositions]);
+
+  // Generate SVG Path String
+  let pathD = "";
+  if (nodePositions.length > 0) {
+    pathD = `M ${nodePositions[0].x} ${nodePositions[0].y}`;
+    for (let i = 1; i < nodePositions.length; i++) {
+        const prev = nodePositions[i-1];
+        const curr = nodePositions[i];
+        const cx1 = prev.x + (curr.x - prev.x) / 2;
+        const cy1 = prev.y;
+        const cx2 = prev.x + (curr.x - prev.x) / 2;
+        const cy2 = curr.y;
+        pathD += ` C ${cx1} ${cy1}, ${cx2} ${cy2}, ${curr.x} ${curr.y}`;
+    }
+  }
+
+  // Quick jump scrolling
+  const scrollToTopic = (index: number) => {
+    const el = topicRefs.current[index];
+    if (el && scrollRef.current) {
+        // Smooth scroll to the topic portal
+        const container = scrollRef.current;
+        const scrollContent = container.firstChild as HTMLDivElement;
+        const scrollContentRect = scrollContent.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+        
+        // Calculate target scroll left: element's left relative to scroll content minus some padding
+        const targetScrollLeft = (elRect.left - scrollContentRect.left) - 100;
+
+        container.scrollTo({
+            left: targetScrollLeft,
+            behavior: 'smooth'
+        });
+    }
+  };
+
+  let globalCount = 0;
 
   return (
-    <div className="relative h-[calc(100vh-5rem)] overflow-hidden bg-gradient-to-b from-indigo-950 via-indigo-900 to-slate-900">
-      <PreRollAdModal 
-        isOpen={showAd} 
-        onClose={() => setShowAd(false)} 
-        onAdComplete={handleAdComplete} 
-      />
-      
-      {/* Title overlay */}
-      <div className="absolute top-3 left-4 z-30 flex items-center gap-2">
-        <span className="text-3xl">📐</span>
-        <div>
-          <h1 className="text-xl sm:text-2xl font-black text-white leading-tight drop-shadow-lg">
-            Hành trình Toán 2
-          </h1>
-          <p className="text-sky-200 text-xs font-bold">
-            Khám phá thế giới toán học 3D! 🚀
+    <div className="relative w-full h-[calc(100vh-5rem)] overflow-hidden bg-slate-900 font-sans selection:bg-sky-500/30">
+      <Math2Background3D />
+
+      {/* Header */}
+      <div className="absolute top-8 left-0 w-full text-center z-20 pointer-events-none px-4 flex flex-col items-center">
+        <h1 className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-white/70 drop-shadow-[0_4px_24px_rgba(255,255,255,0.4)] mb-3 tracking-tight">
+          Hành trình Toán 2
+        </h1>
+        <div className="flex items-center gap-1.5 bg-white/10 backdrop-blur-md border border-white/20 px-4 py-1.5 rounded-full shadow-lg">
+          <Compass className="text-sky-300" size={14} />
+          <p className="text-xs md:text-sm text-sky-100 font-bold tracking-wide">
+             Click giữ chuột và kéo qua lại để khám phá
           </p>
         </div>
       </div>
 
-      {/* Instructions */}
-      <div className="absolute top-3 right-4 z-30">
-        <div className="bg-white/10 backdrop-blur-md rounded-xl px-3 py-1.5 border border-white/20">
-          <p className="text-[10px] text-white/80 font-bold">
-            🖱️ Kéo để xoay • Scroll để zoom • Click bài học
-          </p>
+      {/* Main Drag/Scroll Container */}
+      <div 
+        ref={scrollRef}
+        className={`relative z-10 w-full h-full overflow-x-auto overflow-y-hidden hide-scrollbar flex items-center pt-24 pb-32 ${isDragging ? 'cursor-grabbing select-none scroll-auto' : 'cursor-grab scroll-smooth'}`}
+        onMouseDown={handleMouseDown}
+        onMouseLeave={handleMouseLeave}
+        onMouseUp={handleMouseUp}
+        onMouseMove={handleMouseMove}
+      >
+        <div className="relative flex flex-row items-center w-max h-full px-24 md:px-48 gap-16 md:gap-[clamp(8rem,15vw,16rem)] min-h-[500px]">
+          
+          {/* S V G   P A T H */}
+          <svg className="absolute top-0 left-0 w-full h-full pointer-events-none -z-10" style={{ minWidth: "100%" }}>
+            {/* Glowing background path */}
+            <path 
+                d={pathD} 
+                fill="none" 
+                stroke="rgba(255,255,255,0.15)" 
+                strokeWidth="24" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className="drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]"
+            />
+            {/* Dashed trail */}
+            <path 
+                d={pathD} 
+                fill="none" 
+                stroke="rgba(255,255,255,0.8)" 
+                strokeWidth="8" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeDasharray="20 20"
+                className="animate-[dash_10s_linear_infinite]"
+            />
+            {/* Active Progress Path (Simulation) */}
+            <path 
+                d={pathD} 
+                fill="none" 
+                stroke="url(#progressGradient)" 
+                strokeWidth="8" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeDasharray="20 20"
+            />
+            <defs>
+              <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#facc15" />
+                <stop offset="30%" stopColor="#4ade80" />
+                <stop offset="100%" stopColor="transparent" />
+              </linearGradient>
+            </defs>
+          </svg>
+
+          {MATH2_TOPICS.map((topic, tIdx) => {
+            const portalIdx = globalCount++;
+            
+            return (
+              <div key={topic.id} className="flex flex-row items-center h-full gap-16 md:gap-[clamp(8rem,15vw,16rem)] relative">
+                
+                {/* --- TOPIC PORTAL (Gateway) --- */}
+                <div 
+                    ref={(el) => {
+                        nodeRefs.current[portalIdx] = el;
+                        topicRefs.current[tIdx] = el;
+                    }}
+                    className="relative z-20 shrink-0 transform hover:-translate-y-4 transition-all duration-500 ease-out flex items-center justify-center p-4 group"
+                >
+                  <div className={`absolute inset-0 bg-gradient-to-tr ${topic.color || 'from-sky-400 to-indigo-500'} rounded-[3rem] blur-2xl opacity-40 group-hover:opacity-60 transition-opacity`}></div>
+                  
+                  <div className="relative flex flex-col items-center justify-center w-64 md:w-80 h-[380px] bg-white/10 backdrop-blur-2xl border border-white/30 rounded-[3rem] shadow-[0_20px_40px_rgba(0,0,0,0.3),inset_0_2px_0_rgba(255,255,255,0.4)] overflow-hidden cursor-default">
+                    {/* Glass glare */}
+                    <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/20 to-transparent pointer-events-none rounded-t-[3rem]"></div>
+                    
+                    <div className="bg-white/20 p-6 rounded-3xl shadow-inner backdrop-blur-md border border-white/20 mb-6 group-hover:scale-110 transition-transform duration-500">
+                        <span className="text-6xl md:text-7xl drop-shadow-2xl block animate-[float_4s_ease-in-out_infinite]">{topic.emoji}</span>
+                    </div>
+                    
+                    <div className="flex flex-col items-center text-center px-6">
+                        <div className="px-4 py-1.5 rounded-full bg-white/20 text-white/90 text-xs md:text-sm font-black uppercase tracking-[0.2em] mb-4 shadow-inner border border-white/10 flex items-center gap-2">
+                            <Star size={14} fill="currentColor" /> Chủ đề {topic.topicNumber} <Star size={14} fill="currentColor" />
+                        </div>
+                        <h2 className="text-2xl md:text-3xl font-black text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)] leading-tight">
+                            {topic.title}
+                        </h2>
+                    </div>
+
+                    {/* Bottom fade */}
+                    <div className="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"></div>
+                  </div>
+                </div>
+
+                {/* --- LESSON NODES (Levels) --- */}
+                {topic.lessons.map((lesson) => {
+                  const idx = globalCount++;
+                  // Beautiful sweeping sine wave, wider and taller
+                  const offsetY = Math.sin((idx * Math.PI) / 3) * 120; 
+                  
+                  const isLocked = lesson.requiredPlan === "PRO"; 
+                  const isCompleted = idx < 4; // Mock logic
+
+                  return (
+                    <div
+                      key={lesson.id}
+                      ref={(el) => { nodeRefs.current[idx] = el; }}
+                      className="relative flex flex-col items-center justify-center shrink-0 z-20"
+                      style={{ transform: `translateY(${offsetY}px)` }}
+                    >
+                      {/* Tactile 3D Button wrapper */}
+                      <div className="relative group">
+                          {/* Aura glow for unlocked/completed */}
+                          {!isLocked && (
+                              <div className={`absolute -inset-4 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${isCompleted ? 'bg-yellow-400' : 'bg-sky-400'}`}></div>
+                          )}
+
+                          <button 
+                            onClick={() => setSelectedLesson({ lesson, topic })}
+                            className={`
+                              relative w-24 h-24 md:w-28 md:h-28 rounded-full flex items-center justify-center text-4xl md:text-5xl font-bold
+                              transition-all duration-300 outline-none
+                              ${isLocked 
+                                ? "bg-slate-300 border-4 border-slate-400/50 shadow-[0_8px_0_#94a3b8,0_15px_20px_rgba(0,0,0,0.2)] text-slate-500 cursor-not-allowed" 
+                                : isCompleted 
+                                  ? "bg-gradient-to-b from-amber-200 to-yellow-400 border-[6px] border-white shadow-[0_12px_0_#b45309,0_15px_30px_rgba(0,0,0,0.4)] text-amber-900 group-hover:translate-y-[-8px] group-hover:shadow-[0_20px_0_#b45309,0_25px_40px_rgba(0,0,0,0.4)] active:translate-y-[8px] active:shadow-[0_4px_0_#b45309,0_5px_10px_rgba(0,0,0,0.4)]" 
+                                  : "bg-gradient-to-b from-sky-300 to-blue-500 border-[6px] border-white shadow-[0_12px_0_#1d4ed8,0_15px_30px_rgba(0,0,0,0.4)] text-white group-hover:translate-y-[-8px] group-hover:shadow-[0_20px_0_#1d4ed8,0_25px_40px_rgba(0,0,0,0.4)] active:translate-y-[8px] active:shadow-[0_4px_0_#1d4ed8,0_5px_10px_rgba(0,0,0,0.4)]"
+                              }
+                            `}
+                          >
+                            <span className="relative z-10 drop-shadow-[0_2px_2px_rgba(0,0,0,0.2)] group-active:scale-95 transition-transform origin-center">
+                              {isLocked ? <Lock size={36} className="text-slate-400" /> : lesson.emoji}
+                            </span>
+                            
+                            {/* Glass reflection bubble on the button */}
+                            <div className="absolute top-1 right-2 w-8 h-8 bg-white/40 rounded-full blur-[2px] z-20 pointer-events-none"></div>
+                            <div className="absolute top-2 right-4 w-3 h-3 bg-white/60 rounded-full z-20 pointer-events-none"></div>
+
+                            {/* Crown/Star for completed */}
+                            {isCompleted && !isLocked && (
+                                <div className="absolute -top-4 -right-2 bg-gradient-to-br from-yellow-300 to-amber-500 text-white rounded-full p-2 animate-[bounce_2s_infinite] shadow-lg border-[3px] border-white z-30">
+                                    <Star size={18} fill="currentColor" />
+                                </div>
+                            )}
+                          </button>
+                      </div>
+
+                      {/* Lesson Label underneath */}
+                      <div className="absolute top-[120%] flex flex-col items-center w-max max-w-[200px] pointer-events-none z-20">
+                        <span className="bg-white/10 backdrop-blur-xl border border-white/20 text-white text-sm md:text-base font-bold px-5 py-2 rounded-2xl shadow-[0_4px_15px_rgba(0,0,0,0.3)] drop-shadow-md">
+                          Bài {lesson.lessonNumber}
+                        </span>
+                        {!isLocked && !isCompleted && (
+                            <span className="text-sky-200 text-xs font-bold mt-2 bg-black/30 px-3 py-1 rounded-full backdrop-blur-md border border-white/10 shadow-sm animate-pulse">
+                                Vừa mở khóa!
+                            </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* 3D Canvas */}
-      {webglFailed ? (
-        <div className="absolute inset-0 z-20 flex items-center justify-center px-4">
-          <div className="max-w-md rounded-2xl border border-white/20 bg-slate-900/65 p-4 text-center backdrop-blur-sm">
-            <p className="text-sm font-bold text-white">
-              Thiết bị đang gặp lỗi hiển thị 3D tạm thời.
-            </p>
-            <button
-              onClick={() => {
-                webglLossCountRef.current = 0;
-                setWebglFailed(false);
-                setCanvasKey((k) => k + 1);
-              }}
-              className="mt-3 rounded-xl bg-sky-500 px-4 py-2 text-xs font-black text-white hover:bg-sky-400"
-            >
-              Tải lại bản đồ
-            </button>
+      {/* --- QUICK JUMP SIDEBAR / BOTTOM BAR --- */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-40 animate-in slide-in-from-bottom-10 fade-in duration-700 delay-500">
+        <div className="bg-white/10 backdrop-blur-2xl border border-white/20 p-1.5 md:p-2 rounded-full shadow-[0_10px_40px_rgba(0,0,0,0.5)] flex flex-row items-center justify-center gap-1.5 md:gap-2 overflow-x-auto max-w-[90vw] hide-scrollbar">
+            {MATH2_TOPICS.map((t, index) => (
+                <button 
+                    key={t.id}
+                    onClick={() => scrollToTopic(index)}
+                    title={t.title}
+                    className="relative group shrink-0 flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/5 hover:bg-white/20 border border-transparent hover:border-white/30 transition-all duration-300 hover:scale-110 active:scale-95"
+                >
+                    <span className="text-xl md:text-2xl drop-shadow-md">{t.emoji}</span>
+                    
+                    {/* Tooltip */}
+                    <span className="absolute bottom-[130%] opacity-0 group-hover:opacity-100 transition-opacity bg-black/80 text-white text-[10px] md:text-xs font-bold py-1 px-2.5 rounded-lg whitespace-nowrap pointer-events-none border border-white/10 shadow-xl backdrop-blur-md">
+                        CĐ {t.topicNumber}
+                    </span>
+                </button>
+            ))}
+        </div>
+      </div>
+
+      {/* Styles */}
+      <style>{`
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .hide-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        @keyframes dash {
+            to {
+                stroke-dashoffset: -1000;
+            }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+      `}</style>
+
+      {/* Modal is completely styled with premium CSS */}
+      {selectedLesson && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-xl transition-opacity animate-in fade-in" 
+            onClick={() => setSelectedLesson(null)} 
+          />
+          
+          <div className="relative w-full max-w-[500px] bg-white rounded-[3rem] shadow-[0_0_80px_rgba(0,0,0,0.6)] overflow-hidden animate-in zoom-in-95 duration-300 border-[8px] border-white/10">
+            {/* Modal Header */}
+            <div className={`pt-12 pb-14 bg-gradient-to-br ${selectedLesson.topic.color || 'from-indigo-500 via-sky-500 to-sky-400'} text-white flex flex-col items-center text-center relative overflow-hidden`}>
+              {/* Background decors inside header */}
+              <div className="absolute top-0 right-0 p-8 opacity-20"><Star size={64} /></div>
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -ml-20 -mb-20"></div>
+
+              <button 
+                className="absolute top-6 right-6 text-white/70 hover:text-white bg-black/20 hover:bg-black/40 p-3 rounded-full backdrop-blur-md transition-all hover:scale-110 active:scale-90" 
+                onClick={() => setSelectedLesson(null)}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              </button>
+
+              <div className="relative z-10">
+                <div className="text-8xl mb-6 drop-shadow-[0_10px_10px_rgba(0,0,0,0.3)] animate-[bounce_2s_infinite]">{selectedLesson.lesson.emoji}</div>
+              </div>
+
+              <h2 className="text-4xl font-black mb-4 drop-shadow-md z-10">Bài {selectedLesson.lesson.lessonNumber}</h2>
+              <div className="bg-white/20 px-6 py-3 rounded-[2rem] backdrop-blur-md border border-white/30 shadow-lg max-w-[85%] z-10">
+                 <p className="font-bold text-xl leading-tight text-white drop-shadow-sm">{selectedLesson.lesson.title}</p>
+              </div>
+            </div>
+            
+            {/* Modal Body */}
+            <div className="relative p-10 flex flex-col items-center bg-slate-50/90 backdrop-blur-3xl -mt-6 rounded-t-[3rem] shadow-[0_-10px_20px_rgba(0,0,0,0.1)]">
+               <div className="w-16 h-1.5 bg-slate-200 rounded-full mb-8"></div>
+               
+               <p className="text-slate-600 text-center mb-10 text-lg font-medium leading-relaxed max-w-sm">
+                   {selectedLesson.lesson.description}
+               </p>
+               
+               <button 
+                 className={`w-full flex items-center justify-center gap-3 py-5 rounded-[2rem] text-2xl font-black text-white transition-all duration-300
+                   ${!selectedLesson.lesson.gameType || selectedLesson.lesson.requiredPlan === "PRO"
+                     ? "bg-slate-300 shadow-[0_8px_0_#94a3b8] cursor-not-allowed hover:translate-y-1 hover:shadow-[0_4px_0_#94a3b8] active:translate-y-[8px] active:shadow-none text-slate-500 border-2 border-slate-300" 
+                     : "bg-gradient-to-b from-sky-400 to-blue-600 shadow-[0_10px_0_#1d4ed8,0_15px_30px_rgba(37,99,235,0.4)] hover:translate-y-[-2px] hover:shadow-[0_12px_0_#1d4ed8,0_20px_40px_rgba(37,99,235,0.5)] active:translate-y-[10px] active:shadow-none ring-4 ring-sky-500/20 border border-sky-300"
+                   }`}
+                 disabled={!selectedLesson.lesson.gameType || selectedLesson.lesson.requiredPlan === "PRO"}
+                 onClick={() => {
+                   if (selectedLesson.lesson.gameType && selectedLesson.lesson.requiredPlan !== "PRO") {
+                     const isPremium = activeChild.plan === "PRO" || activeChild.plan === "VIP";
+                     if (selectedLesson.lesson.gameType === "number-sequence-chart") {
+                       if (!isPremium) {
+                         setPendingRoute("/student/game/number-sequence");
+                         setShowAd(true);
+                       } else {
+                         navigate("/student/game/number-sequence");
+                       }
+                     } else {
+                       navigate(`/student/quiz/math2-b2`);
+                     }
+                   }
+                 }}
+               >
+                 {selectedLesson.lesson.requiredPlan === "PRO" ? (
+                   <>
+                     <Lock fill="currentColor" size={28} /> Mở khóa PRO
+                   </>
+                 ) : !selectedLesson.lesson.gameType ? (
+                   <>
+                     Sắp ra mắt
+                   </>
+                 ) : (
+                   <>
+                     <Play fill="currentColor" size={28} /> Vào học ngay
+                   </>
+                 )}
+               </button>
+            </div>
           </div>
         </div>
-      ) : (
-        <Suspense fallback={<LoadingScreen />}>
-          <Canvas
-            key={canvasKey}
-            camera={{ position: [0, 3, 14], fov: 55, near: 0.1, far: 200 }}
-            style={{
-              width: "100%",
-              height: "100%",
-              position: "relative",
-              zIndex: 10,
-            }}
-            dpr={[1, 1.2]}
-            gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
-            onCreated={handleCanvasCreated}
-          >
-            <JourneyScene
-              nodes={nodes}
-              userPlan={userPlan}
-              currentLessonIndex={currentLessonIndex}
-              cameraFocusIndex={cameraFocusIndex}
-              onSelectLesson={handleSelectLesson}
-              controlsRef={controlsRef}
-            />
-          </Canvas>
-        </Suspense>
       )}
 
-      {/* Navigation HUD */}
-      <NavigationHUD
-        currentTopicIndex={currentTopicIndex}
-        totalTopics={MATH2_TOPICS.length}
-        onPrev={() => setCurrentTopicIndex((p) => Math.max(0, p - 1))}
-        onNext={() =>
-          setCurrentTopicIndex((p) => Math.min(MATH2_TOPICS.length - 1, p + 1))
-        }
-        topicName={MATH2_TOPICS[currentTopicIndex]?.title ?? ""}
+      {/* Pre-roll Ad Modal */}
+      <PreRollAdModal
+        isOpen={showAd}
+        onClose={() => {
+          setShowAd(false);
+          setPendingRoute(null);
+        }}
+        onAdComplete={() => {
+          setShowAd(false);
+          if (pendingRoute) {
+            navigate(pendingRoute);
+          }
+        }}
       />
-
-      {/* Lesson Info Popup */}
-      {selectedLesson &&
-        (() => {
-          const topic = MATH2_TOPICS.find((t) =>
-            t.lessons.some((l) => l.id === selectedLesson.id),
-          )!;
-          const accessible = canAccessLesson(selectedLesson, userPlan);
-          return (
-            <LessonPopup
-              lesson={selectedLesson}
-              topic={topic}
-              isAccessible={accessible}
-              onClose={() => setSelectedLesson(null)}
-              onPlay={() => handlePlay(selectedLesson)}
-              onUpgrade={() => {
-                setSelectedLesson(null);
-                setUpgradeLesson(selectedLesson);
-              }}
-            />
-          );
-        })()}
-
-      {/* Upgrade Modal */}
-      {upgradeLesson && (
-        <UpgradeModal
-          requiredPlan={upgradeLesson.requiredPlan}
-          onClose={() => setUpgradeLesson(null)}
-          onUpgrade={() => {
-            setUpgradeLesson(null);
-            navigate("/dashboard/subscription");
-          }}
-        />
-      )}
     </div>
   );
 }
