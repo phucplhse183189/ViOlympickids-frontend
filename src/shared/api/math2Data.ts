@@ -10,9 +10,10 @@ import {
 /**
  * gameType quyết định component game nào sẽ mở khi click vào bài học.
  * - "number-sequence-chart": Game biểu đồ dãy số (Bài 2)
+ * - "math2-quiz-3d": Phòng thí nghiệm khối 3D (Bài 46)
  * - null: chưa có game (hiển thị "Sắp ra mắt")
  */
-export type GameType = "number-sequence-chart" | null;
+export type GameType = "number-sequence-chart" | "math2-quiz-3d" | null;
 
 export interface Math2Lesson {
   id: string;
@@ -538,10 +539,10 @@ export const MATH2_TOPICS: Math2Topic[] = [
         id: "math2-b46",
         lessonNumber: 46,
         title: "Khối trụ, khối cầu",
-        gameType: null,
+        gameType: "math2-quiz-3d",
         emoji: "🏀",
         description: "Nhận biết khối trụ và khối cầu trong thực tế.",
-        requiredPlan: "PRO",
+        requiredPlan: "FREE",
       },
       {
         id: "math2-b47",
