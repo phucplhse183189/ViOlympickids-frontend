@@ -545,6 +545,8 @@ export function Math2TableOfContents() {
                        } else {
                          navigate("/student/game/number-sequence");
                        }
+                     } else if (selectedLesson.lesson.gameType === "math2-quiz-3d") {
+                       navigate("/student/game/math2-quiz-3d");
                      } else {
                        navigate(`/student/quiz/math2-b2`);
                      }
