@@ -16,7 +16,7 @@ async function readJson(req: VercelRequest): Promise<any> {
   if (req.body && typeof req.body === "object") return req.body;
   const chunks: Buffer[] = [];
   await new Promise<void>((resolve, reject) => {
-    req.on("data", (chunk) => chunks.push(chunk));
+    req.on("data", (chunk: Buffer) => chunks.push(chunk));
     req.on("end", () => resolve());
     req.on("error", reject);
   });

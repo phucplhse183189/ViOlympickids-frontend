@@ -13,12 +13,12 @@ import {
 import { useAuth } from "@/shared/lib/auth";
 import {
   CHILD_PROFILES_STORAGE_KEY,
-  ACTIVE_CHILD_ID_KEY,
   INITIAL_CHILD_PROFILES,
   getChildDashboard,
   type ChildProfile,
 } from "@/shared/api/dashboardMockData";
 import { ParentGate } from "@/shared/ui/ParentGate";
+import { useActiveChild } from "@/shared/lib/activeChild";
 
 function loadProfiles(): ChildProfile[] {
   try {
@@ -44,6 +44,7 @@ function getTimeGreeting(): string {
 export function ProfilePickerPage() {
   const navigate = useNavigate();
   const { user, setActiveRole, logout } = useAuth();
+  const { switchChild } = useActiveChild();
   const [profiles, setProfiles] = useState<ChildProfile[]>(() =>
     loadProfiles(),
   );
@@ -101,7 +102,7 @@ export function ProfilePickerPage() {
   }, [user, navigate]);
 
   function selectChild(profile: ChildProfile) {
-    localStorage.setItem(ACTIVE_CHILD_ID_KEY, profile.id);
+    switchChild(profile.id);
     setActiveRole("child");
     navigate("/student");
   }

@@ -1,27 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronDown, Plus, Check } from "lucide-react";
-import {
-  CHILD_PROFILES_STORAGE_KEY,
-  ACTIVE_CHILD_ID_KEY,
-  INITIAL_CHILD_PROFILES,
-  type ChildProfile,
-} from "@/shared/api/dashboardMockData";
-
-// ─── Helpers ──────────────────────────────────────────────────
-function loadProfilesFromStorage(fallback: ChildProfile[]): ChildProfile[] {
-  try {
-    const raw = localStorage.getItem(CHILD_PROFILES_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as ChildProfile[];
-      if (parsed.length > 0 && parsed[0].plan) return parsed;
-      localStorage.removeItem(CHILD_PROFILES_STORAGE_KEY);
-    }
-  } catch {
-    // ignore
-  }
-  return fallback;
-}
+import { useActiveChild } from "@/shared/lib/activeChild";
 
 // ─── Avatar bubble ────────────────────────────────────────────
 function AvatarBubble({
@@ -51,29 +31,21 @@ function AvatarBubble({
 // ─── ProfileSelector (main export) ───────────────────────────
 export function ProfileSelector() {
   const navigate = useNavigate();
-  const [profiles, setProfiles] = useState<ChildProfile[]>(() =>
-    loadProfilesFromStorage(INITIAL_CHILD_PROFILES),
-  );
-  const [activeId, setActiveId] = useState(() => {
-    const loaded = loadProfilesFromStorage(INITIAL_CHILD_PROFILES);
-    const saved = localStorage.getItem(ACTIVE_CHILD_ID_KEY);
-    const exists = loaded.find((p) => p.id === saved);
-    return exists ? saved! : loaded[0].id;
-  });
+  const { profiles, activeChild, switchChild, refreshProfiles } =
+    useActiveChild();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const activeProfile = profiles.find((p) => p.id === activeId) ?? profiles[0];
+  const activeProfile = activeChild;
 
   // Re-read localStorage when window regains focus (after returning from /add-child)
   useEffect(() => {
     const onFocus = () => {
-      const refreshed = loadProfilesFromStorage(INITIAL_CHILD_PROFILES);
-      setProfiles(refreshed);
+      refreshProfiles();
     };
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
-  }, []);
+  }, [refreshProfiles]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -132,12 +104,11 @@ export function ProfileSelector() {
               <button
                 key={profile.id}
                 onClick={() => {
-                  setActiveId(profile.id);
-                  localStorage.setItem(ACTIVE_CHILD_ID_KEY, profile.id);
+                  switchChild(profile.id);
                   setDropdownOpen(false);
                 }}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 transition-colors ${
-                  profile.id === activeId ? "bg-blue-50" : ""
+                  profile.id === activeChild.id ? "bg-blue-50" : ""
                 }`}
               >
                 <AvatarBubble
@@ -153,7 +124,7 @@ export function ProfileSelector() {
                     {profile.grade}
                   </p>
                 </div>
-                {profile.id === activeId && (
+                {profile.id === activeChild.id && (
                   <Check size={13} className="text-blue-500 shrink-0" />
                 )}
               </button>

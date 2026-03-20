@@ -43,6 +43,7 @@ export function ActiveChildProvider({ children }: { children: ReactNode }) {
 
   function refreshProfiles() {
     setProfiles(loadChildProfiles());
+    setActiveId(getActiveChildId());
   }
 
   function updateChildPlan(childId: string, plan: PlanType, daysLeft?: number) {
