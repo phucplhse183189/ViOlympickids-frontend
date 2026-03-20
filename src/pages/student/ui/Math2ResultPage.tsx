@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { RotateCcw, Home } from "lucide-react";
+import { markMath2LessonCompleted } from "@/shared/api/math2Data";
+import { useActiveChild } from "@/shared/lib/activeChild";
 
 interface LocationState {
   correct: number;
@@ -69,9 +71,16 @@ function getRankLabel(stars: number) {
   return { label: "💪 Thử lại nhé bé!", color: "text-red-500" };
 }
 
+const RESULT_TO_LESSON: Record<string, string> = {
+  "math2-b1": "math2-b1",
+  "math2-b2": "math2-b2",
+};
+
 export function Math2ResultPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { activeChild } = useActiveChild();
+  const lessonId = location.pathname.split("/").pop();
 
   const state = location.state as LocationState | null;
   const correct = state?.correct ?? 0;
@@ -96,6 +105,12 @@ export function Math2ResultPage() {
     }
     return () => timers.forEach(clearTimeout);
   }, [stars]);
+
+  useEffect(() => {
+    if (!lessonId || stars < 1) return;
+    const lid = RESULT_TO_LESSON[lessonId];
+    if (lid) markMath2LessonCompleted(activeChild.id, lid);
+  }, [lessonId, stars, activeChild.id]);
 
   return (
     <div className="relative min-h-[calc(100vh-5rem)] flex items-center justify-center px-4 py-8 overflow-hidden">
@@ -123,7 +138,7 @@ export function Math2ResultPage() {
         {/* Header */}
         <div className="bg-gradient-to-r from-orange-400 to-amber-300 px-5 py-3 text-center">
           <p className="text-white text-sm font-extrabold">
-            📊 Bài 2: Tia số · Số liền trước, số liền sau
+            {lessonId === "math2-b1-t1" ? "📊 Bài 1 (Tiết 1): Đọc, viết, xếp thứ tự" : "📊 Bài 2: Tia số · Số liền trước, số liền sau"}
           </p>
         </div>
 
@@ -200,7 +215,7 @@ export function Math2ResultPage() {
             </button>
 
             <button
-              onClick={() => navigate("/student/quiz/math2-b2")}
+              onClick={() => navigate(`/student/quiz/${lessonId}`)}
               className="w-full py-3 bg-white border-2 border-gray-200 text-gray-600 font-extrabold
                          rounded-2xl flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
             >

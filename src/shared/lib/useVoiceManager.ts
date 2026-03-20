@@ -5,7 +5,7 @@
 // Cách dùng sau này: chỉ cần thay đường dẫn audioUrl trong config
 // bằng file .mp3 thực tế là giọng nói tự động chạy mượt mà.
 
-import { useCallback, useRef, useEffect } from "react";
+import { useCallback, useRef, useEffect, useState } from "react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -126,10 +126,77 @@ export interface VoiceManagerAPI {
   isEnabled: () => boolean;
 }
 
+// ─── Cache giọng nói VN tốt nhất ────────────────────────────────────────────
+let cachedBestVoice: SpeechSynthesisVoice | null = null;
+let voicesLoaded = false;
+
+function findBestVietnameseVoice(): SpeechSynthesisVoice | null {
+  if (voicesLoaded && cachedBestVoice) return cachedBestVoice;
+  if (!("speechSynthesis" in window)) return null;
+
+  const voices = window.speechSynthesis.getVoices();
+  if (voices.length === 0) return null;
+
+  voicesLoaded = true;
+  const vnVoices = voices.filter(
+    (v) => v.lang === "vi-VN" || v.lang.startsWith("vi")
+  );
+
+  // Ưu tiên giọng nữ (thường trong trẻo, dễ thương hơn cho trẻ con)
+  const femaleVoice = vnVoices.find(
+    (v) => /female|nữ|woman|girl/i.test(v.name)
+  );
+  if (femaleVoice) {
+    cachedBestVoice = femaleVoice;
+    return cachedBestVoice;
+  }
+
+  // Fallback: giọng VN đầu tiên
+  if (vnVoices.length > 0) {
+    cachedBestVoice = vnVoices[0];
+    return cachedBestVoice;
+  }
+
+  return null;
+}
+
+/** Cấu hình utterance giọng trẻ / tiếng Việt (dùng chung TTS roadmap + game) */
+export function configureKidVietnameseUtterance(
+  utterance: SpeechSynthesisUtterance,
+): void {
+  utterance.lang = "vi-VN";
+  const bestVoice = findBestVietnameseVoice();
+  if (bestVoice) utterance.voice = bestVoice;
+  utterance.rate = 1.15;
+  utterance.pitch = 1.6;
+  utterance.volume = 1.0;
+}
+
 export function useVoiceManager(config: VoiceConfig = defaultVoiceConfig): VoiceManagerAPI {
   const enabledRef = useRef(true);
   const configRef = useRef(config);
   configRef.current = config;
+
+  // Preload voices (chúng load bất đồng bộ trên nhiều trình duyệt)
+  const [, setVoicesReady] = useState(false);
+  useEffect(() => {
+    if (!("speechSynthesis" in window)) return;
+
+    // Thử load ngay
+    findBestVietnameseVoice();
+
+    // Lắng nghe sự kiện voiceschanged (Chrome cần event này)
+    const onVoicesChanged = () => {
+      cachedBestVoice = null;
+      voicesLoaded = false;
+      findBestVietnameseVoice();
+      setVoicesReady(true);
+    };
+    window.speechSynthesis.addEventListener("voiceschanged", onVoicesChanged);
+    return () => {
+      window.speechSynthesis.removeEventListener("voiceschanged", onVoicesChanged);
+    };
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -172,42 +239,39 @@ export function useVoiceManager(config: VoiceConfig = defaultVoiceConfig): Voice
     return enabledRef.current;
   }, []);
 
+  // Lưu callback hiện tại để vô hiệu hoá callback cũ khi cancel()
+  const currentOnEndRef = useRef<(() => void) | null>(null);
+
   const speakText = useCallback((text: string, onEnd?: () => void) => {
     if (!enabledRef.current || !("speechSynthesis" in window)) {
       if (onEnd) onEnd();
       return;
     }
 
+    // Vô hiệu hoá callback cũ trước khi cancel (cancel() sẽ fire onerror bất đồng bộ)
+    currentOnEndRef.current = null;
+
     // Stop any currently playing TTS
     window.speechSynthesis.cancel();
     // Stop MP3s so they don't overlap
     stopAllAudio();
 
-    // Playful text processing
-    let processedText = text;
-    if (processedText.startsWith("Câu ")) {
-      processedText = processedText.replace("Câu ", "Câu số ") + " nè bé ơi!";
-    }
-    if (processedText.includes("!") && !processedText.includes("nha!")) {
-      processedText = processedText.replace("!", " nha!");
-    }
-    if (processedText.includes("?") && !processedText.includes("nhỉ?")) {
-      processedText = processedText.replace("?", " nhỉ?");
-    }
+    const utterance = new SpeechSynthesisUtterance(text);
+    configureKidVietnameseUtterance(utterance);
 
-    const utterance = new SpeechSynthesisUtterance(processedText);
-    utterance.lang = "vi-VN";
-    
-    // Playful, cartoonish voice settings
-    utterance.rate = 1.35;
-    utterance.pitch = 2.0;
-    utterance.volume = 1.0;
+    // Lưu callback mới
+    currentOnEndRef.current = onEnd || null;
 
-    // Handle callbacks
-    if (onEnd) {
-      utterance.onend = onEnd;
-      utterance.onerror = onEnd;
-    }
+    // Wrap callback: chỉ gọi nếu vẫn là callback hiện tại (chưa bị cancel)
+    const wrappedOnEnd = () => {
+      if (currentOnEndRef.current === onEnd && onEnd) {
+        currentOnEndRef.current = null;
+        onEnd();
+      }
+    };
+
+    utterance.onend = wrappedOnEnd;
+    utterance.onerror = wrappedOnEnd;
 
     window.speechSynthesis.speak(utterance);
   }, []);

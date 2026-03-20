@@ -9,11 +9,20 @@ import {
 
 /**
  * gameType quyết định component game nào sẽ mở khi click vào bài học.
- * - "number-sequence-chart": Game biểu đồ dãy số (Bài 2)
+ * - "number-sequence-chart": Bài 2 — lý thuyết /student/theory/math2-b2 rồi game dãy số
  * - "math2-quiz-3d": Phòng thí nghiệm khối 3D (Bài 46)
+ * - "number-review-game": Ôn tập số (Bài 1)
+ * - "add-across-ten-game": Phép cộng qua 10 trong phạm vi 20 (Bài 7)
+ * - "pipe-balance-game": Game nối ống cân bằng (Bài 5)
  * - null: chưa có game (hiển thị "Sắp ra mắt")
  */
-export type GameType = "number-sequence-chart" | "math2-quiz-3d" | null;
+export type GameType =
+  | "number-sequence-chart"
+  | "math2-quiz-3d"
+  | "number-review-game"
+  | "add-across-ten-game"
+  | "pipe-balance-game"
+  | null;
 
 export interface Math2Lesson {
   id: string;
@@ -50,10 +59,10 @@ export const MATH2_TOPICS: Math2Topic[] = [
       {
         id: "math2-b1",
         lessonNumber: 1,
-        title: "Ôn tập các số đến 100",
-        gameType: null,
+        title: "Bài 1: Ôn tập các số đến 100",
+        gameType: "number-review-game",
         emoji: "🔢",
-        description: "Ôn lại các số từ 0 đến 100, đọc và viết số.",
+        description: "Ôn tập cấu tạo số, đọc, viết và so sánh các số đến 100.",
         requiredPlan: "FREE",
       },
       {
@@ -88,9 +97,10 @@ export const MATH2_TOPICS: Math2Topic[] = [
         id: "math2-b5",
         lessonNumber: 5,
         title: "Ôn tập phép cộng, phép trừ (không nhớ) trong phạm vi 100",
-        gameType: null,
+        gameType: "pipe-balance-game",
         emoji: "🧮",
-        description: "Luyện tập phép cộng, trừ không nhớ với các số đến 100.",
+        description:
+          "Luyện tập phép cộng, trừ không nhớ — game nối ống: ghép hai biểu thức bằng nhau.",
         requiredPlan: "FREE",
       },
       {
@@ -116,10 +126,10 @@ export const MATH2_TOPICS: Math2Topic[] = [
         id: "math2-b7",
         lessonNumber: 7,
         title: "Phép cộng (qua 10) trong phạm vi 20",
-        gameType: null,
+        gameType: "add-across-ten-game",
         emoji: "🌟",
         description: "Tìm hiểu cách cộng qua 10 (VD: 8 + 5 = 13).",
-        requiredPlan: "PRO",
+        requiredPlan: "FREE",
       },
       {
         id: "math2-b8",
@@ -999,6 +1009,53 @@ export function canAccessLesson(
   return PLAN_RANK[userPlan] >= PLAN_RANK[lesson.requiredPlan];
 }
 
+/** Per-child completed lesson ids (local) — key matches `Math2Lesson.id` */
+export const MATH2_COMPLETED_LESSONS_KEY = "violympic_math2_completed_v1";
+
+export function getMath2CompletedLessonIds(childId: string): Set<string> {
+  try {
+    const raw = localStorage.getItem(MATH2_COMPLETED_LESSONS_KEY);
+    if (!raw) return new Set();
+    const data = JSON.parse(raw) as Record<string, string[]>;
+    return new Set(data[childId] ?? []);
+  } catch {
+    return new Set();
+  }
+}
+
+export function markMath2LessonCompleted(childId: string, lessonId: string) {
+  try {
+    const raw = localStorage.getItem(MATH2_COMPLETED_LESSONS_KEY);
+    const data: Record<string, string[]> = raw ? JSON.parse(raw) : {};
+    const next = new Set(data[childId] ?? []);
+    next.add(lessonId);
+    data[childId] = [...next];
+    localStorage.setItem(MATH2_COMPLETED_LESSONS_KEY, JSON.stringify(data));
+    window.dispatchEvent(new Event("math2-progress-updated"));
+  } catch {
+    // ignore
+  }
+}
+
+/** Route to open when bé bấm "Vào học ngay" */
+export function getMath2LessonPlayRoute(lesson: Math2Lesson): string | null {
+  switch (lesson.gameType) {
+    case "number-review-game":
+      return "/student/game/math2-b1";
+    case "number-sequence-chart":
+      // Bài 2: luôn qua trang lý thuyết (robot Tí Tách + trục số) rồi mới vào game
+      return "/student/theory/math2-b2";
+    case "add-across-ten-game":
+      return "/student/game/math2-b7";
+    case "pipe-balance-game":
+      return "/student/game/pipe-balance";
+    case "math2-quiz-3d":
+      return "/student/game/math2-quiz-3d";
+    default:
+      return null;
+  }
+}
+
 /** Human-readable plan labels */
 export const PLAN_LABELS: Record<
   PlanType,
@@ -1018,3 +1075,42 @@ export const PLAN_LABELS: Record<
     icon: "👑",
   },
 };
+
+export const MATH2_B1_QUIZ: Math2QuizQuestion[] = [
+  {
+    id: 1,
+    question: "Số gồm 5 chục và 8 đơn vị là số nào?",
+    options: ["85", "58", "508", "50"],
+    correctIndex: 1,
+    explanation: "Số gồm 5 chục và 8 đơn vị được viết là 58.",
+  },
+  {
+    id: 2,
+    question: "Số lớn nhất có hai chữ số là số nào?",
+    options: ["10", "90", "99", "100"],
+    correctIndex: 2,
+    explanation: "Trong các số có 2 chữ số (từ 10 đến 99), thì 99 là số lớn nhất.",
+  },
+  {
+    id: 3,
+    question: "Số nào điền vào tia số: 10, 20, 30, ▢, 50?",
+    visual: "10 → 20 → 30 → ▢ → 50",
+    options: ["35", "40", "45", "100"],
+    correctIndex: 1,
+    explanation: "Đây là các số tròn chục tăng dần: 10, 20, 30, 40, 50.",
+  },
+  {
+    id: 4,
+    question: "Số liền trước của số 60 là số nào?",
+    options: ["61", "59", "50", "60"],
+    correctIndex: 1,
+    explanation: "Số liền trước của 60 là 60 - 1 = 59.",
+  },
+  {
+    id: 5,
+    question: "Số 73 đọc là gì?",
+    options: ["Bảy ba", "Bảy mươi", "Bảy mươi ba", "Ba mươi bảy"],
+    correctIndex: 2,
+    explanation: "Số 73 đọc là bảy mươi ba.",
+  }
+];

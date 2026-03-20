@@ -7,13 +7,30 @@ export function CoursesSection() {
   const delays = ["", "delay-100", "delay-200"];
 
   return (
-    <section id="courses" ref={ref} className="py-24 bg-blue-50">
-      <div className="container mx-auto px-6 max-w-6xl">
+    <section
+      id="courses"
+      ref={ref}
+      className="relative overflow-hidden py-20 sm:py-24 bg-blue-50"
+    >
+      {/* Decorative background blobs + shimmer */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-24 left-[-6%] h-72 w-72 rounded-full bg-cyan-200/45 blur-3xl animate-float-slow" />
+        <div className="absolute top-[18%] right-[-10%] h-80 w-80 rounded-full bg-orange-200/35 blur-3xl animate-pulse-slow" />
+        <div className="absolute bottom-[-10%] left-[40%] h-72 w-72 rounded-full bg-purple-200/25 blur-3xl" />
+        <div
+          className={`absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/65 to-transparent ${
+            inView ? "animate-gradient-x" : ""
+          }`}
+          style={{ backgroundSize: "200% 200%" }}
+        />
+      </div>
+
+      <div className="container relative mx-auto px-4 sm:px-6 max-w-6xl">
         {/* Header */}
         <div
-          className={`reveal ${inView ? "visible" : ""} text-center max-w-2xl mx-auto mb-16`}
+          className={`reveal ${inView ? "visible" : ""} text-center max-w-2xl mx-auto mb-12 sm:mb-16`}
         >
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-800 whitespace-nowrap">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-gray-800 whitespace-nowrap">
             {t.courses.title}{" "}
             <span style={{ color: "var(--brand-primary)" }}>
               {t.courses.titleAccent}
@@ -22,11 +39,13 @@ export function CoursesSection() {
         </div>
 
         {/* Pricing cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-8 max-w-6xl mx-auto items-stretch">
           {t.courses.plans.map((plan, i) => (
             <div
               key={plan.name}
-              className={`reveal scale-up ${delays[i]} ${inView ? "visible" : ""} relative flex flex-col rounded-3xl p-8 ${
+              className={`reveal scale-up ${delays[i]} ${
+                inView ? "visible" : ""
+              } relative flex flex-col rounded-3xl p-5 sm:p-7 md:p-8 ${
                 plan.highlight
                   ? "bg-white border-2 border-orange-400 shadow-2xl scale-[1.03]"
                   : "bg-white shadow-md"
@@ -40,11 +59,29 @@ export function CoursesSection() {
               )}
 
               {/* Plan name & subtitle */}
-              <div className="mb-4 mt-1">
-                <h3 className="text-2xl font-extrabold text-gray-800">
-                  {plan.name}
-                </h3>
-                <p className="text-sm text-gray-400">{plan.subtitle}</p>
+              <div className="mb-3 mt-1 flex items-center gap-3">
+                <span
+                  className={
+                    plan.highlight
+                      ? "inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-400 to-rose-400 shadow-sm animate-float-slow"
+                      : "inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-50 ring-1 ring-slate-200 shadow-sm"
+                  }
+                  aria-hidden
+                >
+                  {plan.name === "FREE"
+                    ? "🧩"
+                    : plan.name === "VIP"
+                      ? "👑"
+                      : "🚀"}
+                </span>
+                <div>
+                  <h3 className="text-lg sm:text-2xl font-extrabold text-gray-800">
+                    {plan.name}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-gray-400">
+                    {plan.subtitle}
+                  </p>
+                </div>
               </div>
 
               {/* Price */}
@@ -87,7 +124,7 @@ export function CoursesSection() {
                 {plan.features.map((f) => (
                   <li
                     key={f.text}
-                    className={`flex items-start gap-3 text-sm ${
+                    className={`flex items-start gap-3 text-sm transition-transform hover:-translate-y-0.5 ${
                       f.included ? "text-gray-700 font-medium" : "text-gray-400"
                     }`}
                   >
@@ -97,6 +134,11 @@ export function CoursesSection() {
                           ? "bg-green-100 text-green-600"
                           : "bg-red-100 text-red-500"
                       }`}
+                      style={
+                        plan.highlight && inView && f.included
+                          ? { animation: "pulse-slow 1.8s ease-in-out infinite" }
+                          : undefined
+                      }
                     >
                       {f.included ? "✓" : "✕"}
                     </span>
@@ -107,7 +149,7 @@ export function CoursesSection() {
 
               {/* CTA */}
               <button
-                className={`mt-8 w-full py-4 font-bold text-base rounded-2xl shadow-lg hover:-translate-y-1 hover:shadow-xl active:translate-y-0 transition-all ${
+                className={`mt-8 group w-full relative overflow-hidden py-4 font-bold text-base rounded-2xl shadow-lg hover:-translate-y-1 hover:shadow-xl active:translate-y-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 ${
                   plan.highlight
                     ? "text-white"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -118,7 +160,8 @@ export function CoursesSection() {
                     : undefined
                 }
               >
-                {plan.ctaBtn}
+                <div className="pointer-events-none absolute top-0 -left-[120%] h-full w-[140%] bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-[-25deg] transition-all duration-700 group-hover:left-[120%]" />
+                <span className="relative">{plan.ctaBtn}</span>
               </button>
             </div>
           ))}

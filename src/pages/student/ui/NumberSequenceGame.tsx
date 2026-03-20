@@ -17,7 +17,6 @@ import {
   RotateCcw,
   ChevronRight,
   Trophy,
-  MapPin,
   Volume2,
   VolumeX,
   Mic,
@@ -33,11 +32,13 @@ import {
   ROBOT_HINTS,
   ROBOT_GREETINGS,
   getRandomItem,
+  personalizeRobotGreeting,
   generateBridgePuzzle,
   generateTrainPuzzle,
   generateBalloonPuzzle,
   generateRabbitPuzzle,
 } from "@/shared/lib/robotGameLogic";
+import { useActiveChild } from "@/shared/lib/activeChild";
 import { ParentGate } from "@/shared/ui/ParentGate";
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1885,69 +1886,222 @@ function RabbitRaceMap({
 // INTRO SCREEN (shown before Map 1 starts)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function IntroScreen({ onStart }: Readonly<{ onStart: () => void }>) {
+const INTRO_STORY_DISPLAY =
+  "🌪️ Một cơn bão toán học đã xáo trộn tất cả các số! Hãy cùng Tí Tách vượt qua 🗺️ 5 vùng đất để sắp xếp lại nào! ✨";
+
+/** Gỡ emoji / ký tự trang trí để TTS đọc ổn định (giống hướng xử lý roadmap). */
+function stripForTTS(text: string): string {
+  return text
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function IntroScreen({
+  onStart,
+  voiceOn,
+}: Readonly<{ onStart: () => void; voiceOn: boolean }>) {
+  const sound = useSounds();
+  const soundRef = useRef(sound);
+  soundRef.current = sound;
+
+  const { activeChild } = useActiveChild();
+
+  const mapColors = ["from-emerald-400 to-green-500", "from-sky-400 to-blue-500", "from-amber-400 to-orange-500", "from-pink-400 to-rose-500", "from-violet-400 to-purple-500"];
+  const mapShadows = ["#15803d", "#1d4ed8", "#c2410c", "#be123c", "#7c3aed"];
+
+  const greetingTemplate = useMemo(() => getRandomItem(ROBOT_GREETINGS), []);
+  const bubbleFullText = useMemo(() => {
+    const line = personalizeRobotGreeting(greetingTemplate, activeChild.name);
+    return line.includes("⚡") ? line : `${line} ⚡`;
+  }, [greetingTemplate, activeChild.name]);
+
+  const [bubbleDisplayed, setBubbleDisplayed] = useState("");
+  const [storyDisplayed, setStoryDisplayed] = useState("");
+  const [bubbleTypingDone, setBubbleTypingDone] = useState(false);
+  const [storyTypingDone, setStoryTypingDone] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  const voiceOnRef = useRef(voiceOn);
+  voiceOnRef.current = voiceOn;
+
+  // ── Typewriter: bubble trước ──
+  useEffect(() => {
+    setBubbleDisplayed("");
+    setBubbleTypingDone(false);
+    let i = 0;
+    const interval = setInterval(() => {
+      i += 1;
+      setBubbleDisplayed(bubbleFullText.slice(0, i));
+      if (i >= bubbleFullText.length) {
+        clearInterval(interval);
+        setBubbleTypingDone(true);
+      }
+    }, 34);
+    return () => clearInterval(interval);
+  }, [bubbleFullText]);
+
+  // ── Typewriter: câu chuyện sau khi bubble xong ──
+  useEffect(() => {
+    if (!bubbleTypingDone) return;
+    setStoryDisplayed("");
+    setStoryTypingDone(false);
+    let i = 0;
+    const interval = setInterval(() => {
+      i += 1;
+      setStoryDisplayed(INTRO_STORY_DISPLAY.slice(0, i));
+      if (i >= INTRO_STORY_DISPLAY.length) {
+        clearInterval(interval);
+        setStoryTypingDone(true);
+      }
+    }, 30);
+    return () => clearInterval(interval);
+  }, [bubbleTypingDone]);
+
+  // ── Giọng AI (TTS) — một lần khi vào intro, nối bubble + câu chuyện ──
+  useEffect(() => {
+    let cancelled = false;
+    const bubbleSpeak = stripForTTS(bubbleFullText);
+    const storySpeak =
+      "Một cơn bão toán học đã xáo trộn tất cả các số! Hãy cùng Tí Tách vượt qua năm vùng đất để sắp xếp lại nhé!";
+    const fullSpeak = `${bubbleSpeak}. ${storySpeak}`;
+
+    const timer = setTimeout(() => {
+      if (cancelled || !voiceOnRef.current) return;
+      setIsSpeaking(true);
+      soundRef.current.speak(fullSpeak, () => {
+        if (!cancelled) setIsSpeaking(false);
+      });
+    }, 450);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      soundRef.current.stopVoice();
+      if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+      setIsSpeaking(false);
+    };
+  }, [bubbleFullText]);
+
+  // Tắt mic trên header → dừng đọc ngay
+  useEffect(() => {
+    if (!voiceOn) {
+      soundRef.current.stopVoice();
+      window.speechSynthesis?.cancel();
+      setIsSpeaking(false);
+    }
+  }, [voiceOn]);
+
+  const TypeCursor = () => (
+    <span className="inline-block w-[2px] h-3.5 bg-gradient-to-b from-sky-400 to-indigo-400 ml-0.5 align-middle rounded-full animate-pulse" />
+  );
+
+  const handleStartClick = () => {
+    soundRef.current.stopVoice();
+    window.speechSynthesis?.cancel();
+    onStart();
+  };
+
   return (
-    <div className="flex flex-col items-center justify-center space-y-4 md:space-y-5 text-center px-4 w-full h-full min-h-[70vh] pb-8">
-      {/* Robot greeting */}
-      <div className="flex justify-center hover:scale-105 transition-transform duration-500">
-        <RobotCharacter message={getRandomItem(ROBOT_GREETINGS)} size="md" />
+    <div className="flex flex-col items-center justify-center text-center px-3 sm:px-6 w-full gap-5 md:gap-6 py-4 max-w-6xl mx-auto">
+
+      {/* ── Robot + Speech ── */}
+      <div className="flex items-end gap-3 md:gap-4 w-full justify-center">
+        <div className="relative shrink-0">
+          <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 lg:w-36 lg:h-36 rounded-2xl overflow-hidden border-4 border-white shadow-lg bg-sky-50">
+            <video src="/videos/VideoRobotHoatDong.mp4" autoPlay muted loop playsInline className="w-full h-full object-cover" />
+          </div>
+          <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[9px] sm:text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-md whitespace-nowrap border-2 border-white">
+            Tí Tách 🤖
+          </div>
+        </div>
+        <div className="relative max-w-[min(100%,280px)] sm:max-w-sm md:max-w-md text-left">
+          <div className="absolute -left-2 bottom-3 w-3 h-3 bg-white rotate-45" />
+          <div className="relative bg-white rounded-2xl rounded-bl-sm shadow-md px-4 py-3 border border-sky-100">
+            <p className="text-sm sm:text-base font-bold text-slate-600 leading-snug flex items-start gap-2">
+              {isSpeaking && voiceOn && (
+                <span className="flex items-end gap-0.5 h-3 shrink-0 mt-1" aria-hidden>
+                  {[0, 1, 2, 3].map((j) => (
+                    <span
+                      key={j}
+                      className="w-[2px] rounded-full bg-gradient-to-t from-emerald-400 to-cyan-400"
+                      style={{
+                        height: `${4 + (j % 3) * 3}px`,
+                        animation: `pulse 0.55s ease-in-out ${j * 0.08}s infinite alternate`,
+                      }}
+                    />
+                  ))}
+                </span>
+              )}
+              <span className="flex-1 text-left">
+                {bubbleDisplayed}
+                {bubbleDisplayed.length < bubbleFullText.length && <TypeCursor />}
+              </span>
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Story intro */}
-      <div className="relative overflow-hidden bg-white/80 backdrop-blur-md rounded-2xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.06)] border-2 border-white/60 max-w-4xl mx-auto transform hover:-translate-y-1 transition-transform duration-300">
-        <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-sky-400 via-amber-400 to-emerald-400"></div>
-        <p className="text-gray-700 font-extrabold text-sm md:text-base leading-relaxed">
-          <span className="text-xl inline-block mr-2 animate-bounce">🌪️</span>
-          Một cơn bão toán học đã xáo trộn tất cả các số!
-          Hãy giúp robot <span className="text-sky-600 font-black relative px-1">Tí Tách<span className="absolute -bottom-0.5 left-0 w-full h-1 bg-sky-300/50 rounded-full"></span></span> vượt qua
-          <span className="text-amber-600 font-black text-lg mx-1.5 bg-amber-100/80 px-2.5 py-0.5 rounded-lg border-2 border-amber-200/60 shadow-sm inline-block transform hover:scale-105 transition-transform"> 5 vùng đất </span>
-          để thu thập và sắp xếp lại nào! 🤖
-        </p>
+      {/* ── Story ── */}
+      <div className="w-full max-w-4xl lg:max-w-5xl mx-auto rounded-2xl overflow-hidden shadow-md bg-white/90 backdrop-blur-md">
+        <div className="h-1 bg-gradient-to-r from-emerald-400 via-sky-400 via-amber-400 to-violet-400" />
+        <div className="px-5 py-4 sm:px-6 sm:py-5 text-left min-h-[5rem] sm:min-h-[5.5rem]">
+          {storyTypingDone ? (
+            <p className="text-slate-700 font-extrabold text-sm sm:text-base md:text-lg leading-relaxed">
+              🌪️ Một cơn bão toán học đã xáo trộn tất cả các số! Hãy cùng{" "}
+              <span className="text-indigo-600">Tí Tách</span> vượt qua
+              <span className="mx-1 inline-flex items-center gap-0.5 bg-amber-50 text-amber-700 font-black px-2 py-0.5 rounded-md border border-amber-200 text-sm sm:text-base">
+                🗺️ 5 vùng đất
+              </span>
+              để sắp xếp lại nào! ✨
+            </p>
+          ) : (
+            <p className="text-slate-700 font-extrabold text-sm sm:text-base md:text-lg leading-relaxed">
+              {storyDisplayed}
+              {bubbleTypingDone && storyDisplayed.length < INTRO_STORY_DISPLAY.length && (
+                <TypeCursor />
+              )}
+            </p>
+          )}
+        </div>
       </div>
 
-      {/* Map preview list */}
-      <div className="w-full max-w-3xl mx-auto grid gap-2">
+      {/* ── 5 Map nodes — flex wrap centered ── */}
+      <div className="flex flex-wrap items-start justify-center gap-4 sm:gap-5 md:gap-6 w-full max-w-4xl lg:max-w-5xl mx-auto">
         {MAPS.map((map, index) => (
           <div
             key={map.id}
-            className="group flex items-center gap-3 bg-white/60 hover:bg-white rounded-xl px-4 py-2.5
-                       border border-white/60 hover:border-sky-300 shadow-sm hover:shadow-[0_4px_15px_rgba(56,189,248,0.15)] 
-                       transition-all duration-300 transform hover:-translate-y-0.5 cursor-default"
+            className="group flex flex-col items-center gap-1.5 w-[84px] sm:w-[92px] md:w-[104px] lg:w-[112px] cursor-default"
             style={{ animation: `fade-in-up 0.4s ease-out ${index * 0.08}s both` }}
           >
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-white to-sky-50 flex items-center justify-center text-xl shadow-inner border border-sky-100 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+            <div
+              className={`w-14 h-14 sm:w-16 sm:h-16 md:w-[4.25rem] md:h-[4.25rem] lg:w-[4.5rem] lg:h-[4.5rem] rounded-xl bg-gradient-to-br ${mapColors[index]} flex items-center justify-center text-2xl sm:text-3xl md:text-4xl border-[3px] border-white group-hover:scale-110 group-hover:-rotate-6 transition-all duration-300`}
+              style={{ boxShadow: `0 3px 0 ${mapShadows[index]}, 0 5px 12px rgba(0,0,0,0.12)` }}
+            >
               {map.emoji}
             </div>
-            <div className="text-left flex-1">
-              <p className="font-extrabold text-gray-800 text-sm group-hover:text-sky-600 transition-colors">
-                Vùng {map.id}: {map.name}
-              </p>
-              <p className="text-[11px] text-gray-500 font-bold mt-0.5 line-clamp-1">
-                {map.description}
-              </p>
-            </div>
-            <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-sky-100 group-hover:shadow-inner transition-colors duration-300">
-               <MapPin size={14} className="text-gray-400 group-hover:text-sky-500 transition-colors duration-300" />
-            </div>
+            <p className="text-[10px] sm:text-[11px] md:text-xs font-black text-slate-600 leading-tight text-center">{map.name}</p>
           </div>
         ))}
       </div>
 
-      {/* Start button */}
-      <div className="pt-2 pb-1">
-        <button
-          onClick={onStart}
-          className="relative overflow-hidden group bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-500 text-white font-black
-                     text-lg md:text-xl px-10 py-3 rounded-3xl shadow-[0_8px_30px_rgba(56,189,248,0.4)]
-                     transition-all duration-300 active:scale-95 hover:scale-105 hover:shadow-[0_12px_40px_rgba(56,189,248,0.5)]"
-        >
-          <div className="absolute inset-0 bg-white/20 group-hover:translate-x-full -translate-x-full transition-transform duration-700 ease-in-out skew-x-12"></div>
-          <span className="relative flex items-center justify-center gap-2">
-             <span className="text-2xl group-hover:animate-bounce drop-shadow-md">🚀</span> 
-             <span>Bắt đầu phiêu lưu!</span>
-          </span>
-        </button>
-      </div>
+      {/* ── CTA ── */}
+      <button
+        onClick={handleStartClick}
+        className="group relative overflow-hidden bg-gradient-to-r from-emerald-400 via-cyan-500 to-blue-500 text-white font-black
+                   text-base sm:text-lg md:text-xl w-full max-w-md sm:max-w-lg md:max-w-xl px-8 md:px-12 py-3.5 md:py-4 rounded-2xl
+                   shadow-[0_5px_0_#0e7490,0_7px_20px_rgba(6,182,212,0.35)]
+                   hover:-translate-y-1 hover:shadow-[0_8px_0_#0e7490,0_12px_28px_rgba(6,182,212,0.4)]
+                   active:translate-y-1 active:shadow-[0_2px_0_#0e7490]
+                   transition-all duration-200"
+      >
+        <div className="absolute inset-0 bg-white/20 group-hover:translate-x-full -translate-x-full transition-transform duration-600 ease-in-out skew-x-12" />
+        <span className="relative flex items-center justify-center gap-2">
+          <span className="text-xl group-hover:animate-bounce">🎮</span>
+          <span>Bắt đầu phiêu lưu!</span>
+          <span className="text-xl group-hover:animate-bounce">🚀</span>
+        </span>
+      </button>
     </div>
   );
 }
@@ -2444,6 +2598,8 @@ export function NumberSequenceGame() {
   };
 
   const handleStart = () => {
+    sound.stopVoice();
+    if (typeof window !== "undefined") window.speechSynthesis?.cancel();
     setGameState("playing");
     setActiveMap(1);
     setCompletedMaps({});
@@ -2521,7 +2677,7 @@ export function NumberSequenceGame() {
           ☁️
         </div>
 
-        <div className="relative flex-1 flex flex-col z-10 max-w-5xl w-full mx-auto px-3 sm:px-6 py-4">
+        <div className="relative flex-1 flex flex-col z-10 w-full max-w-none mx-auto px-3 sm:px-6 lg:px-10 py-4">
           {/* ── Header ── */}
           <div className="flex items-center justify-between mb-4">
             <button
@@ -2622,7 +2778,9 @@ export function NumberSequenceGame() {
 
           {/* ── Content ── */}
           <div className="flex-1 flex flex-col justify-center w-full relative">
-          {gameState === "intro" && <IntroScreen onStart={handleStart} />}
+            {gameState === "intro" && (
+              <IntroScreen onStart={handleStart} voiceOn={voiceOn} />
+            )}
 
           {gameState === "finished" && (
             <FinalVictoryScreen

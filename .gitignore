@@ -25,3 +25,9 @@ dist-ssr
 
 .vercel
 nul
+
+# Asset 3D nặng không dùng trong repo (robot dùng .glb trong public/models)
+public/**/*.fbx
+public/**/*.obj
+src/assets/**/*.fbx
+src/assets/**/*.obj

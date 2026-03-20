@@ -91,10 +91,11 @@ export function StudentLayout() {
     await ensureFullscreen();
   };
 
-
+  // After refresh, requestFullscreen() in ensureFullscreen usually fails (no user
+  // gesture). Retry on the first tap/key so the game can enter fullscreen without
+  // requiring the ParentGate flow (that only runs after an explicit fullscreen exit).
   useEffect(() => {
     if (
-      !showExitGate ||
       !pendingReenterFullscreen ||
       !protectedRoute ||
       allowExitToMap
@@ -106,22 +107,22 @@ export function StudentLayout() {
       void ensureFullscreen();
     };
 
-    window.addEventListener("pointerdown", onUserGesture, { passive: true });
-    window.addEventListener("keydown", onUserGesture);
-    window.addEventListener("touchstart", onUserGesture, { passive: true });
+    window.addEventListener("pointerdown", onUserGesture, {
+      passive: true,
+      capture: true,
+    });
+    window.addEventListener("keydown", onUserGesture, { capture: true });
+    window.addEventListener("touchstart", onUserGesture, {
+      passive: true,
+      capture: true,
+    });
 
     return () => {
-      window.removeEventListener("pointerdown", onUserGesture);
-      window.removeEventListener("keydown", onUserGesture);
-      window.removeEventListener("touchstart", onUserGesture);
+      window.removeEventListener("pointerdown", onUserGesture, true);
+      window.removeEventListener("keydown", onUserGesture, true);
+      window.removeEventListener("touchstart", onUserGesture, true);
     };
-  }, [
-    showExitGate,
-    pendingReenterFullscreen,
-    protectedRoute,
-    allowExitToMap,
-    ensureFullscreen,
-  ]);
+  }, [pendingReenterFullscreen, protectedRoute, allowExitToMap, ensureFullscreen]);
 
   return (
     <div className="min-h-screen bg-sky-100 font-kids overflow-x-hidden">
