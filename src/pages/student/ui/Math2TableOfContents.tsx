@@ -1,11 +1,19 @@
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Float, Sphere, Torus, Octahedron, Stars, Text3D, Box, Cone, Dodecahedron } from "@react-three/drei";
-import { MATH2_TOPICS, type Math2Lesson, type Math2Topic } from "@/shared/api/math2Data";
+import {
+  MATH2_TOPICS,
+  canAccessLesson,
+  getMath2CompletedLessonIds,
+  getMath2LessonPlayRoute,
+  type Math2Lesson,
+  type Math2Topic,
+} from "@/shared/api/math2Data";
 import { useNavigate } from "react-router-dom";
 import { Play, Lock, Star, Compass } from "lucide-react";
 import * as THREE from "three";
 import { useActiveChild } from "@/shared/lib/activeChild";
+import { speakVietnameseWithCaptionProgress } from "@/shared/lib/speakVietnameseWithCaption";
 import { PreRollAdModal } from "@/shared/ui/PreRollAdModal";
 
 // --- 3D Design ---
@@ -160,6 +168,93 @@ export function Math2TableOfContents() {
   const [showAd, setShowAd] = useState(false);
   const [pendingRoute, setPendingRoute] = useState<string | null>(null);
 
+  const [progressTick, setProgressTick] = useState(0);
+  useEffect(() => {
+    const bump = () => setProgressTick((t) => t + 1);
+    const onVis = () => {
+      if (document.visibilityState === "visible") bump();
+    };
+    window.addEventListener("math2-progress-updated", bump);
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      window.removeEventListener("math2-progress-updated", bump);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, []);
+
+  const completedIds = useMemo(
+    () => getMath2CompletedLessonIds(activeChild.id),
+    [activeChild.id, progressTick],
+  );
+
+  const nextLessonId = useMemo(() => {
+    for (const topic of MATH2_TOPICS) {
+      for (const lesson of topic.lessons) {
+        if (
+          canAccessLesson(lesson, activeChild.plan) &&
+          !completedIds.has(lesson.id)
+        ) {
+          return lesson.id;
+        }
+      }
+    }
+    return null;
+  }, [activeChild.plan, completedIds]);
+
+  /** Robot đứng tại bài tiếp theo; nếu đã xong hết bài mở được → đứng ở bài mở cuối lộ trình */
+  const robotLessonId = useMemo(() => {
+    if (nextLessonId) return nextLessonId;
+    let lastAccessible: string | null = null;
+    for (const topic of MATH2_TOPICS) {
+      for (const lesson of topic.lessons) {
+        if (canAccessLesson(lesson, activeChild.plan))
+          lastAccessible = lesson.id;
+      }
+    }
+    return lastAccessible;
+  }, [nextLessonId, activeChild.plan]);
+
+  const robotAllDone =
+    nextLessonId === null &&
+    robotLessonId !== null &&
+    completedIds.has(robotLessonId);
+
+  const childDisplayName = useMemo(() => {
+    const n = activeChild.name?.trim();
+    return n && n.length > 0 ? n : "bạn";
+  }, [activeChild.name]);
+
+  const robotSpeechText = useMemo(() => {
+    if (robotAllDone) {
+      return `Tuyệt vời, ${childDisplayName}! Bé đã học xong cả lộ trình đang mở rồi!`;
+    }
+    return `Chào ${childDisplayName}! Tí Tách đợi cậu ở bài này nhé!`;
+  }, [childDisplayName, robotAllDone]);
+
+  const [robotCaptionLen, setRobotCaptionLen] = useState(0);
+  const [robotSpeechPlaying, setRobotSpeechPlaying] = useState(false);
+
+  useEffect(() => {
+    if (!robotLessonId) return;
+    setRobotCaptionLen(0);
+    setRobotSpeechPlaying(false);
+    let cancelCaption: (() => void) | null = null;
+    const arm = window.setTimeout(() => {
+      setRobotSpeechPlaying(true);
+      cancelCaption = speakVietnameseWithCaptionProgress(
+        robotSpeechText,
+        setRobotCaptionLen,
+        () => setRobotSpeechPlaying(false),
+      );
+    }, 550);
+    return () => {
+      window.clearTimeout(arm);
+      cancelCaption?.();
+      setRobotSpeechPlaying(false);
+      window.speechSynthesis?.cancel();
+    };
+  }, [robotLessonId, robotSpeechText]);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
@@ -265,6 +360,15 @@ export function Math2TableOfContents() {
   };
 
   let globalCount = 0;
+
+  const modalL = selectedLesson?.lesson ?? null;
+  const modalPlayRoute = modalL ? getMath2LessonPlayRoute(modalL) : null;
+  const modalCanStart = Boolean(
+    modalL?.gameType &&
+      modalL &&
+      canAccessLesson(modalL, activeChild.plan) &&
+      modalPlayRoute,
+  );
 
   return (
     <div className="relative w-full h-[calc(100vh-5rem)] overflow-hidden bg-slate-900 font-sans selection:bg-sky-500/30">
@@ -378,10 +482,11 @@ export function Math2TableOfContents() {
                 {topic.lessons.map((lesson) => {
                   const idx = globalCount++;
                   // Beautiful sweeping sine wave, wider and taller
-                  const offsetY = Math.sin((idx * Math.PI) / 3) * 120; 
-                  
-                  const isLocked = lesson.requiredPlan === "PRO"; 
-                  const isCompleted = idx < 4; // Mock logic
+                  const offsetY = Math.sin((idx * Math.PI) / 3) * 120;
+
+                  const isLocked = !canAccessLesson(lesson, activeChild.plan);
+                  const isCompleted = completedIds.has(lesson.id);
+                  const isNextUp = lesson.id === nextLessonId;
 
                   return (
                     <div
@@ -392,13 +497,53 @@ export function Math2TableOfContents() {
                     >
                       {/* Tactile 3D Button wrapper */}
                       <div className="relative group">
+                          {/* Robot Tí Tách — đánh dấu bài hiện tại trên roadmap */}
+                          {lesson.id === robotLessonId && !isLocked && (
+                            <div className="pointer-events-none absolute bottom-full left-1/2 z-[45] mb-2 flex w-[min(240px,78vw)] -translate-x-1/2 flex-col items-center">
+                              <div className="relative mb-1.5 rounded-2xl border-2 border-cyan-200/90 bg-white/95 px-2 py-2 shadow-[0_10px_28px_rgba(0,0,0,0.25)] backdrop-blur-sm">
+                                <p
+                                  className="min-h-[2.5rem] max-w-[min(220px,72vw)] text-left text-[10px] font-black leading-snug text-sky-900 md:min-h-[2.75rem] md:text-xs"
+                                  role="status"
+                                  aria-live="polite"
+                                >
+                                  {robotSpeechText.slice(0, robotCaptionLen)}
+                                  {robotSpeechPlaying &&
+                                  robotCaptionLen < robotSpeechText.length ? (
+                                    <span
+                                      className="robot-caption-caret ml-0.5 inline-block h-3 w-0.5 translate-y-px bg-sky-600 align-middle md:h-3.5"
+                                      aria-hidden
+                                    />
+                                  ) : null}
+                                </p>
+                                <span
+                                  className="absolute -bottom-1.5 left-1/2 size-2.5 -translate-x-1/2 rotate-45 border-b-2 border-r-2 border-cyan-200/90 bg-white/95"
+                                  aria-hidden
+                                />
+                              </div>
+                              <img
+                                src="/robot-head.png"
+                                alt=""
+                                width={112}
+                                height={112}
+                                className="h-14 w-auto object-contain drop-shadow-[0_10px_20px_rgba(0,0,0,0.45)] motion-safe:animate-[roadmap-robot-float_2.8s_ease-in-out_infinite] md:h-[4.25rem]"
+                                onLoad={() => {
+                                  requestAnimationFrame(() => updatePositions());
+                                }}
+                              />
+                              <span className="mt-0.5 rounded-full bg-sky-500/90 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-white shadow-md md:text-[10px]">
+                                Tí Tách
+                              </span>
+                            </div>
+                          )}
                           {/* Aura glow for unlocked/completed */}
                           {!isLocked && (
                               <div className={`absolute -inset-4 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${isCompleted ? 'bg-yellow-400' : 'bg-sky-400'}`}></div>
                           )}
 
                           <button 
-                            onClick={() => setSelectedLesson({ lesson, topic })}
+                            onClick={() => {
+                              if (!isLocked) setSelectedLesson({ lesson, topic });
+                            }}
                             className={`
                               relative w-24 h-24 md:w-28 md:h-28 rounded-full flex items-center justify-center text-4xl md:text-5xl font-bold
                               transition-all duration-300 outline-none
@@ -432,7 +577,7 @@ export function Math2TableOfContents() {
                         <span className="bg-white/10 backdrop-blur-xl border border-white/20 text-white text-sm md:text-base font-bold px-5 py-2 rounded-2xl shadow-[0_4px_15px_rgba(0,0,0,0.3)] drop-shadow-md">
                           Bài {lesson.lessonNumber}
                         </span>
-                        {!isLocked && !isCompleted && (
+                        {!isLocked && !isCompleted && isNextUp && (
                             <span className="text-sky-200 text-xs font-bold mt-2 bg-black/30 px-3 py-1 rounded-full backdrop-blur-md border border-white/10 shadow-sm animate-pulse">
                                 Vừa mở khóa!
                             </span>
@@ -486,6 +631,23 @@ export function Math2TableOfContents() {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-10px); }
         }
+        @keyframes roadmap-robot-float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+        @keyframes roadmap-caption-caret {
+            0%, 45% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+        .robot-caption-caret {
+            animation: roadmap-caption-caret 0.85s step-end infinite;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .robot-caption-caret {
+            animation: none !important;
+            opacity: 1 !important;
+          }
+        }
       `}</style>
 
       {/* Modal is completely styled with premium CSS */}
@@ -530,28 +692,33 @@ export function Math2TableOfContents() {
                
                <button 
                  className={`w-full flex items-center justify-center gap-3 py-5 rounded-[2rem] text-2xl font-black text-white transition-all duration-300
-                   ${!selectedLesson.lesson.gameType || selectedLesson.lesson.requiredPlan === "PRO"
-                     ? "bg-slate-300 shadow-[0_8px_0_#94a3b8] cursor-not-allowed hover:translate-y-1 hover:shadow-[0_4px_0_#94a3b8] active:translate-y-[8px] active:shadow-none text-slate-500 border-2 border-slate-300" 
-                     : "bg-gradient-to-b from-sky-400 to-blue-600 shadow-[0_10px_0_#1d4ed8,0_15px_30px_rgba(37,99,235,0.4)] hover:translate-y-[-2px] hover:shadow-[0_12px_0_#1d4ed8,0_20px_40px_rgba(37,99,235,0.5)] active:translate-y-[10px] active:shadow-none ring-4 ring-sky-500/20 border border-sky-300"
-                   }`}
-                 disabled={!selectedLesson.lesson.gameType || selectedLesson.lesson.requiredPlan === "PRO"}
+                   ${
+                     !modalCanStart
+                       ? "bg-slate-300 shadow-[0_8px_0_#94a3b8] cursor-not-allowed hover:translate-y-1 hover:shadow-[0_4px_0_#94a3b8] active:translate-y-[8px] active:shadow-none text-slate-500 border-2 border-slate-300"
+                       : "bg-gradient-to-b from-sky-400 to-blue-600 shadow-[0_10px_0_#1d4ed8,0_15px_30px_rgba(37,99,235,0.4)] hover:translate-y-[-2px] hover:shadow-[0_12px_0_#1d4ed8,0_20px_40px_rgba(37,99,235,0.5)] active:translate-y-[10px] active:shadow-none ring-4 ring-sky-500/20 border border-sky-300"
+                   }
+                   `}
+                 disabled={!modalCanStart}
                  onClick={() => {
-                   if (selectedLesson.lesson.gameType && selectedLesson.lesson.requiredPlan !== "PRO") {
-                     const isPremium = activeChild.plan === "PRO" || activeChild.plan === "VIP";
-                     if (selectedLesson.lesson.gameType === "number-sequence-chart") {
-                       if (!isPremium) {
-                         setPendingRoute("/student/game/number-sequence");
-                         setShowAd(true);
-                       } else {
-                         navigate("/student/game/number-sequence");
-                       }
-                     } else {
-                       navigate(`/student/quiz/math2-b2`);
-                     }
+                   const L = selectedLesson.lesson;
+                   const route = modalPlayRoute;
+                   if (
+                     !L.gameType ||
+                     !canAccessLesson(L, activeChild.plan) ||
+                     !route
+                   )
+                     return;
+                   const isPremium =
+                     activeChild.plan === "PRO" || activeChild.plan === "VIP";
+                   if (L.gameType === "number-sequence-chart" && !isPremium) {
+                     setPendingRoute(route);
+                     setShowAd(true);
+                   } else {
+                     navigate(route);
                    }
                  }}
                >
-                 {selectedLesson.lesson.requiredPlan === "PRO" ? (
+                 {!canAccessLesson(selectedLesson.lesson, activeChild.plan) ? (
                    <>
                      <Lock fill="currentColor" size={28} /> Mở khóa PRO
                    </>

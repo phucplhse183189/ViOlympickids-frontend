@@ -214,10 +214,19 @@ export const MAPS: MapInfo[] = [
 // ─── Robot dialogue ───────────────────────────────────────────────────────────
 
 export const ROBOT_GREETINGS = [
-  "Xin chào bạn nhỏ! 🤖",
-  "Mình là Tí Tách đây! ⚡",
-  "Chúng ta cùng phiêu lưu nhé! 🚀",
+  "Xin chào {{name}}! 🤖",
+  "Chào {{name}}! Mình là Tí Tách đây! ⚡",
+  "Chúng ta cùng phiêu lưu nhé, {{name}}! 🚀",
 ];
+
+/** Thay {{name}} bằng tên hiển thị (hồ sơ bé đang chọn); nếu trống thì dùng "bạn". */
+export function personalizeRobotGreeting(
+  template: string,
+  displayName: string | undefined,
+): string {
+  const name = displayName?.trim() || "bạn";
+  return template.replace(/\{\{name\}\}/g, name);
+}
 
 export const ROBOT_CORRECT = [
   "Wow! Chuẩn không cần chỉnh! 🌟",
