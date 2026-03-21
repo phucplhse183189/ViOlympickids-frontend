@@ -152,6 +152,9 @@ if (typeof window !== "undefined" && "speechSynthesis" in window) {
   const _initVoices = window.speechSynthesis.getVoices();
   if (_initVoices.length > 0) {
     _markVoicesReady();
+    // DEBUG: log voices có sẵn ngay lập tức
+    const vnInit = _initVoices.filter(v => v.lang.startsWith("vi"));
+    console.log(`[VoiceManager] Init: ${_initVoices.length} voices, ${vnInit.length} Vietnamese`, vnInit.map(v => `${v.name} (${v.lang})`));
   }
   // Luôn lắng nghe event vì Chrome có thể load thêm voices sau
   window.speechSynthesis.addEventListener(
@@ -161,6 +164,14 @@ if (typeof window !== "undefined" && "speechSynthesis" in window) {
       cachedBestVoice = null;
       voicesLoaded = false;
       _markVoicesReady();
+      // DEBUG: log voices khi voiceschanged event được phát
+      const allVoices = window.speechSynthesis.getVoices();
+      const vnVoices = allVoices.filter(v => v.lang.startsWith("vi"));
+      console.log(`[VoiceManager] voiceschanged: ${allVoices.length} voices, ${vnVoices.length} Vietnamese`, vnVoices.map(v => `${v.name} (${v.lang})`));
+      if (vnVoices.length === 0) {
+        console.warn("[VoiceManager] ⚠️ KHÔNG TÌM THẤY GIỌNG TIẾNG VIỆT! Voice sẽ fallback sang giọng mặc định (English).");
+        console.log("[VoiceManager] Tất cả voices:", allVoices.map(v => `${v.name} (${v.lang})`));
+      }
     },
     { once: false },
   );
