@@ -1,19 +1,19 @@
 /* Banner container */
 .banner-ad {
-  position: absolute;
-  top: 80px; /* Adjusted to fit closer below the header */
-  z-index: 20;
+  position: fixed;
+  top: 100px; /* Header spacing */
+  z-index: 40; /* Above most content */
   animation: fadeInBanner 0.7s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
 }
 
 .banner-ad-left {
-  left: 20px; /* Reduced from 32px to push closer to edge */
+  left: 0;
 }
 
 .banner-ad-right {
-  right: 20px; /* Reduced from 32px to push closer to edge */
+  right: 0;
 }
 
 /* Base fade-in animation */
