@@ -39,7 +39,7 @@ export function AboutSection() {
             "radial-gradient(circle at 15% 12%, rgba(56,189,248,0.22), transparent 40%), radial-gradient(circle at 85% 18%, rgba(249,115,22,0.16), transparent 45%), radial-gradient(circle at 50% 85%, rgba(168,85,247,0.12), transparent 45%)",
         }}
       />
-      <div className="container relative mx-auto max-w-6xl px-4 sm:px-6">
+      <div className="container relative mx-auto max-w-5xl px-4 sm:px-6">
         {/* Header */}
         <div
           className={`reveal ${inView ? "visible" : ""} text-center max-w-3xl mx-auto mb-12 sm:mb-16`}

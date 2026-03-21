@@ -35,8 +35,8 @@ export function HeroSection() {
       {/* Spinning ring decoration */}
       <div className="absolute -top-20 -right-20 w-64 h-64 border-[3px] border-dashed border-blue-200/40 rounded-full animate-spin-slow" />
 
-      {/* Main Container - Narrowed down to max-w-6xl (~1152px) to make room for banners on 1366px laptops */}
-      <div className="container mx-auto max-w-6xl px-6 grid grid-cols-1 md:grid-cols-2 items-center gap-8">
+      {/* Main Container - Narrowed down to max-w-5xl (~1024px) to make room for banners on 1366px laptops */}
+      <div className="container mx-auto max-w-5xl px-6 grid grid-cols-1 md:grid-cols-2 items-center gap-8">
         {/* Left content – 6 cols */}
         <div className="text-center md:text-left z-10">
           <span

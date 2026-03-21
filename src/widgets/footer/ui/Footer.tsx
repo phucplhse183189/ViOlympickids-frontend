@@ -7,7 +7,7 @@ export function Footer() {
   return (
     <footer ref={ref} className="bg-gray-900 text-white pt-16 pb-8">
       <div
-        className={`reveal ${inView ? "visible" : ""} container mx-auto px-6 max-w-6xl`}
+        className={`reveal ${inView ? "visible" : ""} container mx-auto px-6 max-w-5xl`}
       >
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
           {/* Brand */}

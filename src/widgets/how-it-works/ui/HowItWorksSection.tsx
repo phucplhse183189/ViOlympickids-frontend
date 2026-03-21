@@ -14,7 +14,7 @@ export function HowItWorksSection() {
   const steps = stepStyles.map((s, i) => ({ ...s, ...t.howItWorks.steps[i] }));
   return (
     <section ref={ref} className="py-24 bg-white">
-      <div className="container mx-auto px-6 max-w-6xl">
+      <div className="container mx-auto px-6 max-w-5xl">
         <h2
           className={`reveal ${inView ? "visible" : ""} text-4xl font-bold mb-16 text-center text-gray-800`}
         >

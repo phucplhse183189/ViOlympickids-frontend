@@ -36,7 +36,7 @@ export function Header() {
             : "bg-white/60 backdrop-blur-md border-b border-white/40"
         }`}
       >
-        <div className="w-full max-w-6xl mx-auto px-4 md:px-6 h-14 grid grid-cols-3 items-center gap-2">
+        <div className="w-full max-w-5xl mx-auto px-4 md:px-6 h-14 grid grid-cols-3 items-center gap-2">
           {/* ── Logo (trái) ── */}
           <a
             href="/"

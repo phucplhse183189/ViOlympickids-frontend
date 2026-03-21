@@ -25,7 +25,7 @@ export function CoursesSection() {
         />
       </div>
 
-      <div className="container relative mx-auto px-4 sm:px-6 max-w-6xl">
+      <div className="container relative mx-auto px-4 sm:px-6 max-w-5xl">
         {/* Header */}
         <div
           className={`reveal ${inView ? "visible" : ""} text-center max-w-2xl mx-auto mb-12 sm:mb-16`}
@@ -39,7 +39,7 @@ export function CoursesSection() {
         </div>
 
         {/* Pricing cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-8 max-w-6xl mx-auto items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-8 max-w-5xl mx-auto items-stretch">
           {t.courses.plans.map((plan, i) => (
             <div
               key={plan.name}
