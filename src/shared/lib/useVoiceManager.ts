@@ -100,8 +100,46 @@ function stopAllAudio(): void {
 }
 
 function stopTTS(): void {
-  // AI voice đã bị tắt hoàn toàn.
+  // Thay vì tắt hoàn toàn, nếu đang có fallback audio thì phải dừng nó
+  if (currentFallbackAudio) {
+    currentFallbackAudio.pause();
+    currentFallbackAudio.currentTime = 0;
+    currentFallbackAudio = null;
+  }
 }
+
+// ─── Google TTS Fallback ─────────────────────────────────────────────────────
+let currentFallbackAudio: HTMLAudioElement | null = null;
+
+export function playGoogleTTSFallback(text: string, onEnd?: () => void): void {
+  stopTTS(); // Dừng nếu đang có
+
+  // Encode text và tạo URL Google Translate TTS (giới hạn ký tự ngắn, phù hợp cho game)
+  const url = `https://translate.googleapis.com/translate_tts?client=gtx&ie=UTF-8&tl=vi&q=${encodeURIComponent(text)}`;
+  
+  const audio = new Audio(url);
+  currentFallbackAudio = audio;
+
+  const handleEnd = () => {
+    if (currentFallbackAudio === audio) {
+      currentFallbackAudio = null;
+      if (onEnd) onEnd();
+    }
+  };
+
+  audio.onended = handleEnd;
+  audio.onerror = (e) => {
+    console.error("[VoiceManager] Fallback TTS failed:", e);
+    handleEnd();
+  };
+
+  // Play audio
+  audio.play().catch((e) => {
+    console.error("[VoiceManager] Fallback TTS auto-play prevented:", e);
+    handleEnd();
+  });
+}
+
 
 // ─── React Hook ──────────────────────────────────────────────────────────────
 
@@ -183,13 +221,14 @@ if (typeof window !== "undefined" && "speechSynthesis" in window) {
  */
 export function waitForVoices(timeoutMs = 3000): Promise<void> {
   if (_voicesAreReady) return Promise.resolve();
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return Promise.resolve();
   return Promise.race([
     _voicesReadyPromise,
     new Promise<void>((r) => setTimeout(r, timeoutMs)),
   ]);
 }
 
-function findBestVietnameseVoice(): SpeechSynthesisVoice | null {
+export function findBestVietnameseVoice(): SpeechSynthesisVoice | null {
   if (voicesLoaded && cachedBestVoice) return cachedBestVoice;
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return null;
 
@@ -302,29 +341,28 @@ export function useVoiceManager(config: VoiceConfig = defaultVoiceConfig): Voice
   const currentOnEndRef = useRef<(() => void) | null>(null);
 
   const speakText = useCallback((text: string, onEnd?: () => void) => {
-    if (!enabledRef.current || !("speechSynthesis" in window)) {
+    if (!enabledRef.current) {
       if (onEnd) onEnd();
       return;
     }
 
-    // Vô hiệu hoá callback cũ trước khi cancel (cancel() sẽ fire onerror bất đồng bộ)
+    // Vô hiệu hoá callback cũ trước khi cancel
     currentOnEndRef.current = null;
 
-    // Stop any currently playing TTS
-    window.speechSynthesis.cancel();
-    // Stop MP3s so they don't overlap
-    stopAllAudio();
+    // Stop bất kỳ TTS nào đang phát (Native hoặc Fallback)
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+    stopTTS(); // Dừng Google TTS fallback
+    stopAllAudio(); // Dừng MP3 game
 
-    // Chờ voices load xong (fix timing bug trên Vercel) rồi mới nói
+    // Chờ voices load xong (nếu cần) rồi mới nói
     const doSpeak = () => {
-      // Kiểm tra lại enabled sau khi chờ (có thể bị tắt trong lúc chờ)
+      // Kiểm tra lại enabled sau khi chờ
       if (!enabledRef.current) {
         if (onEnd) onEnd();
         return;
       }
-
-      const utterance = new SpeechSynthesisUtterance(text);
-      configureKidVietnameseUtterance(utterance);
 
       // Lưu callback mới
       currentOnEndRef.current = onEnd || null;
@@ -337,14 +375,30 @@ export function useVoiceManager(config: VoiceConfig = defaultVoiceConfig): Voice
         }
       };
 
+      // KIỂM TRA VOICE VIỆT NAM (NẾU CÓ)
+      const bestVoice = typeof window !== "undefined" && "speechSynthesis" in window 
+        ? findBestVietnameseVoice() 
+        : null;
+
+      if (!bestVoice || typeof window === "undefined" || !("speechSynthesis" in window)) {
+        // FALLBACK GOOGLE TTS DO KHÔNG CÓ GIỌNG VIỆT HOẶC KHÔNG HỖ TRỢ
+        console.log("[VoiceManager] Dùng Google TTS Fallback cho:", text);
+        playGoogleTTSFallback(text, wrappedOnEnd);
+        return;
+      }
+
+      // Dùng Web Speech API tự nhiên
+      const utterance = new SpeechSynthesisUtterance(text);
+      configureKidVietnameseUtterance(utterance);
+
       utterance.onend = wrappedOnEnd;
       utterance.onerror = wrappedOnEnd;
 
       window.speechSynthesis.speak(utterance);
     };
 
-    // Nếu voices đã sẵn sàng → nói ngay, không → chờ tối đa 3 giây
-    if (_voicesAreReady) {
+    // Nếu voices đã sẵn sàng hoặc không hỗ trợ Web Speech → nói luôn
+    if (_voicesAreReady || typeof window === "undefined" || !("speechSynthesis" in window)) {
       doSpeak();
     } else {
       waitForVoices(3000).then(doSpeak);

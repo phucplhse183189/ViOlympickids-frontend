@@ -27,7 +27,7 @@ import {
   Minimize,
 } from "lucide-react";
 import { useGameSound } from "@/shared/lib/useGameSound";
-import { waitForVoices } from "@/shared/lib/useVoiceManager";
+import { waitForVoices, findBestVietnameseVoice, playGoogleTTSFallback } from "@/shared/lib/useVoiceManager";
 import {
   MAPS,
   ROBOT_HINTS,
@@ -469,45 +469,40 @@ function AppleGardenMap({
 
   const sound = useSounds();
 
-  const speakRobotAnswer = useCallback((text: string) => {
-    if (typeof window === "undefined") return;
-    if (!text) return;
-    if (!("speechSynthesis" in window)) return;
+  const speakRobotAnswer = useCallback((text: string, voiceName?: string) => {
+    if (typeof window === "undefined" || !text) return;
 
     // Chờ voices load xong (fix timing bug trên Vercel)
     waitForVoices(3000).then(() => {
+      const bestVoice = typeof window !== "undefined" && "speechSynthesis" in window
+        ? findBestVietnameseVoice()
+        : null;
+
+      if (!bestVoice || typeof window === "undefined" || !("speechSynthesis" in window)) {
+        playGoogleTTSFallback(text);
+        return;
+      }
+
       const utterance = new SpeechSynthesisUtterance(text);
       const voices = window.speechSynthesis.getVoices();
-      let preferredName = "";
+      let preferredName = voiceName || "";
 
       try {
-        preferredName = localStorage.getItem("robotVoiceName") || "";
+        if (!preferredName) preferredName = localStorage.getItem("robotVoiceName") || "";
       } catch {
-        preferredName = "";
+        // ignore
       }
 
       const preferred = preferredName
         ? voices.find((v) => v.name === preferredName)
         : undefined;
 
-      const fallback =
-        voices.find((v) =>
-          /vi/i.test(v.lang) && /(female|woman|girl|nữ|nu)/i.test(v.name),
-        ) ||
-        voices.find((v) => /vi/i.test(v.lang)) ||
-        voices.find((v) => /(female|woman|girl|nữ|nu)/i.test(v.name)) ||
-        voices[0];
-
-      const finalVoice = preferred || fallback;
-      if (finalVoice) {
-        utterance.voice = finalVoice;
-        utterance.lang = finalVoice.lang || "vi-VN";
-      } else {
-        utterance.lang = "vi-VN";
-      }
-
+      const finalVoice = preferred || bestVoice;
+      utterance.voice = finalVoice;
+      utterance.lang = finalVoice.lang || "vi-VN";
       utterance.rate = 1;
       utterance.pitch = 1;
+
       window.speechSynthesis.cancel();
       window.speechSynthesis.speak(utterance);
     });
@@ -810,36 +805,39 @@ function BridgeMap({
   const sound = useSounds();
 
   const speakRobotAnswer = useCallback((text: string, voiceName?: string) => {
-    if (typeof window === "undefined") return;
-    if (!text) return;
-    if (!("speechSynthesis" in window)) return;
+    if (typeof window === "undefined" || !text) return;
 
     // Chờ voices load xong (fix timing bug trên Vercel)
     waitForVoices(3000).then(() => {
-      const utterance = new SpeechSynthesisUtterance(text);
-      const voices = window.speechSynthesis.getVoices();
-      const preferred = voiceName
-        ? voices.find((v) => v.name === voiceName)
-        : undefined;
+      const bestVoice = typeof window !== "undefined" && "speechSynthesis" in window
+        ? findBestVietnameseVoice()
+        : null;
 
-      const fallback =
-        voices.find((v) =>
-          /vi/i.test(v.lang) && /(female|woman|girl|nữ|nu)/i.test(v.name),
-        ) ||
-        voices.find((v) => /vi/i.test(v.lang)) ||
-        voices.find((v) => /(female|woman|girl|nữ|nu)/i.test(v.name)) ||
-        voices[0];
-
-      const finalVoice = preferred || fallback;
-      if (finalVoice) {
-        utterance.voice = finalVoice;
-        utterance.lang = finalVoice.lang || "vi-VN";
-      } else {
-        utterance.lang = "vi-VN";
+      if (!bestVoice || typeof window === "undefined" || !("speechSynthesis" in window)) {
+        playGoogleTTSFallback(text);
+        return;
       }
 
+      const utterance = new SpeechSynthesisUtterance(text);
+      const voices = window.speechSynthesis.getVoices();
+      let preferredName = voiceName || "";
+
+      try {
+        if (!preferredName) preferredName = localStorage.getItem("robotVoiceName") || "";
+      } catch {
+        // ignore
+      }
+
+      const preferred = preferredName
+        ? voices.find((v) => v.name === preferredName)
+        : undefined;
+
+      const finalVoice = preferred || bestVoice;
+      utterance.voice = finalVoice;
+      utterance.lang = finalVoice.lang || "vi-VN";
       utterance.rate = 1;
       utterance.pitch = 1;
+
       window.speechSynthesis.cancel();
       window.speechSynthesis.speak(utterance);
     });
@@ -1086,32 +1084,44 @@ function TrainMap({
 
   const sound = useSounds();
 
-  const speakRobotAnswer = useCallback(
-    (text: string, voiceName?: string) => {
-      if (typeof window === "undefined") return;
-      if (!text) return;
-      if (!("speechSynthesis" in window)) return;
+  const speakRobotAnswer = useCallback((text: string, voiceName?: string) => {
+    if (typeof window === "undefined" || !text) return;
 
-      // Chờ voices load xong (fix timing bug trên Vercel)
-      waitForVoices(3000).then(() => {
-        const utterance = new SpeechSynthesisUtterance(text);
-        const voices = window.speechSynthesis.getVoices();
-        const preferred = voiceName
-          ? voices.find((v) => v.name === voiceName)
-          : undefined;
-        const viVoice = voices.find((v) =>
-          v.lang?.toLowerCase().startsWith("vi"),
-        );
-        utterance.voice = preferred || viVoice || voices[0];
-        utterance.lang = utterance.voice?.lang || "vi-VN";
-        utterance.rate = 1;
-        utterance.pitch = 1;
-        window.speechSynthesis.cancel();
-        window.speechSynthesis.speak(utterance);
-      });
-    },
-    [],
-  );
+    // Chờ voices load xong (fix timing bug trên Vercel)
+    waitForVoices(3000).then(() => {
+      const bestVoice = typeof window !== "undefined" && "speechSynthesis" in window
+        ? findBestVietnameseVoice()
+        : null;
+
+      if (!bestVoice || typeof window === "undefined" || !("speechSynthesis" in window)) {
+        playGoogleTTSFallback(text);
+        return;
+      }
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      const voices = window.speechSynthesis.getVoices();
+      let preferredName = voiceName || "";
+
+      try {
+        if (!preferredName) preferredName = localStorage.getItem("robotVoiceName") || "";
+      } catch {
+        // ignore
+      }
+
+      const preferred = preferredName
+        ? voices.find((v) => v.name === preferredName)
+        : undefined;
+
+      const finalVoice = preferred || bestVoice;
+      utterance.voice = finalVoice;
+      utterance.lang = finalVoice.lang || "vi-VN";
+      utterance.rate = 1;
+      utterance.pitch = 1;
+
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utterance);
+    });
+  }, []);
 
   const sendRobotQuestion = useCallback(async () => {
     const trimmed = robotInput.trim();

@@ -1,4 +1,4 @@
-import { configureKidVietnameseUtterance, waitForVoices } from "./useVoiceManager";
+import { configureKidVietnameseUtterance, waitForVoices, findBestVietnameseVoice, playGoogleTTSFallback } from "./useVoiceManager";
 
 /**
  * Đọc TTS tiếng Việt và báo tiến độ để hiện phụ đề "nói đến đâu hiện đến đó".
@@ -15,13 +15,9 @@ export function speakVietnameseWithCaptionProgress(
     return () => {};
   }
 
-  if (!("speechSynthesis" in window)) {
-    onReveal(text.length);
-    onComplete?.();
-    return () => {};
+  if (typeof window !== "undefined" && "speechSynthesis" in window) {
+    window.speechSynthesis.cancel();
   }
-
-  window.speechSynthesis.cancel();
 
   let disposed = false;
   let maxEnd = 0;
@@ -58,9 +54,38 @@ export function speakVietnameseWithCaptionProgress(
     onComplete?.();
   };
 
+  const startFakeTimer = (delay: number = 480) => {
+    fallbackArmTimer = window.setTimeout(() => {
+      fallbackArmTimer = null;
+      if (disposed || boundarySeen || finished) return;
+      const durationMs = Math.max(3200, text.length * 72);
+      const t0 = performance.now();
+      fallbackId = window.setInterval(() => {
+        if (disposed || finished) return;
+        const p = Math.min(1, (performance.now() - t0) / durationMs);
+        bump(p * text.length);
+        if (p >= 1 && fallbackId !== null) {
+          clearInterval(fallbackId);
+          fallbackId = null;
+        }
+      }, 45);
+    }, delay);
+  };
+
   // Chờ voices load xong rồi mới tạo utterance (fix timing bug trên Vercel)
   waitForVoices(3000).then(() => {
     if (disposed) return;
+
+    const bestVoice = typeof window !== "undefined" && "speechSynthesis" in window 
+      ? findBestVietnameseVoice() 
+      : null;
+
+    if (!bestVoice || typeof window === "undefined" || !("speechSynthesis" in window)) {
+      // Dùng Google TTS + bộ đếm thời gian fake để hiện phụ đề
+      playGoogleTTSFallback(text, completeOnce);
+      startFakeTimer(0);
+      return;
+    }
 
     const utterance = new SpeechSynthesisUtterance(text);
     configureKidVietnameseUtterance(utterance);
@@ -87,22 +112,7 @@ export function speakVietnameseWithCaptionProgress(
       completeOnce();
     };
 
-    fallbackArmTimer = window.setTimeout(() => {
-      fallbackArmTimer = null;
-      if (disposed || boundarySeen || finished) return;
-      const durationMs = Math.max(3200, text.length * 72);
-      const t0 = performance.now();
-      fallbackId = window.setInterval(() => {
-        if (disposed || finished) return;
-        const p = Math.min(1, (performance.now() - t0) / durationMs);
-        bump(p * text.length);
-        if (p >= 1 && fallbackId !== null) {
-          clearInterval(fallbackId);
-          fallbackId = null;
-        }
-      }, 45);
-    }, 480);
-
+    startFakeTimer(480);
     window.speechSynthesis.speak(utterance);
   });
 
