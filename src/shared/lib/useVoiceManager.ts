@@ -130,9 +130,57 @@ export interface VoiceManagerAPI {
 let cachedBestVoice: SpeechSynthesisVoice | null = null;
 let voicesLoaded = false;
 
+// ─── Voice readiness promise (fix timing bug trên Vercel/Chrome) ─────────────
+// Chrome/Cốc Cốc: getVoices() trả về [] lần đầu, cần chờ event voiceschanged.
+// Nếu speakText() gọi trước khi voices load xong → không tìm được giọng VN → fallback English.
+let _voicesReadyResolve: (() => void) | null = null;
+let _voicesAreReady = false;
+
+const _voicesReadyPromise = new Promise<void>((resolve) => {
+  _voicesReadyResolve = resolve;
+});
+
+function _markVoicesReady() {
+  if (!_voicesAreReady) {
+    _voicesAreReady = true;
+    _voicesReadyResolve?.();
+  }
+}
+
+// Auto-init: kiểm tra ngay khi module load
+if (typeof window !== "undefined" && "speechSynthesis" in window) {
+  const _initVoices = window.speechSynthesis.getVoices();
+  if (_initVoices.length > 0) {
+    _markVoicesReady();
+  }
+  // Luôn lắng nghe event vì Chrome có thể load thêm voices sau
+  window.speechSynthesis.addEventListener(
+    "voiceschanged",
+    () => {
+      // Reset cache khi voices thay đổi
+      cachedBestVoice = null;
+      voicesLoaded = false;
+      _markVoicesReady();
+    },
+    { once: false },
+  );
+}
+
+/**
+ * Chờ voices sẵn sàng (giải quyết timing bug trên Chrome/Cốc Cốc).
+ * Trả về Promise resolve khi voices đã load, hoặc sau timeout.
+ */
+export function waitForVoices(timeoutMs = 3000): Promise<void> {
+  if (_voicesAreReady) return Promise.resolve();
+  return Promise.race([
+    _voicesReadyPromise,
+    new Promise<void>((r) => setTimeout(r, timeoutMs)),
+  ]);
+}
+
 function findBestVietnameseVoice(): SpeechSynthesisVoice | null {
   if (voicesLoaded && cachedBestVoice) return cachedBestVoice;
-  if (!("speechSynthesis" in window)) return null;
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return null;
 
   const voices = window.speechSynthesis.getVoices();
   if (voices.length === 0) return null;
@@ -256,24 +304,40 @@ export function useVoiceManager(config: VoiceConfig = defaultVoiceConfig): Voice
     // Stop MP3s so they don't overlap
     stopAllAudio();
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    configureKidVietnameseUtterance(utterance);
-
-    // Lưu callback mới
-    currentOnEndRef.current = onEnd || null;
-
-    // Wrap callback: chỉ gọi nếu vẫn là callback hiện tại (chưa bị cancel)
-    const wrappedOnEnd = () => {
-      if (currentOnEndRef.current === onEnd && onEnd) {
-        currentOnEndRef.current = null;
-        onEnd();
+    // Chờ voices load xong (fix timing bug trên Vercel) rồi mới nói
+    const doSpeak = () => {
+      // Kiểm tra lại enabled sau khi chờ (có thể bị tắt trong lúc chờ)
+      if (!enabledRef.current) {
+        if (onEnd) onEnd();
+        return;
       }
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      configureKidVietnameseUtterance(utterance);
+
+      // Lưu callback mới
+      currentOnEndRef.current = onEnd || null;
+
+      // Wrap callback: chỉ gọi nếu vẫn là callback hiện tại (chưa bị cancel)
+      const wrappedOnEnd = () => {
+        if (currentOnEndRef.current === onEnd && onEnd) {
+          currentOnEndRef.current = null;
+          onEnd();
+        }
+      };
+
+      utterance.onend = wrappedOnEnd;
+      utterance.onerror = wrappedOnEnd;
+
+      window.speechSynthesis.speak(utterance);
     };
 
-    utterance.onend = wrappedOnEnd;
-    utterance.onerror = wrappedOnEnd;
-
-    window.speechSynthesis.speak(utterance);
+    // Nếu voices đã sẵn sàng → nói ngay, không → chờ tối đa 3 giây
+    if (_voicesAreReady) {
+      doSpeak();
+    } else {
+      waitForVoices(3000).then(doSpeak);
+    }
   }, []);
 
   const isEnabled = useCallback(() => enabledRef.current, []);

@@ -1,7 +1,7 @@
-import { configureKidVietnameseUtterance } from "./useVoiceManager";
+import { configureKidVietnameseUtterance, waitForVoices } from "./useVoiceManager";
 
 /**
- * Đọc TTS tiếng Việt và báo tiến độ để hiện phụ đề “nói đến đâu hiện đến đó”.
+ * Đọc TTS tiếng Việt và báo tiến độ để hiện phụ đề "nói đến đâu hiện đến đó".
  * Chrome/Edge: dùng sự kiện `boundary` (từng từ). Trình khác: fallback tuyến tính theo thời gian.
  */
 export function speakVietnameseWithCaptionProgress(
@@ -58,48 +58,53 @@ export function speakVietnameseWithCaptionProgress(
     onComplete?.();
   };
 
-  const utterance = new SpeechSynthesisUtterance(text);
-  configureKidVietnameseUtterance(utterance);
+  // Chờ voices load xong rồi mới tạo utterance (fix timing bug trên Vercel)
+  waitForVoices(3000).then(() => {
+    if (disposed) return;
 
-  utterance.onstart = () => {
-    bump(1);
-  };
+    const utterance = new SpeechSynthesisUtterance(text);
+    configureKidVietnameseUtterance(utterance);
 
-  utterance.onboundary = (ev: SpeechSynthesisEvent) => {
-    boundarySeen = true;
-    clearFallback();
-    const idx = ev.charIndex;
-    const len = ev.charLength;
-    const end =
-      typeof len === "number" && len > 0 ? idx + len : Math.min(text.length, idx + 1);
-    bump(end);
-  };
+    utterance.onstart = () => {
+      bump(1);
+    };
 
-  utterance.onend = () => {
-    completeOnce();
-  };
+    utterance.onboundary = (ev: SpeechSynthesisEvent) => {
+      boundarySeen = true;
+      clearFallback();
+      const idx = ev.charIndex;
+      const len = ev.charLength;
+      const end =
+        typeof len === "number" && len > 0 ? idx + len : Math.min(text.length, idx + 1);
+      bump(end);
+    };
 
-  utterance.onerror = () => {
-    completeOnce();
-  };
+    utterance.onend = () => {
+      completeOnce();
+    };
 
-  fallbackArmTimer = window.setTimeout(() => {
-    fallbackArmTimer = null;
-    if (disposed || boundarySeen || finished) return;
-    const durationMs = Math.max(3200, text.length * 72);
-    const t0 = performance.now();
-    fallbackId = window.setInterval(() => {
-      if (disposed || finished) return;
-      const p = Math.min(1, (performance.now() - t0) / durationMs);
-      bump(p * text.length);
-      if (p >= 1 && fallbackId !== null) {
-        clearInterval(fallbackId);
-        fallbackId = null;
-      }
-    }, 45);
-  }, 480);
+    utterance.onerror = () => {
+      completeOnce();
+    };
 
-  window.speechSynthesis.speak(utterance);
+    fallbackArmTimer = window.setTimeout(() => {
+      fallbackArmTimer = null;
+      if (disposed || boundarySeen || finished) return;
+      const durationMs = Math.max(3200, text.length * 72);
+      const t0 = performance.now();
+      fallbackId = window.setInterval(() => {
+        if (disposed || finished) return;
+        const p = Math.min(1, (performance.now() - t0) / durationMs);
+        bump(p * text.length);
+        if (p >= 1 && fallbackId !== null) {
+          clearInterval(fallbackId);
+          fallbackId = null;
+        }
+      }, 45);
+    }, 480);
+
+    window.speechSynthesis.speak(utterance);
+  });
 
   return () => {
     disposed = true;
@@ -107,3 +112,4 @@ export function speakVietnameseWithCaptionProgress(
     window.speechSynthesis.cancel();
   };
 }
+
