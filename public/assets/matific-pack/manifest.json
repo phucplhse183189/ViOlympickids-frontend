@@ -1,0 +1,54 @@
+{
+  "name": "Matific Robot Space Pack",
+  "version": "1.2.0",
+  "theme": ["robot", "space", "kids-learning"],
+  "assets": {
+    "backgrounds": [
+      "bg-space-deep.svg",
+      "bg-space-nebula.svg",
+      "../bg-sky-main.svg",
+      "../bg-cloud-layer.svg"
+    ],
+    "space": [
+      "stars-layer-dense.svg",
+      "planet-blue.svg",
+      "planet-ring.svg",
+      "asteroid-a.svg",
+      "asteroid-b.svg",
+      "portal-ring.svg"
+    ],
+    "robots": ["ufo-bot.svg", "rocket-bot.svg", "../mascot-guide.svg"],
+    "ui": [
+      "panel-space-glass.svg",
+      "button-neon-cyan.svg",
+      "badge-robot-star.svg",
+      "../hud-panel.svg",
+      "../slot-empty.svg",
+      "../slot-correct.svg",
+      "../token-base.svg",
+      "../token-correct.svg"
+    ],
+    "fx": [
+      "../fx-star-burst.svg",
+      "../effects/fx-comet-trail.svg",
+      "../effects/fx-sparkle-pack.svg",
+      "../effects/fx-warp-grid.svg"
+    ],
+    "icons": [
+      "../icons/icon-planet.svg",
+      "../icons/icon-rocket.svg",
+      "../icons/icon-asteroid.svg",
+      "../icons/icon-ufo.svg"
+    ],
+    "stickers": [
+      "../stickers/sticker-robot-wave.svg",
+      "../stickers/sticker-robot-pencil.svg",
+      "../stickers/sticker-star-friend.svg"
+    ],
+    "rewards": [
+      "../rewards/reward-medal-gold.svg",
+      "../rewards/reward-crown-blue.svg",
+      "../rewards/reward-certificate.svg"
+    ]
+  }
+}

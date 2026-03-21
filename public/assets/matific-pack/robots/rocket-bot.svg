@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="640" viewBox="0 0 360 640" fill="none">
+  <defs>
+    <linearGradient id="rb" x1="180" y1="36" x2="180" y2="520" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8BE4FF"/>
+      <stop offset="1" stop-color="#2F86E3"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="180" cy="596" rx="86" ry="24" fill="#10224D" fill-opacity="0.25"/>
+  <path d="M180 36C238 110 258 198 258 316V428C258 484 222 528 180 528C138 528 102 484 102 428V316C102 198 122 110 180 36Z" fill="url(#rb)" stroke="#1F66B8" stroke-width="12"/>
+  <ellipse cx="180" cy="226" rx="64" ry="54" fill="#E8FBFF" stroke="#86D6FF" stroke-width="10"/>
+  <circle cx="158" cy="222" r="12" fill="#1A4C8E"/>
+  <circle cx="202" cy="222" r="12" fill="#1A4C8E"/>
+  <path d="M154 252H206" stroke="#2CB069" stroke-width="10" stroke-linecap="round"/>
+  <path d="M102 368L58 424L96 438L122 396" fill="#4EA2F0" stroke="#1F66B8" stroke-width="10"/>
+  <path d="M258 368L302 424L264 438L238 396" fill="#4EA2F0" stroke="#1F66B8" stroke-width="10"/>
+  <path d="M156 528L180 582L204 528" fill="#FFB55C" stroke="#E07A24" stroke-width="10"/>
+</svg>

@@ -1,0 +1,50 @@
+{
+  "pack": "map2-dom-draft-v1",
+  "targets": ["Math2B2TheoryPage", "NumberSequenceGame"],
+  "theory": [
+    "theory/theory-bg-classroom.svg",
+    "theory/theory-numberline-board.svg",
+    "theory/theory-stone-normal.svg",
+    "theory/theory-stone-focus.svg"
+  ],
+  "ui": [
+    "ui/hud-panel-kids.svg",
+    "ui/slot-empty-kids.svg",
+    "ui/slot-correct-kids.svg"
+  ],
+  "map1": [
+    "map1-orchard/map1-bg-orchard-day.svg",
+    "map1-orchard/map1-token-apple-red.svg",
+    "map1-orchard/map1-token-apple-green.svg",
+    "map1-orchard/map1-token-apple-gold.svg"
+  ],
+  "map2": [
+    "map2-bridge/map2-bg-river-bridge.svg",
+    "map2-bridge/map2-stone-normal.svg",
+    "map2-bridge/map2-stone-highlight.svg",
+    "map2-bridge/map2-stone-cracked.svg"
+  ],
+  "map3": [
+    "map3-train/map3-bg-trainyard.svg",
+    "map3-train/map3-locomotive-head.svg",
+    "map3-train/map3-wagon-empty.svg",
+    "map3-train/map3-wagon-filled.svg"
+  ],
+  "map4": [
+    "map4-balloon/map4-bg-balloon-city.svg",
+    "map4-balloon/map4-balloon-blue.svg",
+    "map4-balloon/map4-balloon-pink.svg",
+    "map4-balloon/map4-balloon-yellow.svg"
+  ],
+  "map5": [
+    "map5-rabbit/map5-bg-race-track.svg",
+    "map5-rabbit/map5-rabbit-token-blue.svg",
+    "map5-rabbit/map5-rabbit-token-pink.svg",
+    "map5-rabbit/map5-rabbit-token-green.svg"
+  ],
+  "rewards": [
+    "rewards/victory-medal-gold.svg",
+    "rewards/victory-crown-blue.svg",
+    "rewards/victory-certificate-kids.svg"
+  ]
+}

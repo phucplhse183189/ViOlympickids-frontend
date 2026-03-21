@@ -1174,6 +1174,16 @@ export function Math2TableOfContents() {
                 )}
               </button>
 
+              <button
+                type="button"
+                onClick={() =>
+                  navigate("/student/game/number-sequence-canvas-preview")
+                }
+                className="mt-3 w-full flex items-center justify-center gap-2 rounded-2xl border border-cyan-300/50 bg-slate-800/60 px-4 py-3 text-sm font-extrabold text-cyan-100 transition-all hover:-translate-y-0.5 hover:bg-slate-700/70 active:translate-y-0"
+              >
+                <Compass size={18} /> Test Canvas Preview
+              </button>
+
               <p className="mt-3 text-center text-xs font-semibold text-cyan-100/70">
                 Chạm nút để khởi động robot và vào bài học.
               </p>

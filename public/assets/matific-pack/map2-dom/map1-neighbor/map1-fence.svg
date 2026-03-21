@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="120" viewBox="0 0 600 120" fill="none">
+  <defs>
+    <linearGradient id="fencePost" x1="0" y1="0" x2="0" y2="120" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D4A55A"/>
+      <stop offset="1" stop-color="#A67832"/>
+    </linearGradient>
+  </defs>
+  <!-- Horizontal rails -->
+  <rect x="0" y="30" width="600" height="12" rx="4" fill="#C49548"/>
+  <rect x="0" y="70" width="600" height="12" rx="4" fill="#C49548"/>
+  <!-- Vertical posts -->
+  <rect x="10" y="5" width="20" height="110" rx="4" fill="url(#fencePost)"/>
+  <rect x="110" y="5" width="20" height="110" rx="4" fill="url(#fencePost)"/>
+  <rect x="210" y="5" width="20" height="110" rx="4" fill="url(#fencePost)"/>
+  <rect x="310" y="5" width="20" height="110" rx="4" fill="url(#fencePost)"/>
+  <rect x="410" y="5" width="20" height="110" rx="4" fill="url(#fencePost)"/>
+  <rect x="510" y="5" width="20" height="110" rx="4" fill="url(#fencePost)"/>
+  <!-- Post tops (pointed) -->
+  <path d="M10 5 L20 -8 L30 5Z" fill="#D4A55A"/>
+  <path d="M110 5 L120 -8 L130 5Z" fill="#D4A55A"/>
+  <path d="M210 5 L220 -8 L230 5Z" fill="#D4A55A"/>
+  <path d="M310 5 L320 -8 L330 5Z" fill="#D4A55A"/>
+  <path d="M410 5 L420 -8 L430 5Z" fill="#D4A55A"/>
+  <path d="M510 5 L520 -8 L530 5Z" fill="#D4A55A"/>
+  <!-- Highlights -->
+  <rect x="14" y="10" width="6" height="100" rx="2" fill="#E8C27A" opacity="0.4"/>
+  <rect x="114" y="10" width="6" height="100" rx="2" fill="#E8C27A" opacity="0.4"/>
+  <rect x="214" y="10" width="6" height="100" rx="2" fill="#E8C27A" opacity="0.4"/>
+  <rect x="314" y="10" width="6" height="100" rx="2" fill="#E8C27A" opacity="0.4"/>
+  <rect x="414" y="10" width="6" height="100" rx="2" fill="#E8C27A" opacity="0.4"/>
+  <rect x="514" y="10" width="6" height="100" rx="2" fill="#E8C27A" opacity="0.4"/>
+</svg>

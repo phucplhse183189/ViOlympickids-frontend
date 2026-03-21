@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none">
+  <defs>
+    <radialGradient id="token" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(96 84) rotate(34) scale(170)">
+      <stop stop-color="#FFF5D8"/>
+      <stop offset="1" stop-color="#FFC653"/>
+    </radialGradient>
+  </defs>
+  <circle cx="128" cy="128" r="112" fill="url(#token)" stroke="#E9A624" stroke-width="16"/>
+  <circle cx="94" cy="90" r="22" fill="#FFFFFF" fill-opacity="0.42"/>
+</svg>

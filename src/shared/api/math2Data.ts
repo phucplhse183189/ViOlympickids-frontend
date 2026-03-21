@@ -14,6 +14,7 @@ import {
  * - "number-review-game": Ôn tập số (Bài 1)
  * - "add-across-ten-game": Phép cộng qua 10 trong phạm vi 20 (Bài 7)
  * - "pipe-balance-game": Game nối ống cân bằng (Bài 5)
+ * - "matific-canvas-game": Game kéo thả kiểu Matific (Bài 6)
  * - null: chưa có game (hiển thị "Sắp ra mắt")
  */
 export type GameType =
@@ -22,6 +23,7 @@ export type GameType =
   | "number-review-game"
   | "add-across-ten-game"
   | "pipe-balance-game"
+  | "matific-canvas-game"
   | null;
 
 export interface Math2Lesson {
@@ -107,9 +109,10 @@ export const MATH2_TOPICS: Math2Topic[] = [
         id: "math2-b6",
         lessonNumber: 6,
         title: "Luyện tập chung",
-        gameType: null,
-        emoji: "🏋️",
-        description: "Tổng hợp các dạng bài tập của chủ đề 1.",
+        gameType: "matific-canvas-game",
+        emoji: "🎮",
+        description:
+          "Game kéo thả số kiểu Matific để tổng hợp kỹ năng chủ đề 1.",
         requiredPlan: "FREE",
       },
     ],
@@ -1049,6 +1052,8 @@ export function getMath2LessonPlayRoute(lesson: Math2Lesson): string | null {
       return "/student/game/math2-b7";
     case "pipe-balance-game":
       return "/student/game/pipe-balance";
+    case "matific-canvas-game":
+      return "/student/game/matific-canvas";
     case "math2-quiz-3d":
       return "/student/game/math2-quiz-3d";
     default:
@@ -1089,7 +1094,8 @@ export const MATH2_B1_QUIZ: Math2QuizQuestion[] = [
     question: "Số lớn nhất có hai chữ số là số nào?",
     options: ["10", "90", "99", "100"],
     correctIndex: 2,
-    explanation: "Trong các số có 2 chữ số (từ 10 đến 99), thì 99 là số lớn nhất.",
+    explanation:
+      "Trong các số có 2 chữ số (từ 10 đến 99), thì 99 là số lớn nhất.",
   },
   {
     id: 3,
@@ -1112,5 +1118,5 @@ export const MATH2_B1_QUIZ: Math2QuizQuestion[] = [
     options: ["Bảy ba", "Bảy mươi", "Bảy mươi ba", "Ba mươi bảy"],
     correctIndex: 2,
     explanation: "Số 73 đọc là bảy mươi ba.",
-  }
+  },
 ];

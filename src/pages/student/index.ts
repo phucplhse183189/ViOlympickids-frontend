@@ -7,5 +7,8 @@ export { Math2B1Game } from "./ui/Math2B1Game";
 export { Math2B1QuizPage } from "./ui/Math2B1QuizPage";
 export { MatificCoinGame } from "./ui/MatificCoinGame";
 export { Math2B2TheoryPage } from "./ui/Math2B2TheoryPage";
+export { Math2B2GamePage } from "./ui/Math2B2GamePage";
 export { Math2B7Game } from "./ui/Math2B7Game";
 export { PipeBalanceGame } from "./ui/PipeBalanceGame";
+export { MatificCanvasGame } from "./ui/MatificCanvasGame";
+export { NumberSequenceCanvasPreview } from "./ui/NumberSequenceCanvasPreview";

@@ -1,0 +1,26 @@
+<svg width="256" height="160" viewBox="0 0 256 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bodyNext" x1="44" y1="56" x2="210" y2="126" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8BE2ED"/>
+      <stop offset="1" stop-color="#2C98BE"/>
+    </linearGradient>
+    <linearGradient id="rimNext" x1="56" y1="54" x2="198" y2="76" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#CCF6FA"/>
+      <stop offset="1" stop-color="#63C8DA"/>
+    </linearGradient>
+  </defs>
+
+  <ellipse cx="128" cy="134" rx="74" ry="10" fill="#114C69" fill-opacity="0.18"/>
+
+  <path d="M78 58C86 36 103 27 128 27C153 27 170 36 178 58" stroke="#2F98BA" stroke-width="10" stroke-linecap="round"/>
+  <path d="M78 58C86 42 102 34 128 34C154 34 170 42 178 58" stroke="#DAF8FF" stroke-width="4" stroke-linecap="round"/>
+
+  <rect x="44" y="56" width="168" height="68" rx="20" fill="url(#bodyNext)" stroke="#257C9C" stroke-width="2"/>
+  <rect x="56" y="54" width="144" height="18" rx="9" fill="url(#rimNext)"/>
+
+  <path d="M62 64V122M86 64V122M110 64V122M134 64V122M158 64V122M182 64V122" stroke="#1D6F8F" stroke-width="3" stroke-linecap="round" opacity="0.5"/>
+  <path d="M52 88H204M52 104H204" stroke="#1D6F8F" stroke-width="2.5" opacity="0.32"/>
+
+  <circle cx="128" cy="92" r="23" fill="#EFFFFF" stroke="#BFE8F1" stroke-width="2"/>
+  <path d="M117 80L134.5 92L117 104" stroke="#146B7A" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

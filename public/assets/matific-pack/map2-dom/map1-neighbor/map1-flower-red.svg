@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="80" height="120" viewBox="0 0 80 120" fill="none">
+  <!-- Stem -->
+  <path d="M40 55 Q38 80 40 115" stroke="#3DA83A" stroke-width="5" stroke-linecap="round"/>
+  <!-- Leaf left -->
+  <path d="M38 78 Q20 68 18 82 Q22 90 38 82" fill="#5CC44A"/>
+  <!-- Leaf right -->
+  <path d="M42 90 Q60 82 62 96 Q58 102 42 94" fill="#5CC44A"/>
+  <!-- Petals -->
+  <ellipse cx="28" cy="36" rx="14" ry="18" fill="#FF5C7A" transform="rotate(-20 28 36)"/>
+  <ellipse cx="52" cy="36" rx="14" ry="18" fill="#FF5C7A" transform="rotate(20 52 36)"/>
+  <ellipse cx="32" cy="22" rx="14" ry="18" fill="#FF7090" transform="rotate(-40 32 22)"/>
+  <ellipse cx="48" cy="22" rx="14" ry="18" fill="#FF7090" transform="rotate(40 48 22)"/>
+  <ellipse cx="40" cy="18" rx="12" ry="16" fill="#FF8DA6"/>
+  <!-- Center -->
+  <circle cx="40" cy="32" r="10" fill="#FFE566"/>
+  <circle cx="40" cy="32" r="5" fill="#FFCB33"/>
+</svg>

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" fill="none">
+  <defs>
+    <linearGradient id="base" x1="0" y1="0" x2="1920" y2="1080" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B114A"/>
+      <stop offset="1" stop-color="#264E9E"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#base)"/>
+  <g fill-opacity="0.18">
+    <ellipse cx="360" cy="360" rx="280" ry="150" fill="#9E7DFF"/>
+    <ellipse cx="620" cy="280" rx="240" ry="120" fill="#69B8FF"/>
+    <ellipse cx="1380" cy="620" rx="340" ry="170" fill="#70E5FF"/>
+    <ellipse cx="1600" cy="560" rx="260" ry="120" fill="#A883FF"/>
+  </g>
+  <g fill-opacity="0.08" fill="#FFFFFF">
+    <circle cx="220" cy="180" r="90"/>
+    <circle cx="1060" cy="180" r="130"/>
+    <circle cx="1700" cy="220" r="80"/>
+    <circle cx="1480" cy="860" r="120"/>
+  </g>
+</svg>

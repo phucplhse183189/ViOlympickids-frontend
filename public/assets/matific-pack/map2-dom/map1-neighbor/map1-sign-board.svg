@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="200" viewBox="0 0 240 200" fill="none">
+  <defs>
+    <linearGradient id="boardFill" x1="40" y1="20" x2="200" y2="130" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D4A55A"/>
+      <stop offset="1" stop-color="#A67832"/>
+    </linearGradient>
+  </defs>
+  <!-- Post -->
+  <rect x="108" y="110" width="24" height="90" rx="4" fill="#8B6332"/>
+  <rect x="112" y="110" width="8" height="90" rx="2" fill="#A07842" opacity="0.4"/>
+  <!-- Board -->
+  <rect x="30" y="18" width="180" height="100" rx="14" fill="url(#boardFill)" stroke="#7B5A34" stroke-width="4"/>
+  <!-- Inner frame -->
+  <rect x="42" y="30" width="156" height="76" rx="8" fill="#F5E6C8" stroke="#C49548" stroke-width="2"/>
+  <!-- Nails -->
+  <circle cx="52" cy="40" r="4" fill="#8B6332"/>
+  <circle cx="188" cy="40" r="4" fill="#8B6332"/>
+  <circle cx="52" cy="96" r="4" fill="#8B6332"/>
+  <circle cx="188" cy="96" r="4" fill="#8B6332"/>
+  <!-- Text "Vườn Số" -->
+  <text x="120" y="60" text-anchor="middle" font-family="Arial, sans-serif" font-weight="900" font-size="24" fill="#5B3A12">Vườn Số</text>
+  <text x="120" y="88" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="14" fill="#8B6332">🌳 Kéo thả số 🌳</text>
+</svg>

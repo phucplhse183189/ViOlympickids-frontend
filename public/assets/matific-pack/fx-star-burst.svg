@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <radialGradient id="burst" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(256 256) rotate(90) scale(240)">
+      <stop stop-color="#FFF3B0" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#FFE38A" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="256" cy="256" r="240" fill="url(#burst)"/>
+  <g stroke="#FFC72B" stroke-width="14" stroke-linecap="round">
+    <path d="M256 48V112"/>
+    <path d="M256 400V464"/>
+    <path d="M48 256H112"/>
+    <path d="M400 256H464"/>
+    <path d="M112 112L156 156"/>
+    <path d="M356 356L400 400"/>
+    <path d="M112 400L156 356"/>
+    <path d="M356 156L400 112"/>
+  </g>
+  <path d="M256 144L286 221L368 226L304 278L325 358L256 314L187 358L208 278L144 226L226 221L256 144Z" fill="#FFD54B" stroke="#E9AE21" stroke-width="12"/>
+</svg>
