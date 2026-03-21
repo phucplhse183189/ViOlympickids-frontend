@@ -4,7 +4,7 @@ import "./BannerAd.css";
 
 const BannerAdRight: React.FC = () => (
   <div className="banner-ad banner-ad-right hidden xl:block">
-    <div className="relative w-[180px] h-[calc(100vh-100px)] min-h-[750px] max-h-[900px] rounded-l-2xl rounded-r-none border-r-0 overflow-hidden shadow-2xl flex flex-col items-center bg-gradient-to-b from-[#0055a4] via-[#0066cc] to-[#004080] border border-[#3399ff]/50 group cursor-pointer hover:shadow-[0_0_30px_rgba(0,85,164,0.4)] transition-all duration-300">
+    <div className="relative w-[180px] h-[calc(100vh-85px)] min-h-[750px] max-h-[900px] rounded-l-2xl rounded-r-none border-r-0 overflow-hidden shadow-2xl flex flex-col items-center bg-gradient-to-b from-[#0055a4] via-[#0066cc] to-[#004080] border border-[#3399ff]/50 group cursor-pointer hover:shadow-[0_0_30px_rgba(0,85,164,0.4)] transition-all duration-300">
       {/* Decorative leaf/shape elements */}
       <div className="absolute top-8 left-4 w-6 h-6 bg-blue-300/30 rounded-full blur-sm"></div>
       <div className="absolute top-24 right-4 w-8 h-8 bg-white/40 rounded-full blur-md animate-pulse"></div>

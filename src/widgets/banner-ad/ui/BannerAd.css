@@ -1,7 +1,7 @@
 /* Banner container */
 .banner-ad {
   position: fixed;
-  top: 100px; /* Header spacing */
+  top: 85px; /* Closer to header */
   z-index: 40; /* Above most content */
   animation: fadeInBanner 0.7s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;

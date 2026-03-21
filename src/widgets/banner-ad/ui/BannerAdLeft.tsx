@@ -4,7 +4,7 @@ import "./BannerAd.css";
 
 const BannerAdLeft: React.FC = () => (
   <div className="banner-ad banner-ad-left hidden xl:block">
-    <div className="relative w-[180px] h-[calc(100vh-100px)] min-h-[750px] max-h-[900px] rounded-r-2xl rounded-l-none border-l-0 overflow-hidden shadow-2xl flex flex-col items-center bg-gradient-to-b from-[#e60000] to-[#b30000] border border-[#ff6666]/30 group cursor-pointer hover:shadow-[0_0_30px_rgba(230,0,0,0.4)] transition-all duration-300">
+    <div className="relative w-[180px] h-[calc(100vh-85px)] min-h-[750px] max-h-[900px] rounded-r-2xl rounded-l-none border-l-0 overflow-hidden shadow-2xl flex flex-col items-center bg-gradient-to-b from-[#e60000] to-[#b30000] border border-[#ff6666]/30 group cursor-pointer hover:shadow-[0_0_30px_rgba(230,0,0,0.4)] transition-all duration-300">
       {/* Decorative stars / sparks */}
       <div className="absolute top-10 left-4 text-yellow-300 opacity-70 animate-pulse">
         <Sparkles size={16} />
