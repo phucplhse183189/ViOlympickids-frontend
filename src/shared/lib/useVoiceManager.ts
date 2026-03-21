@@ -114,8 +114,9 @@ let currentFallbackAudio: HTMLAudioElement | null = null;
 export function playGoogleTTSFallback(text: string, onEnd?: () => void): void {
   stopTTS(); // Dừng nếu đang có
 
-  // Encode text và tạo URL Google Translate TTS (sử dụng tw-ob thay vì gtx để tránh lỗi NotSupportedError)
-  const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q=${encodeURIComponent(text)}`;
+  // Dùng proxy api.allorigins.win để bypass lỗi NotSupportedError (do trình duyệt/adblock chặn direct request lên Google)
+  const targetUrl = `https://translate.googleapis.com/translate_tts?client=gtx&ie=UTF-8&tl=vi&q=${encodeURIComponent(text)}`;
+  const url = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
   
   const audio = new Audio(url);
   currentFallbackAudio = audio;
