@@ -27,7 +27,11 @@ import {
   Minimize,
 } from "lucide-react";
 import { useGameSound } from "@/shared/lib/useGameSound";
-import { waitForVoices, findBestVietnameseVoice, playGoogleTTSFallback } from "@/shared/lib/useVoiceManager";
+import {
+  waitForVoices,
+  findBestVietnameseVoice,
+  playGoogleTTSFallback,
+} from "@/shared/lib/useVoiceManager";
 import {
   MAPS,
   ROBOT_HINTS,
@@ -55,74 +59,109 @@ function useSounds(): GameSoundAPI {
   return ctx;
 }
 
+const ROBOT_VOICE_STORAGE_KEY = "robotVoiceName";
+const LOCK_CHATBOX_TO_MAP_VOICE = true;
+
+function readStoredRobotVoiceName(): string {
+  if (typeof window === "undefined") return "";
+  try {
+    return window.localStorage.getItem(ROBOT_VOICE_STORAGE_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+function pickUnifiedRobotVoice(
+  voices: SpeechSynthesisVoice[],
+  preferredName?: string,
+): SpeechSynthesisVoice | null {
+  if (!voices.length) return null;
+
+  const preferred = preferredName
+    ? voices.find((v) => v.name === preferredName)
+    : undefined;
+  if (preferred) return preferred;
+
+  const mapVoice =
+    voices.find((v) => /microsoft an/i.test(v.name)) ||
+    voices.find(
+      (v) => /^vi\b/i.test(v.lang) && /(female|woman|girl|nữ|nu)/i.test(v.name),
+    ) ||
+    voices.find((v) => /^vi\b/i.test(v.lang)) ||
+    findBestVietnameseVoice();
+
+  if (mapVoice) return mapVoice;
+
+  return (
+    voices.find((v) => /microsoft an/i.test(v.name)) ||
+    voices.find(
+      (v) => /^vi\b/i.test(v.lang) && /(female|woman|girl|nữ|nu)/i.test(v.name),
+    ) ||
+    voices.find((v) => /^vi\b/i.test(v.lang)) ||
+    findBestVietnameseVoice() ||
+    voices[0] ||
+    null
+  );
+}
+
+function speakWithUnifiedRobotVoice(text: string, voiceName?: string): void {
+  if (typeof window === "undefined" || !text) return;
+
+  waitForVoices(3000).then(() => {
+    if (!("speechSynthesis" in window)) {
+      playGoogleTTSFallback(text);
+      return;
+    }
+
+    const voices = window.speechSynthesis.getVoices();
+    const finalVoice = pickUnifiedRobotVoice(
+      voices,
+      voiceName || readStoredRobotVoiceName(),
+    );
+
+    if (!finalVoice) {
+      playGoogleTTSFallback(text);
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.voice = finalVoice;
+    utterance.lang = finalVoice.lang || "vi-VN";
+    // Keep the same bright kid-friendly tone as intro speech.
+    utterance.rate = 1.15;
+    utterance.pitch = 1.6;
+    utterance.volume = 1;
+
+    try {
+      window.localStorage.setItem(ROBOT_VOICE_STORAGE_KEY, finalVoice.name);
+    } catch {
+      // ignore storage errors
+    }
+
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+  });
+}
+
 export default NumberSequenceGame;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SHARED COMPONENTS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// ─── Robot Tí Tách ────────────────────────────────────────────────────────────
-
-function RobotCharacter({
-  message,
-  size = "md",
-  onClick,
-}: Readonly<{
-  message: string;
-  size?: "sm" | "md" | "lg";
-  onClick?: () => void;
-}>) {
-  const sizeMap = { sm: "w-16 h-16", md: "w-24 h-24", lg: "w-32 h-32" };
-
-  return (
-    <div className="flex items-end gap-2">
-      {/* Robot body */}
-      <button
-        type="button"
-        onClick={onClick}
-        className={`${sizeMap[size]} relative robot-idle flex-shrink-0 focus:outline-none`}
-        aria-label="Mở trợ lý robot"
-      >
-        <video
-          className="w-full h-full object-cover rounded-2xl border-2 border-sky-300 shadow-lg bg-sky-100"
-          src="/videos/VideoRobotHoatDong.mp4"
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          controls={false}
-          disablePictureInPicture
-          controlsList="nodownload noplaybackrate noremoteplayback nofullscreen"
-        />
-      </button>
-
-      {/* Speech bubble */}
-      {message && (
-        <div className="relative bg-white rounded-2xl shadow-lg px-4 py-2.5 max-w-[260px] animate-fade-in-up">
-          <div className="absolute -left-2 bottom-3 w-4 h-4 bg-white rotate-45" />
-          <div className="max-h-[92px] overflow-y-auto scrollbar-hide">
-            <p className="text-sm font-bold text-gray-700 relative z-10">
-              {message}
-            </p>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 function RobotAskBar({
   value,
   onChange,
   onSend,
   loading,
+  onClose,
   autoSendOnVoice = true,
 }: Readonly<{
   value: string;
   onChange: (value: string) => void;
   onSend: () => void;
   loading: boolean;
+  onClose?: () => void;
   autoSendOnVoice?: boolean;
 }>) {
   const [listening, setListening] = useState(false);
@@ -138,52 +177,60 @@ function RobotAskBar({
   const resolvedVoiceName =
     selectedVoice ||
     (typeof window !== "undefined" &&
-    (() => {
-      try {
-        return localStorage.getItem("robotVoiceName") || "";
-      } catch {
-        return "";
-      }
-    })()) ||
+      (() => {
+        try {
+          return localStorage.getItem(ROBOT_VOICE_STORAGE_KEY) || "";
+        } catch {
+          return "";
+        }
+      })()) ||
     "";
+
+  const isVietnameseVoice = useCallback((voice: SpeechSynthesisVoice) => {
+    return (
+      /^vi\b/i.test(voice.lang) ||
+      /vietnamese|tiếng việt|viet/i.test(voice.name)
+    );
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
 
     const loadVoices = () => {
       const voices = window.speechSynthesis.getVoices();
-      setVoiceOptions(voices);
+      const vietnameseVoices = voices.filter(isVietnameseVoice);
+      const mapVoice = pickUnifiedRobotVoice(voices);
 
-      if (!selectedVoice) {
-        const pick =
-          voices.find((v) =>
-            /vi/i.test(v.lang) && /(female|woman|girl|nữ|nu)/i.test(v.name),
-          ) ||
-          voices.find((v) => /vi/i.test(v.lang)) ||
-          voices.find((v) =>
-            /(female|woman|girl|nữ|nu)/i.test(v.name),
-          ) ||
-          voices[0];
+      if (LOCK_CHATBOX_TO_MAP_VOICE) {
+        setVoiceOptions(mapVoice ? [mapVoice] : voices.slice(0, 1));
+      } else {
+        setVoiceOptions(
+          vietnameseVoices.length > 0 ? vietnameseVoices : voices.slice(0, 1),
+        );
+      }
 
-        if (pick) {
-          setSelectedVoice(pick.name);
-          try {
-            localStorage.setItem("robotVoiceName", pick.name);
-          } catch {
-            // ignore storage errors
-          }
+      const pick = mapVoice || voices[0];
+      if (pick) {
+        setSelectedVoice(pick.name);
+        try {
+          localStorage.setItem(ROBOT_VOICE_STORAGE_KEY, pick.name);
+        } catch {
+          // ignore storage errors
         }
       }
     };
 
     loadVoices();
-    const prevHandler = window.speechSynthesis.onvoiceschanged;
-    window.speechSynthesis.onvoiceschanged = loadVoices;
+    window.speechSynthesis.addEventListener("voiceschanged", loadVoices);
+    const retryShort = window.setTimeout(loadVoices, 400);
+    const retryLong = window.setTimeout(loadVoices, 1200);
 
     return () => {
-      window.speechSynthesis.onvoiceschanged = prevHandler ?? null;
+      window.speechSynthesis.removeEventListener("voiceschanged", loadVoices);
+      window.clearTimeout(retryShort);
+      window.clearTimeout(retryLong);
     };
-  }, [selectedVoice]);
+  }, [selectedVoice, isVietnameseVoice]);
 
   useEffect(() => {
     return () => {
@@ -234,28 +281,30 @@ function RobotAskBar({
   };
 
   return (
-    <div className="bg-white/90 backdrop-blur rounded-3xl shadow-lg border-2 border-amber-200 px-3 py-2 flex flex-col gap-2">
-      <div className="flex items-center gap-2">
-        <input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              onSend();
-            }
-          }}
-          placeholder="Nhập câu hỏi toán lớp 2..."
-          className="flex-1 bg-transparent text-sm sm:text-base font-bold text-gray-700 outline-none placeholder:text-gray-400"
-        />
+    <div className="bg-[#F7F3E8]/95 backdrop-blur rounded-3xl shadow-lg border-2 border-amber-200 px-3 py-2.5 sm:px-4 sm:py-3 flex flex-col gap-2.5 overflow-hidden">
+      <div className="flex items-center gap-2 min-w-0">
+        <div className="flex-1 min-w-0 rounded-2xl bg-white/70 border border-amber-100 px-3 py-2">
+          <input
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                onSend();
+              }
+            }}
+            placeholder="Nhập câu hỏi toán lớp 2..."
+            className="w-full bg-transparent text-sm sm:text-base font-bold text-slate-600 outline-none placeholder:text-slate-400 truncate"
+          />
+        </div>
         <button
           type="button"
           onClick={handleToggleVoice}
-          className={`w-10 h-10 rounded-full flex items-center justify-center shadow transition active:scale-95 ${
+          className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center shadow transition active:scale-95 ${
             listening
               ? "bg-rose-400 text-white"
               : "bg-white text-amber-500 border border-amber-200"
-          }`}
+          } ${!supportsVoice || loading ? "opacity-45 cursor-not-allowed" : ""}`}
           aria-label={listening ? "Đang nghe" : "Nói câu hỏi"}
           disabled={!supportsVoice || loading}
         >
@@ -264,40 +313,129 @@ function RobotAskBar({
         <button
           type="button"
           onClick={onSend}
-          className="px-4 py-2 rounded-full bg-amber-400 text-white text-sm font-extrabold shadow active:scale-95 transition"
+          className="shrink-0 px-4 sm:px-5 py-2 rounded-full bg-amber-400 text-white text-sm sm:text-base font-extrabold shadow active:scale-95 transition disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={loading}
         >
           Gửi
         </button>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="shrink-0 w-9 h-9 rounded-full bg-white text-gray-500 border border-gray-200 hover:bg-gray-50 transition active:scale-95"
+            aria-label="Đóng khung chat"
+          >
+            ✕
+          </button>
+        )}
       </div>
-      <div className="flex items-center gap-2">
-        <label className="text-[11px] font-bold text-gray-500 whitespace-nowrap">
+
+      <div className="flex items-center gap-2 min-w-0">
+        <label className="text-xs sm:text-sm font-bold text-slate-500 whitespace-nowrap">
           Giọng đọc:
         </label>
-        <select
-          value={resolvedVoiceName}
-          onChange={(e) => {
-            const next = e.target.value;
-            setSelectedVoice(next);
-            try {
-              localStorage.setItem("robotVoiceName", next);
-            } catch {
-              // ignore storage errors
-            }
-          }}
-          className="flex-1 bg-white/80 text-[11px] sm:text-xs font-bold text-gray-600 border border-amber-200 rounded-full px-3 py-1 outline-none focus:ring-2 focus:ring-amber-200"
-        >
-          {voiceOptions.length === 0 && (
-            <option value="">Mặc định</option>
-          )}
-          {voiceOptions.map((voice) => (
-            <option key={voice.name} value={voice.name}>
-              {voice.name} ({voice.lang})
-            </option>
-          ))}
-        </select>
+        <div className="relative flex-1 min-w-0">
+          <select
+            value={resolvedVoiceName}
+            onChange={(e) => {
+              if (LOCK_CHATBOX_TO_MAP_VOICE) return;
+              const next = e.target.value;
+              setSelectedVoice(next);
+              try {
+                localStorage.setItem(ROBOT_VOICE_STORAGE_KEY, next);
+              } catch {
+                // ignore storage errors
+              }
+            }}
+            className="w-full min-w-0 appearance-none bg-white/85 text-xs sm:text-sm font-bold text-slate-600 border border-amber-200 rounded-full pl-3 pr-8 py-1.5 outline-none focus:ring-2 focus:ring-amber-200 truncate disabled:opacity-80 disabled:cursor-not-allowed"
+            disabled={LOCK_CHATBOX_TO_MAP_VOICE}
+          >
+            {voiceOptions.length === 0 && <option value="">Mặc định</option>}
+            {voiceOptions.map((voice) => (
+              <option key={voice.name} value={voice.name}>
+                {voice.name} ({voice.lang})
+              </option>
+            ))}
+          </select>
+          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs">
+            ▾
+          </span>
+        </div>
       </div>
     </div>
+  );
+}
+
+function FloatingTitechAssistant({
+  robotMsg,
+  robotChatOpen,
+  showSpeechBubble = true,
+  onToggle,
+  value,
+  onChange,
+  onSend,
+  loading,
+  onClose,
+}: Readonly<{
+  robotMsg: string;
+  robotChatOpen: boolean;
+  showSpeechBubble?: boolean;
+  onToggle: () => void;
+  value: string;
+  onChange: (value: string) => void;
+  onSend: () => void;
+  loading: boolean;
+  onClose: () => void;
+}>) {
+  return (
+    <>
+      <div className="absolute left-0 bottom-3 sm:left-0 sm:bottom-4 z-40">
+        <button
+          type="button"
+          onClick={onToggle}
+          className="relative w-[16vw] min-w-[84px] max-w-[132px] focus:outline-none"
+          aria-label="Mở khung chat AI của robot"
+        >
+          <img
+            src="/robot%20(1).png"
+            alt="Robot"
+            className="w-full object-contain drop-shadow animate-pulse"
+          />
+          <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 rounded-full bg-white/92 text-emerald-700 text-[10px] sm:text-[11px] font-black px-2.5 py-0.5 border border-emerald-200 shadow-sm whitespace-nowrap">
+            Hỏi Tí Tách
+          </span>
+        </button>
+      </div>
+
+      {showSpeechBubble && robotChatOpen && (
+        <div className="absolute z-30 left-1/2 -translate-x-1/2 top-2 sm:top-3 w-[72%] sm:w-[52%] md:w-[40%] min-w-[220px] max-w-[390px]">
+          <img
+            src="/khungThoai.png"
+            alt="Khung thoại"
+            className="w-full object-contain"
+          />
+          <div className="absolute left-[14%] right-[14%] top-[18%] bottom-[28%] flex flex-col justify-center">
+            <div className="max-h-[96px] overflow-y-auto scrollbar-hide p-4 flex flex-col justify-center">
+              <p className="text-[13px] sm:text-[16px] font-black text-gray-800 text-center leading-tight whitespace-pre-line">
+                {robotMsg}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {robotChatOpen && (
+        <div className="absolute z-40 left-2 right-2 bottom-3 sm:left-[17%] sm:right-4 sm:bottom-4 md:left-[18%] lg:left-[19%] w-auto max-w-[700px]">
+          <RobotAskBar
+            value={value}
+            onChange={onChange}
+            onSend={onSend}
+            loading={loading}
+            onClose={onClose}
+          />
+        </div>
+      )}
+    </>
   );
 }
 
@@ -448,7 +586,7 @@ function AppleGardenMap({
   const [robotInput, setRobotInput] = useState("");
   const [robotLoading, setRobotLoading] = useState(false);
   const [robotChatOpen, setRobotChatOpen] = useState(false);
-
+  const [showChatCoachmark, setShowChatCoachmark] = useState(false);
 
   const [attempts, setAttempts] = useState(0);
   const [shake, setShake] = useState<number | null>(null);
@@ -467,45 +605,22 @@ function AppleGardenMap({
     completedRef.current = false;
   }, [difficulty, initialInstruction]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const coachmarkSeen = window.localStorage.getItem(
+      "map1-ai-chat-coachmark-seen",
+    );
+    if (!coachmarkSeen) {
+      setShowChatCoachmark(true);
+      const timer = window.setTimeout(() => setShowChatCoachmark(false), 6500);
+      return () => window.clearTimeout(timer);
+    }
+  }, []);
+
   const sound = useSounds();
 
   const speakRobotAnswer = useCallback((text: string, voiceName?: string) => {
-    if (typeof window === "undefined" || !text) return;
-
-    // Chờ voices load xong (fix timing bug trên Vercel)
-    waitForVoices(3000).then(() => {
-      const bestVoice = typeof window !== "undefined" && "speechSynthesis" in window
-        ? findBestVietnameseVoice()
-        : null;
-
-      if (!bestVoice || typeof window === "undefined" || !("speechSynthesis" in window)) {
-        playGoogleTTSFallback(text);
-        return;
-      }
-
-      const utterance = new SpeechSynthesisUtterance(text);
-      const voices = window.speechSynthesis.getVoices();
-      let preferredName = voiceName || "";
-
-      try {
-        if (!preferredName) preferredName = localStorage.getItem("robotVoiceName") || "";
-      } catch {
-        // ignore
-      }
-
-      const preferred = preferredName
-        ? voices.find((v) => v.name === preferredName)
-        : undefined;
-
-      const finalVoice = preferred || bestVoice;
-      utterance.voice = finalVoice;
-      utterance.lang = finalVoice.lang || "vi-VN";
-      utterance.rate = 1;
-      utterance.pitch = 1;
-
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(utterance);
-    });
+    speakWithUnifiedRobotVoice(text, voiceName);
   }, []);
 
   const sendRobotQuestion = useCallback(async () => {
@@ -531,11 +646,11 @@ function AppleGardenMap({
       const data = await res.json();
       const answer = data?.answer ?? "";
       const finalAnswer =
-        answer || "Robot chưa nghe rõ. Con hỏi lại được không?";
+        answer || "Robot chưa nghe rõ. Bạn hỏi lại được không?";
       setRobotMsg(finalAnswer);
       speakRobotAnswer(finalAnswer);
     } catch {
-      const fallback = "Robot đang bận một chút, con thử lại nhé!";
+      const fallback = "Robot đang bận một chút, bạn thử lại nhé!";
       setRobotMsg(fallback);
       speakRobotAnswer(fallback);
     } finally {
@@ -635,24 +750,55 @@ function AppleGardenMap({
 
       <div className="relative z-10 max-w-5xl mx-auto px-4 py-5 sm:py-6 min-h-[560px] sm:min-h-[620px]">
         <div className="absolute left-1/2 -translate-x-1/2 top-5 sm:top-6 w-[76%] max-w-[620px]">
-          <img src="/bang.png" alt="Tiêu đề" className="w-full object-contain" />
+          <img
+            src="/bang.png"
+            alt="Tiêu đề"
+            className="w-full object-contain"
+          />
         </div>
 
-        <button
-          type="button"
-          onClick={() => setRobotChatOpen((v) => !v)}
-          className="absolute left-[8%] top-[34%] w-[19%] min-w-[88px] max-w-[160px] focus:outline-none"
-          aria-label="Mở khung chat robot"
-        >
-          <img
-            src="/robot%20(1).png"
-            alt="Robot"
-            className="w-full object-contain drop-shadow"
-          />
-        </button>
+        <div className="absolute left-0 bottom-3 sm:left-0 sm:bottom-4 z-40">
+          <button
+            type="button"
+            onClick={() => {
+              const opening = !robotChatOpen;
+              setRobotChatOpen(opening);
+              setShowChatCoachmark(false);
+              if (typeof window !== "undefined") {
+                window.localStorage.setItem("map1-ai-chat-coachmark-seen", "1");
+              }
+
+              if (opening) {
+                const supportPrompt =
+                  "Đây là Vườn Táo Số! Bạn cần Tí Tách gợi ý số nào nè?";
+                setRobotMsg(supportPrompt);
+                speakRobotAnswer(supportPrompt);
+              }
+            }}
+            className="relative w-[16vw] min-w-[84px] max-w-[132px] focus:outline-none"
+            aria-label="Mở khung chat AI của robot"
+          >
+            <img
+              src="/robot%20(1).png"
+              alt="Robot"
+              className="w-full object-contain drop-shadow animate-pulse"
+            />
+            <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 rounded-full bg-white/92 text-emerald-700 text-[10px] sm:text-[11px] font-black px-2.5 py-0.5 border border-emerald-200 shadow-sm whitespace-nowrap">
+              Hỏi Tí Tách
+            </span>
+          </button>
+
+          {showChatCoachmark && !robotChatOpen && (
+            <div className="absolute bottom-[96%] left-[58%] sm:left-[70%] -translate-x-1/2 mb-2 rounded-2xl bg-white/95 border border-amber-300 shadow-lg px-3 py-2 w-[170px] sm:w-[210px]">
+              <p className="text-[11px] sm:text-xs font-bold text-amber-700 text-center leading-snug">
+                Bấm vào robot để hỏi AI khi bạn cần gợi ý nhé!
+              </p>
+            </div>
+          )}
+        </div>
 
         {robotChatOpen && (
-          <div className="absolute left-1/2 -translate-x-1/2 top-[25%] w-[40%] min-w-[220px] max-w-[370px]">
+          <div className="absolute z-30 left-1/2 -translate-x-1/2 top-[22%] sm:top-[24%] w-[72%] sm:w-[52%] md:w-[40%] min-w-[220px] max-w-[390px]">
             <img
               src="/khungThoai.png"
               alt="Khung thoại"
@@ -704,7 +850,11 @@ function AppleGardenMap({
                           : "bg-[#f1e9c9]/95 text-stone-700 border-2 border-amber-700/55"
                     }`}
                   >
-                    {isMissing ? (placedValue !== null ? placedValue : "?") : num}
+                    {isMissing
+                      ? placedValue !== null
+                        ? placedValue
+                        : "?"
+                      : num}
                   </div>
                   <div className="w-1 h-2 bg-amber-800/70 rounded-full mt-1" />
                 </div>
@@ -713,7 +863,7 @@ function AppleGardenMap({
           </div>
         </div>
 
-        <div className="absolute left-1/2 -translate-x-1/2 bottom-[21%] flex items-center justify-center gap-6 sm:gap-8 min-h-[86px]">
+        <div className="absolute left-1/2 -translate-x-1/2 bottom-[21%] flex items-center justify-center gap-6 sm:gap-8 min-h-[104px]">
           {remaining.map((num, i) => (
             <div
               key={`apple-${num}-${i}`}
@@ -728,28 +878,38 @@ function AppleGardenMap({
               className={`cursor-grab active:cursor-grabbing select-none hover:scale-105 active:scale-95 transition-transform ${dragging === num ? "opacity-50 scale-90" : ""}`}
             >
               <img
-                src={num === 3 ? "/tao3.png" : num === 5 ? "/tao5.png" : "/tao7.png"}
+                src={
+                  num === 3
+                    ? "/tao3.png"
+                    : num === 5
+                      ? "/tao5.png"
+                      : "/tao7.png"
+                }
                 alt={`Táo số ${num}`}
-                className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow"
+                className="w-20 h-20 sm:w-24 sm:h-24 object-contain drop-shadow"
               />
             </div>
           ))}
         </div>
 
-          {robotChatOpen && (
-          <div className="absolute left-1/2 -translate-x-1/2 bottom-[8%] w-[78%] max-w-[520px]">
+        {robotChatOpen && (
+          <div className="absolute z-40 left-2 right-2 bottom-3 sm:left-[17%] sm:right-4 sm:bottom-4 md:left-[18%] lg:left-[19%] w-auto max-w-[700px]">
             <RobotAskBar
               value={robotInput}
               onChange={setRobotInput}
               onSend={() => void sendRobotQuestion()}
               loading={robotLoading}
+              onClose={() => setRobotChatOpen(false)}
             />
           </div>
         )}
       </div>
 
       {touchDragValue !== null && touchPos && (
-        <div className="fixed z-50 pointer-events-none" style={{ left: touchPos.x - 32, top: touchPos.y - 32 }}>
+        <div
+          className="fixed z-30 pointer-events-none"
+          style={{ left: touchPos.x - 40, top: touchPos.y - 40 }}
+        >
           <img
             src={
               touchDragValue === 3
@@ -759,7 +919,7 @@ function AppleGardenMap({
                   : "/tao7.png"
             }
             alt="Táo đang kéo"
-            className="w-16 h-16 object-contain drop-shadow-2xl opacity-95"
+            className="w-20 h-20 object-contain drop-shadow-2xl opacity-95"
           />
         </div>
       )}
@@ -805,42 +965,7 @@ function BridgeMap({
   const sound = useSounds();
 
   const speakRobotAnswer = useCallback((text: string, voiceName?: string) => {
-    if (typeof window === "undefined" || !text) return;
-
-    // Chờ voices load xong (fix timing bug trên Vercel)
-    waitForVoices(3000).then(() => {
-      const bestVoice = typeof window !== "undefined" && "speechSynthesis" in window
-        ? findBestVietnameseVoice()
-        : null;
-
-      if (!bestVoice || typeof window === "undefined" || !("speechSynthesis" in window)) {
-        playGoogleTTSFallback(text);
-        return;
-      }
-
-      const utterance = new SpeechSynthesisUtterance(text);
-      const voices = window.speechSynthesis.getVoices();
-      let preferredName = voiceName || "";
-
-      try {
-        if (!preferredName) preferredName = localStorage.getItem("robotVoiceName") || "";
-      } catch {
-        // ignore
-      }
-
-      const preferred = preferredName
-        ? voices.find((v) => v.name === preferredName)
-        : undefined;
-
-      const finalVoice = preferred || bestVoice;
-      utterance.voice = finalVoice;
-      utterance.lang = finalVoice.lang || "vi-VN";
-      utterance.rate = 1;
-      utterance.pitch = 1;
-
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(utterance);
-    });
+    speakWithUnifiedRobotVoice(text, voiceName);
   }, []);
 
   const sendRobotQuestion = useCallback(async () => {
@@ -866,11 +991,11 @@ function BridgeMap({
       const data = await res.json();
       const answer = data?.answer ?? "";
       const finalAnswer =
-        answer || "Robot chưa nghe rõ. Con hỏi lại được không?";
+        answer || "Robot chưa nghe rõ. Bạn hỏi lại được không?";
       setRobotMsg(finalAnswer);
       speakRobotAnswer(finalAnswer);
     } catch {
-      const fallback = "Robot đang bận một chút, con thử lại nhé!";
+      const fallback = "Robot đang bận một chút, bạn thử lại nhé!";
       setRobotMsg(fallback);
       speakRobotAnswer(fallback);
     } finally {
@@ -923,22 +1048,7 @@ function BridgeMap({
       : `Số liền trước của ${questionRef} là bao nhiêu?`;
 
   return (
-    <div className="space-y-6">
-      <RobotCharacter
-        message={robotMsg}
-        size="sm"
-        onClick={() => setRobotChatOpen((v) => !v)}
-      />
-
-      {robotChatOpen && (
-        <RobotAskBar
-          value={robotInput}
-          onChange={setRobotInput}
-          onSend={() => void sendRobotQuestion()}
-          loading={robotLoading}
-        />
-      )}
-
+    <div className="relative space-y-6 pb-32 sm:pb-36">
       {/* Bridge scene */}
       <div className="relative bg-gradient-to-b from-sky-200 to-blue-300 rounded-3xl p-4 sm:p-6 shadow-inner min-h-[220px] overflow-hidden">
         {/* Water  */}
@@ -1036,6 +1146,27 @@ function BridgeMap({
           </div>
         </div>
       )}
+
+      <FloatingTitechAssistant
+        robotMsg={robotMsg}
+        robotChatOpen={robotChatOpen}
+        showSpeechBubble={false}
+        onToggle={() => {
+          const opening = !robotChatOpen;
+          setRobotChatOpen(opening);
+          if (opening) {
+            const supportPrompt =
+              "Đến Cây Cầu Số rồi! Bạn muốn tìm số liền trước hay liền sau?";
+            setRobotMsg(supportPrompt);
+            speakRobotAnswer(supportPrompt);
+          }
+        }}
+        value={robotInput}
+        onChange={setRobotInput}
+        onSend={() => void sendRobotQuestion()}
+        loading={robotLoading}
+        onClose={() => setRobotChatOpen(false)}
+      />
     </div>
   );
 }
@@ -1085,42 +1216,7 @@ function TrainMap({
   const sound = useSounds();
 
   const speakRobotAnswer = useCallback((text: string, voiceName?: string) => {
-    if (typeof window === "undefined" || !text) return;
-
-    // Chờ voices load xong (fix timing bug trên Vercel)
-    waitForVoices(3000).then(() => {
-      const bestVoice = typeof window !== "undefined" && "speechSynthesis" in window
-        ? findBestVietnameseVoice()
-        : null;
-
-      if (!bestVoice || typeof window === "undefined" || !("speechSynthesis" in window)) {
-        playGoogleTTSFallback(text);
-        return;
-      }
-
-      const utterance = new SpeechSynthesisUtterance(text);
-      const voices = window.speechSynthesis.getVoices();
-      let preferredName = voiceName || "";
-
-      try {
-        if (!preferredName) preferredName = localStorage.getItem("robotVoiceName") || "";
-      } catch {
-        // ignore
-      }
-
-      const preferred = preferredName
-        ? voices.find((v) => v.name === preferredName)
-        : undefined;
-
-      const finalVoice = preferred || bestVoice;
-      utterance.voice = finalVoice;
-      utterance.lang = finalVoice.lang || "vi-VN";
-      utterance.rate = 1;
-      utterance.pitch = 1;
-
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(utterance);
-    });
+    speakWithUnifiedRobotVoice(text, voiceName);
   }, []);
 
   const sendRobotQuestion = useCallback(async () => {
@@ -1146,11 +1242,11 @@ function TrainMap({
       const data = await res.json();
       const answer = data?.answer ?? "";
       const finalAnswer =
-        answer || "Robot chưa nghe rõ. Con hỏi lại được không?";
+        answer || "Robot chưa nghe rõ. Bạn hỏi lại được không?";
       setRobotMsg(finalAnswer);
       speakRobotAnswer(finalAnswer);
     } catch {
-      const fallback = "Robot đang bận một chút, con thử lại nhé!";
+      const fallback = "Robot đang bận một chút, bạn thử lại nhé!";
       setRobotMsg(fallback);
       speakRobotAnswer(fallback);
     } finally {
@@ -1235,24 +1331,7 @@ function TrainMap({
   }, [placed, puzzle.missingIndices, attempts, onComplete, remaining]);
 
   return (
-    <div className="space-y-6">
-      <RobotCharacter
-        message={robotMsg}
-        size="sm"
-        onClick={() => setRobotChatOpen((v) => !v)}
-      />
-
-      {robotChatOpen && (
-        <div className="mb-4">
-          <RobotAskBar
-            value={robotInput}
-            onChange={setRobotInput}
-            onSend={() => void sendRobotQuestion()}
-            loading={robotLoading}
-          />
-        </div>
-      )}
-
+    <div className="relative space-y-6 pb-32 sm:pb-36">
       <div className="bg-gradient-to-b from-amber-100 to-yellow-200 rounded-3xl p-4 sm:p-6 shadow-inner">
         <p className="text-center text-amber-700 font-extrabold text-sm mb-4">
           🚂 Đường ray tàu số
@@ -1381,6 +1460,27 @@ function TrainMap({
           {touchDragValue}
         </div>
       )}
+
+      <FloatingTitechAssistant
+        robotMsg={robotMsg}
+        robotChatOpen={robotChatOpen}
+        showSpeechBubble={false}
+        onToggle={() => {
+          const opening = !robotChatOpen;
+          setRobotChatOpen(opening);
+          if (opening) {
+            const supportPrompt =
+              "Đường ray tàu số sẵn sàng! Bạn cần Tí Tách nhắc quy luật nào?";
+            setRobotMsg(supportPrompt);
+            speakRobotAnswer(supportPrompt);
+          }
+        }}
+        value={robotInput}
+        onChange={setRobotInput}
+        onSend={() => void sendRobotQuestion()}
+        loading={robotLoading}
+        onClose={() => setRobotChatOpen(false)}
+      />
     </div>
   );
 }
@@ -1429,6 +1529,10 @@ function BalloonCityMap({
 
   const sound = useSounds();
 
+  const speakRobotAnswer = useCallback((text: string, voiceName?: string) => {
+    speakWithUnifiedRobotVoice(text, voiceName);
+  }, []);
+
   const sendRobotQuestion = useCallback(async () => {
     const trimmed = robotInput.trim();
     if (!trimmed || robotLoading) return;
@@ -1451,13 +1555,18 @@ function BalloonCityMap({
 
       const data = await res.json();
       const answer = data?.answer ?? "";
-      setRobotMsg(answer || "Robot chưa nghe rõ. Con hỏi lại được không?");
+      const finalAnswer =
+        answer || "Robot chưa nghe rõ. Bạn hỏi lại được không?";
+      setRobotMsg(finalAnswer);
+      speakRobotAnswer(finalAnswer);
     } catch {
-      setRobotMsg("Robot đang bận một chút, con thử lại nhé!");
+      const fallback = "Robot đang bận một chút, bạn thử lại nhé!";
+      setRobotMsg(fallback);
+      speakRobotAnswer(fallback);
     } finally {
       setRobotLoading(false);
     }
-  }, [robotInput, robotLoading]);
+  }, [robotInput, robotLoading, speakRobotAnswer]);
 
   const tryDrop = useCallback(
     (targetIdx: number, value: number) => {
@@ -1533,22 +1642,7 @@ function BalloonCityMap({
   }, [placed, puzzle.missingIndices, attempts, onComplete, remaining]);
 
   return (
-    <div className="space-y-6">
-      <RobotCharacter
-        message={robotMsg}
-        size="sm"
-        onClick={() => setRobotChatOpen((v) => !v)}
-      />
-
-      {robotChatOpen && (
-        <RobotAskBar
-          value={robotInput}
-          onChange={setRobotInput}
-          onSend={() => void sendRobotQuestion()}
-          loading={robotLoading}
-        />
-      )}
-
+    <div className="relative space-y-6 pb-32 sm:pb-36">
       {/* Floating balloons */}
       <div className="text-center">
         <p className="text-pink-700 font-extrabold text-sm mb-3">
@@ -1666,6 +1760,27 @@ function BalloonCityMap({
           {touchDragValue}
         </div>
       )}
+
+      <FloatingTitechAssistant
+        robotMsg={robotMsg}
+        robotChatOpen={robotChatOpen}
+        showSpeechBubble={false}
+        onToggle={() => {
+          const opening = !robotChatOpen;
+          setRobotChatOpen(opening);
+          if (opening) {
+            const supportPrompt =
+              "Thành phố bóng bay đây! Bạn cần gợi ý đặt bóng số nào không?";
+            setRobotMsg(supportPrompt);
+            speakRobotAnswer(supportPrompt);
+          }
+        }}
+        value={robotInput}
+        onChange={setRobotInput}
+        onSend={() => void sendRobotQuestion()}
+        loading={robotLoading}
+        onClose={() => setRobotChatOpen(false)}
+      />
     </div>
   );
 }
@@ -1708,6 +1823,10 @@ function RabbitRaceMap({
     sound.speak(initialInstruction);
   }, [difficulty, sound, initialInstruction]);
 
+  const speakRobotAnswer = useCallback((text: string, voiceName?: string) => {
+    speakWithUnifiedRobotVoice(text, voiceName);
+  }, []);
+
   const sendRobotQuestion = useCallback(async () => {
     const trimmed = robotInput.trim();
     if (!trimmed || robotLoading) return;
@@ -1730,13 +1849,18 @@ function RabbitRaceMap({
 
       const data = await res.json();
       const answer = data?.answer ?? "";
-      setRobotMsg(answer || "Robot chưa nghe rõ. Con hỏi lại được không?");
+      const finalAnswer =
+        answer || "Robot chưa nghe rõ. Bạn hỏi lại được không?";
+      setRobotMsg(finalAnswer);
+      speakRobotAnswer(finalAnswer);
     } catch {
-      setRobotMsg("Robot đang bận một chút, con thử lại nhé!");
+      const fallback = "Robot đang bận một chút, bạn thử lại nhé!";
+      setRobotMsg(fallback);
+      speakRobotAnswer(fallback);
     } finally {
       setRobotLoading(false);
     }
-  }, [robotInput, robotLoading]);
+  }, [robotInput, robotLoading, speakRobotAnswer]);
 
   const handleTapRabbit = (value: number) => {
     if (checked) return;
@@ -1771,33 +1895,9 @@ function RabbitRaceMap({
   };
 
   return (
-    <div className="space-y-6">
-      <RobotCharacter
-        message={robotMsg}
-        size="sm"
-        onClick={() => setRobotChatOpen((v) => !v)}
-      />
-
-      {robotChatOpen && (
-        <RobotAskBar
-          value={robotInput}
-          onChange={setRobotInput}
-          onSend={() => void sendRobotQuestion()}
-          loading={robotLoading}
-        />
-      )}
-
+    <div className="relative space-y-6 pb-32 sm:pb-36">
       {/* Race track */}
       <div className="bg-gradient-to-r from-violet-100 via-purple-50 to-fuchsia-100 rounded-3xl p-4 sm:p-6 shadow-inner relative overflow-hidden">
-        <div className="mb-4">
-          <RobotAskBar
-            value={robotInput}
-            onChange={setRobotInput}
-            onSend={() => void sendRobotQuestion()}
-            loading={robotLoading}
-          />
-        </div>
-
         {/* Track lines */}
         <div className="absolute top-0 left-0 right-0 bottom-0 flex flex-col justify-around opacity-10">
           {[0, 1, 2].map((i) => (
@@ -1898,6 +1998,27 @@ function RabbitRaceMap({
           </div>
         </div>
       )}
+
+      <FloatingTitechAssistant
+        robotMsg={robotMsg}
+        robotChatOpen={robotChatOpen}
+        showSpeechBubble={false}
+        onToggle={() => {
+          const opening = !robotChatOpen;
+          setRobotChatOpen(opening);
+          if (opening) {
+            const supportPrompt =
+              "Đến đường đua thỏ rồi! Bạn muốn xếp số từ bé đến lớn hay ngược lại?";
+            setRobotMsg(supportPrompt);
+            speakRobotAnswer(supportPrompt);
+          }
+        }}
+        value={robotInput}
+        onChange={setRobotInput}
+        onSend={() => void sendRobotQuestion()}
+        loading={robotLoading}
+        onClose={() => setRobotChatOpen(false)}
+      />
     </div>
   );
 }
@@ -1927,7 +2048,13 @@ function IntroScreen({
 
   const { activeChild } = useActiveChild();
 
-  const mapColors = ["from-emerald-400 to-green-500", "from-sky-400 to-blue-500", "from-amber-400 to-orange-500", "from-pink-400 to-rose-500", "from-violet-400 to-purple-500"];
+  const mapColors = [
+    "from-emerald-400 to-green-500",
+    "from-sky-400 to-blue-500",
+    "from-amber-400 to-orange-500",
+    "from-pink-400 to-rose-500",
+    "from-violet-400 to-purple-500",
+  ];
   const mapShadows = ["#15803d", "#1d4ed8", "#c2410c", "#be123c", "#7c3aed"];
 
   const greetingTemplate = useMemo(() => getRandomItem(ROBOT_GREETINGS), []);
@@ -2024,12 +2151,18 @@ function IntroScreen({
 
   return (
     <div className="flex flex-col items-center justify-center text-center px-3 sm:px-6 w-full gap-5 md:gap-6 py-4 max-w-6xl mx-auto">
-
       {/* ── Robot + Speech ── */}
       <div className="flex items-end gap-3 md:gap-4 w-full justify-center">
         <div className="relative shrink-0">
           <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 lg:w-36 lg:h-36 rounded-2xl overflow-hidden border-4 border-white shadow-lg bg-sky-50">
-            <video src="/videos/VideoRobotHoatDong.mp4" autoPlay muted loop playsInline className="w-full h-full object-cover" />
+            <video
+              src="/videos/VideoRobotHoatDong.mp4"
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="w-full h-full object-cover"
+            />
           </div>
           <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[9px] sm:text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-md whitespace-nowrap border-2 border-white">
             Tí Tách 🤖
@@ -2040,7 +2173,10 @@ function IntroScreen({
           <div className="relative bg-white rounded-2xl rounded-bl-sm shadow-md px-4 py-3 border border-sky-100">
             <p className="text-sm sm:text-base font-bold text-slate-600 leading-snug flex items-start gap-2">
               {isSpeaking && voiceOn && (
-                <span className="flex items-end gap-0.5 h-3 shrink-0 mt-1" aria-hidden>
+                <span
+                  className="flex items-end gap-0.5 h-3 shrink-0 mt-1"
+                  aria-hidden
+                >
                   {[0, 1, 2, 3].map((j) => (
                     <span
                       key={j}
@@ -2055,7 +2191,9 @@ function IntroScreen({
               )}
               <span className="flex-1 text-left">
                 {bubbleDisplayed}
-                {bubbleDisplayed.length < bubbleFullText.length && <TypeCursor />}
+                {bubbleDisplayed.length < bubbleFullText.length && (
+                  <TypeCursor />
+                )}
               </span>
             </p>
           </div>
@@ -2078,9 +2216,10 @@ function IntroScreen({
           ) : (
             <p className="text-slate-700 font-extrabold text-sm sm:text-base md:text-lg leading-relaxed">
               {storyDisplayed}
-              {bubbleTypingDone && storyDisplayed.length < INTRO_STORY_DISPLAY.length && (
-                <TypeCursor />
-              )}
+              {bubbleTypingDone &&
+                storyDisplayed.length < INTRO_STORY_DISPLAY.length && (
+                  <TypeCursor />
+                )}
             </p>
           )}
         </div>
@@ -2092,15 +2231,21 @@ function IntroScreen({
           <div
             key={map.id}
             className="group flex flex-col items-center gap-1.5 w-[84px] sm:w-[92px] md:w-[104px] lg:w-[112px] cursor-default"
-            style={{ animation: `fade-in-up 0.4s ease-out ${index * 0.08}s both` }}
+            style={{
+              animation: `fade-in-up 0.4s ease-out ${index * 0.08}s both`,
+            }}
           >
             <div
               className={`w-14 h-14 sm:w-16 sm:h-16 md:w-[4.25rem] md:h-[4.25rem] lg:w-[4.5rem] lg:h-[4.5rem] rounded-xl bg-gradient-to-br ${mapColors[index]} flex items-center justify-center text-2xl sm:text-3xl md:text-4xl border-[3px] border-white group-hover:scale-110 group-hover:-rotate-6 transition-all duration-300`}
-              style={{ boxShadow: `0 3px 0 ${mapShadows[index]}, 0 5px 12px rgba(0,0,0,0.12)` }}
+              style={{
+                boxShadow: `0 3px 0 ${mapShadows[index]}, 0 5px 12px rgba(0,0,0,0.12)`,
+              }}
             >
               {map.emoji}
             </div>
-            <p className="text-[10px] sm:text-[11px] md:text-xs font-black text-slate-600 leading-tight text-center">{map.name}</p>
+            <p className="text-[10px] sm:text-[11px] md:text-xs font-black text-slate-600 leading-tight text-center">
+              {map.name}
+            </p>
           </div>
         ))}
       </div>
@@ -2397,7 +2542,7 @@ function MapProgressBar({
 // MAIN GAME COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const ROUNDS_PER_MAP: Record<number, number> = { 1: 2, 2: 2, 3: 3, 4: 3, 5: 3 };
+const ROUNDS_PER_MAP: Record<number, number> = { 1: 1, 2: 2, 3: 3, 4: 3, 5: 3 };
 
 export function NumberSequenceGame() {
   const navigate = useNavigate();
@@ -2421,7 +2566,9 @@ export function NumberSequenceGame() {
   const [showPinGate, setShowPinGate] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   // State to track if we're asking for PIN specifically to exit fullscreen
-  const [pinActionTarget, setPinActionTarget] = useState<"menu" | "fullscreen" | null>(null);
+  const [pinActionTarget, setPinActionTarget] = useState<
+    "menu" | "fullscreen" | null
+  >(null);
   const gameContainerRef = useRef<HTMLDivElement>(null);
 
   const totalStars = Object.values(completedMaps).reduce((a, b) => a + b, 0);
@@ -2482,7 +2629,11 @@ export function NumberSequenceGame() {
 
       // If the browser forced an exit (e.g. user pressed ESC) while playing
       // and we didn't explicitly authorize it via PIN success (pinActionTarget is null)
-      if (!currentlyFullscreen && gameState === "playing" && pinActionTarget === null) {
+      if (
+        !currentlyFullscreen &&
+        gameState === "playing" &&
+        pinActionTarget === null
+      ) {
         // We immediately show the PIN gate
         setPinActionTarget("fullscreen");
         setShowPinGate(true);
@@ -2492,7 +2643,11 @@ export function NumberSequenceGame() {
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && gameState === "playing" && document.fullscreenElement) {
+      if (
+        e.key === "Escape" &&
+        gameState === "playing" &&
+        document.fullscreenElement
+      ) {
         e.preventDefault();
         e.stopPropagation();
       }
@@ -2501,7 +2656,7 @@ export function NumberSequenceGame() {
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     // Use capture phase to intercept before native browser handlers if possible
     window.addEventListener("keydown", handleKeyDown, { capture: true });
-    
+
     return () => {
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
       window.removeEventListener("keydown", handleKeyDown, { capture: true });
@@ -2523,7 +2678,7 @@ export function NumberSequenceGame() {
 
   const handlePinSuccess = () => {
     setShowPinGate(false);
-    
+
     if (pinActionTarget === "menu") {
       if (document.fullscreenElement) {
         if ("keyboard" in navigator && (navigator as any).keyboard?.unlock) {
@@ -2540,7 +2695,7 @@ export function NumberSequenceGame() {
         document.exitFullscreen().catch(console.error);
       }
     }
-    
+
     setPinActionTarget(null);
   };
 
@@ -2627,7 +2782,11 @@ export function NumberSequenceGame() {
     setRoundStars([]);
     setMapKey((k) => k + 1);
     sound.click();
-    sound.introVoice();
+    if (typeof window !== "undefined") {
+      window.setTimeout(() => {
+        sound.introVoice();
+      }, 140);
+    }
   };
 
   const handleRestart = () => {
@@ -2655,7 +2814,10 @@ export function NumberSequenceGame() {
 
   return (
     <GameSoundContext.Provider value={sound}>
-      <div ref={gameContainerRef} className="min-h-screen relative overflow-hidden flex flex-col">
+      <div
+        ref={gameContainerRef}
+        className="min-h-screen relative overflow-hidden flex flex-col"
+      >
         {/* Background Base */}
         <div
           className={`absolute inset-0 bg-gradient-to-br ${
@@ -2664,13 +2826,19 @@ export function NumberSequenceGame() {
               : "from-sky-200 via-indigo-100 to-emerald-100"
           } transition-all duration-700`}
         />
-        
+
         {/* Ambient light blobs (Intro only) */}
         {gameState === "intro" && (
           <>
             <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-pink-300/30 rounded-full blur-[80px] animate-pulse-slow mix-blend-multiply pointer-events-none" />
-            <div className="absolute top-[20%] right-[-5%] w-[35%] h-[45%] bg-amber-300/30 rounded-full blur-[80px] animate-pulse-slow mix-blend-multiply pointer-events-none" style={{ animationDelay: '2s' }} />
-            <div className="absolute bottom-[-10%] left-[20%] w-[50%] h-[40%] bg-blue-300/30 rounded-full blur-[100px] animate-pulse-slow mix-blend-multiply pointer-events-none" style={{ animationDelay: '1s' }} />
+            <div
+              className="absolute top-[20%] right-[-5%] w-[35%] h-[45%] bg-amber-300/30 rounded-full blur-[80px] animate-pulse-slow mix-blend-multiply pointer-events-none"
+              style={{ animationDelay: "2s" }}
+            />
+            <div
+              className="absolute bottom-[-10%] left-[20%] w-[50%] h-[40%] bg-blue-300/30 rounded-full blur-[100px] animate-pulse-slow mix-blend-multiply pointer-events-none"
+              style={{ animationDelay: "1s" }}
+            />
           </>
         )}
 
@@ -2688,7 +2856,7 @@ export function NumberSequenceGame() {
           className="absolute bottom-1/4 left-5 text-3xl animate-float-slow opacity-30 pointer-events-none drop-shadow-sm"
           style={{ animationDelay: "2.5s" }}
         >
-           ☁️
+          ☁️
         </div>
         <div
           className="absolute top-10 right-1/3 text-3xl animate-float-slow opacity-50 pointer-events-none drop-shadow-sm"
@@ -2802,123 +2970,122 @@ export function NumberSequenceGame() {
               <IntroScreen onStart={handleStart} voiceOn={voiceOn} />
             )}
 
-          {gameState === "finished" && (
-            <FinalVictoryScreen
-              totalStars={totalStars}
-              mapStars={completedMaps}
-              onRestart={handleRestart}
-              onBack={() => {
-                sound.click();
-                navigate("/student");
-              }}
-              onNextLesson={() => {
-                sound.click();
-                navigate("/student/quiz/math2-b2");
-              }}
-            />
-          )}
-
-          {gameState === "playing" && (
-            <>
-              <MapProgressBar
-                activeMap={activeMap}
-                completedMaps={completedMaps}
+            {gameState === "finished" && (
+              <FinalVictoryScreen
+                totalStars={totalStars}
+                mapStars={completedMaps}
+                onRestart={handleRestart}
+                onBack={() => {
+                  sound.click();
+                  navigate("/student");
+                }}
+                onNextLesson={() => {
+                  sound.click();
+                  navigate("/student/quiz/math2-b2");
+                }}
               />
+            )}
 
-              <div className="bg-white/40 backdrop-blur-sm rounded-3xl shadow-lg border-2 border-white/60 p-4 sm:p-6">
-                {activeMap === 1 && (
-                  <AppleGardenMap
-                    key={mapKey}
-                    onComplete={handleMapComplete}
-                    difficulty={difficulty}
-                    initialInstruction="Kéo quả táo vào ô trống trên tia số nhé! 🍎"
-                  />
-                )}
-                {activeMap === 2 && (
-                  <BridgeMap
-                    key={mapKey}
-                    onComplete={handleMapComplete}
-                    difficulty={difficulty}
-                    initialInstruction="Tìm số liền trước hoặc liền sau để giúp robot nhảy qua cầu nhé! 🌉"
-                  />
-                )}
-                {activeMap === 3 && (
-                  <TrainMap
-                    key={mapKey}
-                    onComplete={handleMapComplete}
-                    difficulty={difficulty}
-                    initialInstruction="Kéo toa tàu vào đúng vị trí trên đường ray nhé! 🚂"
-                  />
-                )}
-                {activeMap === 4 && (
-                  <BalloonCityMap
-                    key={mapKey}
-                    onComplete={handleMapComplete}
-                    difficulty={difficulty}
-                    initialInstruction="Bắt bóng bay và kéo về đúng ô trống! 🎈"
-                  />
-                )}
-                {activeMap === 5 && (
-                  <RabbitRaceMap
-                    key={mapKey}
-                    onComplete={handleMapComplete}
-                    difficulty={difficulty}
-                    initialInstruction="Sắp xếp các bạn thỏ theo thứ tự từ bé đến lớn! 🐰"
-                  />
-                )}
-              </div>
-            </>
-          )}
+            {gameState === "playing" && (
+              <>
+                <MapProgressBar
+                  activeMap={activeMap}
+                  completedMaps={completedMaps}
+                />
 
-          {/* Victory modal */}
-          {showVictory && (
-            <VictoryModal
-              stars={lastStars}
-              onNext={handleNextMap}
-              onReplay={handleReplay}
-              message={
-                lastStars === 3
-                  ? "Tuyệt vời! Bạn đạt 3 sao! ⭐⭐⭐"
-                  : lastStars === 2
-                    ? "Giỏi lắm! Thử lại để đạt 3 sao nhé!"
-                    : "Hoàn thành rồi! Cố gắng thêm nhé!"
-              }
-              isLastMap={activeMap === MAPS.length}
-            />
-          )}
+                <div className="bg-white/40 backdrop-blur-sm rounded-3xl shadow-lg border-2 border-white/60 p-4 sm:p-6">
+                  {activeMap === 1 && (
+                    <AppleGardenMap
+                      key={mapKey}
+                      onComplete={handleMapComplete}
+                      difficulty={difficulty}
+                      initialInstruction="Kéo quả táo vào ô trống trên tia số nhé! 🍎"
+                    />
+                  )}
+                  {activeMap === 2 && (
+                    <BridgeMap
+                      key={mapKey}
+                      onComplete={handleMapComplete}
+                      difficulty={difficulty}
+                      initialInstruction="Tìm số liền trước hoặc liền sau để giúp robot nhảy qua cầu nhé! 🌉"
+                    />
+                  )}
+                  {activeMap === 3 && (
+                    <TrainMap
+                      key={mapKey}
+                      onComplete={handleMapComplete}
+                      difficulty={difficulty}
+                      initialInstruction="Kéo toa tàu vào đúng vị trí trên đường ray nhé! 🚂"
+                    />
+                  )}
+                  {activeMap === 4 && (
+                    <BalloonCityMap
+                      key={mapKey}
+                      onComplete={handleMapComplete}
+                      difficulty={difficulty}
+                      initialInstruction="Bắt bóng bay và kéo về đúng ô trống! 🎈"
+                    />
+                  )}
+                  {activeMap === 5 && (
+                    <RabbitRaceMap
+                      key={mapKey}
+                      onComplete={handleMapComplete}
+                      difficulty={difficulty}
+                      initialInstruction="Sắp xếp các bạn thỏ theo thứ tự từ bé đến lớn! 🐰"
+                    />
+                  )}
+                </div>
+              </>
+            )}
 
-          {/* Round transition overlay */}
-          {showRoundTransition && (
-            <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/20 backdrop-blur-sm">
-              <div className="bg-white rounded-3xl shadow-2xl p-8 text-center animate-kids-bounce-in">
-                <div className="text-5xl mb-3">🎉</div>
-                <h3 className="text-xl font-extrabold text-emerald-600 mb-1">
-                  Lượt {currentRound}/{totalRounds} hoàn thành!
-                </h3>
-                <p className="text-gray-500 font-bold text-sm">
-                  Chuẩn bị lượt tiếp theo...
-                </p>
-                <div className="flex justify-center gap-1 mt-2">
-                  {roundStars.map((s, i) => (
-                    <span key={`rs-${i}`} className="text-lg">
-                      {s >= 1 ? "⭐" : "☆"}
-                      {s >= 2 ? "⭐" : "☆"}
-                      {s >= 3 ? "⭐" : "☆"}
-                    </span>
-                  ))}
+            {/* Victory modal */}
+            {showVictory && (
+              <VictoryModal
+                stars={lastStars}
+                onNext={handleNextMap}
+                onReplay={handleReplay}
+                message={
+                  lastStars === 3
+                    ? "Tuyệt vời! Bạn đạt 3 sao! ⭐⭐⭐"
+                    : lastStars === 2
+                      ? "Giỏi lắm! Thử lại để đạt 3 sao nhé!"
+                      : "Hoàn thành rồi! Cố gắng thêm nhé!"
+                }
+                isLastMap={activeMap === MAPS.length}
+              />
+            )}
+
+            {/* Round transition overlay */}
+            {showRoundTransition && (
+              <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/20 backdrop-blur-sm">
+                <div className="bg-white rounded-3xl shadow-2xl p-8 text-center animate-kids-bounce-in">
+                  <div className="text-5xl mb-3">🎉</div>
+                  <h3 className="text-xl font-extrabold text-emerald-600 mb-1">
+                    Lượt {currentRound}/{totalRounds} hoàn thành!
+                  </h3>
+                  <p className="text-gray-500 font-bold text-sm">
+                    Chuẩn bị lượt tiếp theo...
+                  </p>
+                  <div className="flex justify-center gap-1 mt-2">
+                    {roundStars.map((s, i) => (
+                      <span key={`rs-${i}`} className="text-lg">
+                        {s >= 1 ? "⭐" : "☆"}
+                        {s >= 2 ? "⭐" : "☆"}
+                        {s >= 3 ? "⭐" : "☆"}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* PIN Gate Modal */}
-          {showPinGate && (
-            <ParentGate
-              onSuccess={handlePinSuccess}
-              onClose={handlePinCancel}
-            />
-          )}
-
+            {/* PIN Gate Modal */}
+            {showPinGate && (
+              <ParentGate
+                onSuccess={handlePinSuccess}
+                onClose={handlePinCancel}
+              />
+            )}
           </div>
         </div>
       </div>

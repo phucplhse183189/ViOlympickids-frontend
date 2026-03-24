@@ -61,17 +61,35 @@ export const defaultVoiceConfig: VoiceConfig = {
 
 /** Cache Audio elements đã tạo để tái sử dụng */
 const audioCache = new Map<string, HTMLAudioElement>();
+type VoicePlayStatus = "played" | "interrupted" | "failed";
 
 /** Chọn ngẫu nhiên 1 phần tử từ mảng */
 function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+function isInterruptedPlaybackError(error: unknown): boolean {
+  if (error instanceof DOMException && error.name === "AbortError") return true;
+  if (!error || typeof error !== "object") return false;
+  const maybe = error as { name?: unknown; message?: unknown };
+  const name = typeof maybe.name === "string" ? maybe.name : "";
+  const message = typeof maybe.message === "string" ? maybe.message : "";
+  return (
+    name === "AbortError" ||
+    /interrupted by a call to pause|play\(\) request was interrupted/i.test(
+      message,
+    )
+  );
+}
+
 /** Phát file .mp3 nếu có. */
-function playVoiceLine(line: VoiceLine, options: { volume?: number }): void {
+async function playVoiceLine(
+  line: VoiceLine,
+  options: { volume?: number },
+): Promise<VoicePlayStatus> {
   const { volume = 0.85 } = options;
 
-  if (!line.audioUrl) return;
+  if (!line.audioUrl) return "failed";
 
   // Thử phát mp3
   let audio = audioCache.get(line.audioUrl);
@@ -83,11 +101,23 @@ function playVoiceLine(line: VoiceLine, options: { volume?: number }): void {
   audio.volume = volume;
   audio.currentTime = 0;
 
-  const playPromise = audio.play();
-  if (playPromise) {
-    playPromise.catch(() => {
-      // Không fallback sang AI voice.
-    });
+  try {
+    const playPromise = audio.play();
+    if (playPromise) {
+      await playPromise;
+    }
+    return "played";
+  } catch (error) {
+    if (isInterruptedPlaybackError(error)) {
+      // Expected case: audio bị dừng chủ động khi chuyển màn/cleanup.
+      return "interrupted";
+    }
+    console.warn(
+      "[VoiceManager] Voice file playback failed:",
+      line.audioUrl,
+      error,
+    );
+    return "failed";
   }
 }
 
@@ -117,7 +147,7 @@ export function playGoogleTTSFallback(text: string, onEnd?: () => void): void {
   // Dùng proxy api.allorigins.win để bypass lỗi NotSupportedError (do trình duyệt/adblock chặn direct request lên Google)
   const targetUrl = `https://translate.googleapis.com/translate_tts?client=gtx&ie=UTF-8&tl=vi&q=${encodeURIComponent(text)}`;
   const url = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
-  
+
   const audio = new Audio(url);
   currentFallbackAudio = audio;
 
@@ -140,7 +170,6 @@ export function playGoogleTTSFallback(text: string, onEnd?: () => void): void {
     handleEnd();
   });
 }
-
 
 // ─── React Hook ──────────────────────────────────────────────────────────────
 
@@ -192,8 +221,11 @@ if (typeof window !== "undefined" && "speechSynthesis" in window) {
   if (_initVoices.length > 0) {
     _markVoicesReady();
     // DEBUG: log voices có sẵn ngay lập tức
-    const vnInit = _initVoices.filter(v => v.lang.startsWith("vi"));
-    console.log(`[VoiceManager] Init: ${_initVoices.length} voices, ${vnInit.length} Vietnamese`, vnInit.map(v => `${v.name} (${v.lang})`));
+    const vnInit = _initVoices.filter((v) => v.lang.startsWith("vi"));
+    console.log(
+      `[VoiceManager] Init: ${_initVoices.length} voices, ${vnInit.length} Vietnamese`,
+      vnInit.map((v) => `${v.name} (${v.lang})`),
+    );
   }
   // Luôn lắng nghe event vì Chrome có thể load thêm voices sau
   window.speechSynthesis.addEventListener(
@@ -205,11 +237,19 @@ if (typeof window !== "undefined" && "speechSynthesis" in window) {
       _markVoicesReady();
       // DEBUG: log voices khi voiceschanged event được phát
       const allVoices = window.speechSynthesis.getVoices();
-      const vnVoices = allVoices.filter(v => v.lang.startsWith("vi"));
-      console.log(`[VoiceManager] voiceschanged: ${allVoices.length} voices, ${vnVoices.length} Vietnamese`, vnVoices.map(v => `${v.name} (${v.lang})`));
+      const vnVoices = allVoices.filter((v) => v.lang.startsWith("vi"));
+      console.log(
+        `[VoiceManager] voiceschanged: ${allVoices.length} voices, ${vnVoices.length} Vietnamese`,
+        vnVoices.map((v) => `${v.name} (${v.lang})`),
+      );
       if (vnVoices.length === 0) {
-        console.warn("[VoiceManager] ⚠️ KHÔNG TÌM THẤY GIỌNG TIẾNG VIỆT! Voice sẽ fallback sang giọng mặc định (English).");
-        console.log("[VoiceManager] Tất cả voices:", allVoices.map(v => `${v.name} (${v.lang})`));
+        console.warn(
+          "[VoiceManager] ⚠️ KHÔNG TÌM THẤY GIỌNG TIẾNG VIỆT! Voice sẽ fallback sang giọng mặc định (English).",
+        );
+        console.log(
+          "[VoiceManager] Tất cả voices:",
+          allVoices.map((v) => `${v.name} (${v.lang})`),
+        );
       }
     },
     { once: false },
@@ -222,7 +262,8 @@ if (typeof window !== "undefined" && "speechSynthesis" in window) {
  */
 export function waitForVoices(timeoutMs = 3000): Promise<void> {
   if (_voicesAreReady) return Promise.resolve();
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return Promise.resolve();
+  if (typeof window === "undefined" || !("speechSynthesis" in window))
+    return Promise.resolve();
   return Promise.race([
     _voicesReadyPromise,
     new Promise<void>((r) => setTimeout(r, timeoutMs)),
@@ -231,19 +272,20 @@ export function waitForVoices(timeoutMs = 3000): Promise<void> {
 
 export function findBestVietnameseVoice(): SpeechSynthesisVoice | null {
   if (voicesLoaded && cachedBestVoice) return cachedBestVoice;
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return null;
+  if (typeof window === "undefined" || !("speechSynthesis" in window))
+    return null;
 
   const voices = window.speechSynthesis.getVoices();
   if (voices.length === 0) return null;
 
   voicesLoaded = true;
   const vnVoices = voices.filter(
-    (v) => v.lang === "vi-VN" || v.lang.startsWith("vi")
+    (v) => v.lang === "vi-VN" || v.lang.startsWith("vi"),
   );
 
   // Ưu tiên giọng nữ (thường trong trẻo, dễ thương hơn cho trẻ con)
-  const femaleVoice = vnVoices.find(
-    (v) => /female|nữ|woman|girl/i.test(v.name)
+  const femaleVoice = vnVoices.find((v) =>
+    /female|nữ|woman|girl/i.test(v.name),
   );
   if (femaleVoice) {
     cachedBestVoice = femaleVoice;
@@ -271,7 +313,9 @@ export function configureKidVietnameseUtterance(
   utterance.volume = 1.0;
 }
 
-export function useVoiceManager(config: VoiceConfig = defaultVoiceConfig): VoiceManagerAPI {
+export function useVoiceManager(
+  config: VoiceConfig = defaultVoiceConfig,
+): VoiceManagerAPI {
   const enabledRef = useRef(true);
   const configRef = useRef(config);
   configRef.current = config;
@@ -293,7 +337,10 @@ export function useVoiceManager(config: VoiceConfig = defaultVoiceConfig): Voice
     };
     window.speechSynthesis.addEventListener("voiceschanged", onVoicesChanged);
     return () => {
-      window.speechSynthesis.removeEventListener("voiceschanged", onVoicesChanged);
+      window.speechSynthesis.removeEventListener(
+        "voiceschanged",
+        onVoicesChanged,
+      );
     };
   }, []);
 
@@ -304,20 +351,21 @@ export function useVoiceManager(config: VoiceConfig = defaultVoiceConfig): Voice
     };
   }, []);
 
-  const playEvent = useCallback(
-    (event: keyof VoiceConfig): string => {
-      const lines = configRef.current[event];
-      const line = pickRandom(lines);
-      if (enabledRef.current) {
-        // Dừng audio/TTS cũ trước
-        stopAllAudio();
-        stopTTS();
-        playVoiceLine(line, {});
-      }
-      return line.text;
-    },
-    [],
-  );
+  const playEvent = useCallback((event: keyof VoiceConfig): string => {
+    const lines = configRef.current[event];
+    const line = pickRandom(lines);
+    if (enabledRef.current) {
+      // Dừng audio/TTS cũ trước
+      stopAllAudio();
+      stopTTS();
+      void playVoiceLine(line, {}).then((status) => {
+        if (status === "failed" && event === "intro" && line.text) {
+          playGoogleTTSFallback(line.text);
+        }
+      });
+    }
+    return line.text;
+  }, []);
 
   const playIntroVoice = useCallback(() => playEvent("intro"), [playEvent]);
   const playCorrectVoice = useCallback(() => playEvent("correct"), [playEvent]);
@@ -377,11 +425,16 @@ export function useVoiceManager(config: VoiceConfig = defaultVoiceConfig): Voice
       };
 
       // KIỂM TRA VOICE VIỆT NAM (NẾU CÓ)
-      const bestVoice = typeof window !== "undefined" && "speechSynthesis" in window 
-        ? findBestVietnameseVoice() 
-        : null;
+      const bestVoice =
+        typeof window !== "undefined" && "speechSynthesis" in window
+          ? findBestVietnameseVoice()
+          : null;
 
-      if (!bestVoice || typeof window === "undefined" || !("speechSynthesis" in window)) {
+      if (
+        !bestVoice ||
+        typeof window === "undefined" ||
+        !("speechSynthesis" in window)
+      ) {
         // FALLBACK GOOGLE TTS DO KHÔNG CÓ GIỌNG VIỆT HOẶC KHÔNG HỖ TRỢ
         console.log("[VoiceManager] Dùng Google TTS Fallback cho:", text);
         playGoogleTTSFallback(text, wrappedOnEnd);
@@ -399,7 +452,11 @@ export function useVoiceManager(config: VoiceConfig = defaultVoiceConfig): Voice
     };
 
     // Nếu voices đã sẵn sàng hoặc không hỗ trợ Web Speech → nói luôn
-    if (_voicesAreReady || typeof window === "undefined" || !("speechSynthesis" in window)) {
+    if (
+      _voicesAreReady ||
+      typeof window === "undefined" ||
+      !("speechSynthesis" in window)
+    ) {
       doSpeak();
     } else {
       waitForVoices(3000).then(doSpeak);

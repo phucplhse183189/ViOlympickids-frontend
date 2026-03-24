@@ -98,29 +98,18 @@ type Map1LoopState = {
 const MAP1_TOTAL_TASKS = 5;
 const MAP1_START_TIME = 55;
 const VI_FONT_STACK = '"Segoe UI", "Noto Sans", "Helvetica Neue", Arial, sans-serif';
-const MAP1_ASSET_BASE = "/assets/matific-pack/map2-dom/map1-neighbor";
-const MAP1_PREV_SLOT_ICON = `${MAP1_ASSET_BASE}/slot-prev-basket.svg`;
-const MAP1_NEXT_SLOT_ICON = `${MAP1_ASSET_BASE}/slot-next-basket.svg`;
-const MAP1_BG = `${MAP1_ASSET_BASE}/map1-bg-garden.svg`;
-const MAP1_TREE_BIG = `${MAP1_ASSET_BASE}/map1-tree-big.svg`;
-const MAP1_TREE_SMALL = `${MAP1_ASSET_BASE}/map1-tree-small.svg`;
-const MAP1_FENCE = `${MAP1_ASSET_BASE}/map1-fence.svg`;
-const MAP1_FLOWER_RED = `${MAP1_ASSET_BASE}/map1-flower-red.svg`;
-const MAP1_FLOWER_YELLOW = `${MAP1_ASSET_BASE}/map1-flower-yellow.svg`;
-const MAP1_BUTTERFLY = `${MAP1_ASSET_BASE}/map1-butterfly.svg`;
-const MAP1_SIGN_BOARD = `${MAP1_ASSET_BASE}/map1-sign-board.svg`;
-const MAP1_APPLE_RED = "/assets/matific-pack/map2-dom/map1-orchard/map1-token-apple-red.svg";
-const MAP1_APPLE_GREEN = "/assets/matific-pack/map2-dom/map1-orchard/map1-token-apple-green.svg";
-const MAP1_APPLE_GOLD = "/assets/matific-pack/map2-dom/map1-orchard/map1-token-apple-gold.svg";
-const MAP1_APPLE_PATHS = [MAP1_APPLE_RED, MAP1_APPLE_GREEN, MAP1_APPLE_GOLD];
+const MAP1_PREV_SLOT_ICON =
+  "/assets/matific-pack/map2-dom/map1-neighbor/slot-prev-basket.svg";
+const MAP1_NEXT_SLOT_ICON =
+  "/assets/matific-pack/map2-dom/map1-neighbor/slot-next-basket.svg";
 const MAP1_SLOTS: Map1Slot[] = [
-  { id: "slot-prev", kind: "prev", x: 0.28, y: 0.72, w: 0.22, h: 0.14 },
-  { id: "slot-next", kind: "next", x: 0.72, y: 0.72, w: 0.22, h: 0.14 },
+  { id: "slot-prev", kind: "prev", x: 0.3, y: 0.73, w: 0.2, h: 0.1 },
+  { id: "slot-next", kind: "next", x: 0.7, y: 0.73, w: 0.2, h: 0.1 },
 ];
 const MAP1_TOKEN_HOMES = [
-  { x: 0.14, y: 0.14 },
-  { x: 0.43, y: 0.10 },
-  { x: 0.72, y: 0.14 },
+  { x: 0.15, y: 0.16 },
+  { x: 0.44, y: 0.12 },
+  { x: 0.73, y: 0.16 },
 ];
 
 function shuffleArray<T>(arr: T[]) {
@@ -286,60 +275,39 @@ function drawMap1InteractiveLayer(
 
   if (task) {
     const anchorX = width * 0.5;
-    const anchorY = height * 0.48;
-    const anchorW = width * 0.18;
-    const anchorH = height * 0.18;
+    const anchorY = height * 0.5;
+    const anchorW = width * 0.2;
+    const anchorH = height * 0.15;
+    const anchorFill = ctx.createLinearGradient(
+      anchorX - anchorW / 2,
+      anchorY - anchorH / 2,
+      anchorX - anchorW / 2,
+      anchorY + anchorH / 2,
+    );
+    anchorFill.addColorStop(0, "rgba(53,139,219,0.95)");
+    anchorFill.addColorStop(1, "rgba(26,94,181,0.95)");
+    ctx.fillStyle = anchorFill;
+    ctx.strokeStyle = "rgba(190,243,255,0.9)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.roundRect(
+      anchorX - anchorW / 2,
+      anchorY - anchorH / 2,
+      anchorW,
+      anchorH,
+      18,
+    );
+    ctx.fill();
+    ctx.stroke();
 
-    // Try using sign-board SVG as anchor background
-    const signImg = images[MAP1_SIGN_BOARD];
-    if (signImg) {
-      // Draw the sign-board image centered
-      ctx.drawImage(
-        signImg,
-        anchorX - anchorW / 2,
-        anchorY - anchorH / 2,
-        anchorW,
-        anchorH,
-      );
-    } else {
-      // Fallback: woody panel
-      const anchorFill = ctx.createLinearGradient(
-        anchorX - anchorW / 2, anchorY - anchorH / 2,
-        anchorX - anchorW / 2, anchorY + anchorH / 2,
-      );
-      anchorFill.addColorStop(0, "rgba(212,165,90,0.95)");
-      anchorFill.addColorStop(1, "rgba(166,120,50,0.92)");
-      ctx.fillStyle = anchorFill;
-      ctx.strokeStyle = "rgba(123,90,52,0.9)";
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.roundRect(anchorX - anchorW / 2, anchorY - anchorH / 2, anchorW, anchorH, 18);
-      ctx.fill();
-      ctx.stroke();
-    }
-
-    // "Số mốc" label
-    ctx.fillStyle = "rgba(91,58,18,0.95)";
+    ctx.fillStyle = "rgba(255,255,255,0.95)";
     ctx.font = `700 ${Math.max(11, Math.floor(height * 0.024))}px ${VI_FONT_STACK}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("Số mốc", anchorX, anchorY - anchorH * 0.18);
+    ctx.fillText("Số mốc", anchorX, anchorY - anchorH * 0.22);
+    ctx.font = `900 ${Math.max(24, Math.floor(height * 0.058))}px ${VI_FONT_STACK}`;
+    ctx.fillText(String(task.anchor), anchorX, anchorY + anchorH * 0.18);
 
-    // Big anchor number with decorative circle
-    const numR = Math.max(22, anchorH * 0.28);
-    ctx.fillStyle = "rgba(255,255,255,0.92)";
-    ctx.beginPath();
-    ctx.arc(anchorX, anchorY + anchorH * 0.12, numR, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(91,58,18,0.3)";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    ctx.fillStyle = "rgba(73,45,11,0.98)";
-    ctx.font = `900 ${Math.max(24, Math.floor(numR * 1.5))}px ${VI_FONT_STACK}`;
-    ctx.fillText(String(task.anchor), anchorX, anchorY + anchorH * 0.14);
-
-    // Dashed arrow to target slot
     const targetSlot = MAP1_SLOTS.find((slot) => slot.id === requiredSlotId);
     if (targetSlot) {
       const toX = width * targetSlot.x;
@@ -349,7 +317,7 @@ function drawMap1InteractiveLayer(
       ctx.setLineDash([8, 8]);
       ctx.beginPath();
       ctx.moveTo(anchorX, anchorY + anchorH * 0.5);
-      ctx.quadraticCurveTo(width * 0.5, height * 0.68, toX, toY);
+      ctx.quadraticCurveTo(width * 0.5, height * 0.7, toX, toY);
       ctx.stroke();
       ctx.setLineDash([]);
     }
@@ -364,62 +332,53 @@ function drawMap1InteractiveLayer(
       requiredSlotId === slot.id && !loop.failed && !loop.completed;
     const pulse = 0.2 + 0.12 * (1 + Math.sin(t * 6));
 
-    // Draw the basket SVG as the full slot background
+    const fill = ctx.createLinearGradient(x, y, x, y + h);
+    if (isTarget) {
+      fill.addColorStop(0, `rgba(255,246,214,${0.8 + pulse * 0.1})`);
+      fill.addColorStop(1, `rgba(255,221,152,${0.72 + pulse * 0.12})`);
+    } else {
+      fill.addColorStop(0, "rgba(228,247,233,0.58)");
+      fill.addColorStop(1, "rgba(191,229,207,0.44)");
+    }
+
+    ctx.fillStyle = fill;
+    ctx.strokeStyle = isTarget
+      ? "rgba(255,160,34,0.98)"
+      : "rgba(209,125,35,0.65)";
+    ctx.lineWidth = isTarget ? 4.2 : 3;
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, 16);
+    ctx.fill();
+    ctx.stroke();
+
+    if (isTarget) {
+      ctx.strokeStyle = `rgba(255,214,120,${0.6 + pulse * 0.4})`;
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.roundRect(x - 5, y - 5, w + 10, h + 10, 20);
+      ctx.stroke();
+    }
+
     const slotIconPath =
       slot.kind === "prev" ? MAP1_PREV_SLOT_ICON : MAP1_NEXT_SLOT_ICON;
     const slotIcon = images[slotIconPath];
     if (slotIcon) {
-      // Draw basket image filling the entire slot
-      ctx.drawImage(slotIcon, x, y, w, h);
-    } else {
-      // Fallback: draw a rounded rect if image not loaded
-      const fill = ctx.createLinearGradient(x, y, x, y + h);
-      fill.addColorStop(0, "rgba(239,195,125,0.9)");
-      fill.addColorStop(1, "rgba(166,120,50,0.85)");
-      ctx.fillStyle = fill;
-      ctx.beginPath();
-      ctx.roundRect(x, y, w, h, 16);
-      ctx.fill();
+      const iconW = w * 0.24;
+      const iconH = h * 0.68;
+      ctx.drawImage(slotIcon, x + w * 0.08, y + h * 0.16, iconW, iconH);
     }
 
-    // Highlight border for target slot (pulsing glow)
-    if (isTarget) {
-      ctx.strokeStyle = `rgba(255,180,50,${0.7 + pulse * 0.3})`;
-      ctx.lineWidth = 4.5;
-      ctx.beginPath();
-      ctx.roundRect(x - 4, y - 4, w + 8, h + 8, 20);
-      ctx.stroke();
-
-      // Outer glow
-      ctx.strokeStyle = `rgba(255,214,120,${0.4 + pulse * 0.4})`;
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.roundRect(x - 9, y - 9, w + 18, h + 18, 24);
-      ctx.stroke();
-    }
-
-    // Label text on top of basket
-    ctx.fillStyle = "rgba(255,255,255,0.95)";
-    ctx.font = `800 ${Math.max(11, Math.floor(height * 0.028))}px ${VI_FONT_STACK}`;
+    ctx.fillStyle = "rgba(106,80,34,0.94)";
+    ctx.font = `800 ${Math.max(11, Math.floor(height * 0.026))}px ${VI_FONT_STACK}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    const labelBg = ctx.createLinearGradient(x + w * 0.2, y - h * 0.15, x + w * 0.8, y + h * 0.05);
-    labelBg.addColorStop(0, "rgba(74,139,74,0.92)");
-    labelBg.addColorStop(1, "rgba(58,115,58,0.88)");
-    const labelW = w * 0.7;
-    const labelH = h * 0.28;
-    const labelX = x + (w - labelW) / 2;
-    const labelY = y - labelH * 0.6;
-    ctx.fillStyle = labelBg;
-    ctx.beginPath();
-    ctx.roundRect(labelX, labelY, labelW, labelH, 8);
-    ctx.fill();
-    ctx.fillStyle = "rgba(255,255,255,0.98)";
     ctx.fillText(
-      slot.kind === "prev" ? "⬅ Số liền trước" : "Số liền sau ➡",
-      x + w / 2,
-      labelY + labelH / 2,
+      slot.kind === "prev" ? "Số liền trước" : "Số liền sau",
+      x + w * 0.64,
+      y + h * 0.34,
     );
+    ctx.font = `900 ${Math.max(18, Math.floor(height * 0.045))}px ${VI_FONT_STACK}`;
+    ctx.fillText(slot.kind === "prev" ? "<" : ">", x + w * 0.64, y + h * 0.71);
   });
 
   const tokens = [...loop.tokens].sort((a, b) => a.z - b.z);
@@ -429,75 +388,58 @@ function drawMap1InteractiveLayer(
   const drawNumberToken = (token: Map1TokenState, idx: number) => {
     const x = token.x * width;
     const baseY = token.y * height;
-    const isDragging = dragged && dragged.id === token.id;
-    const bob = isDragging ? 0 : Math.sin(t * 2.2 + idx) * 6;
-    const scale = isDragging ? 1.08 : 1;
+    const bob =
+      dragged && dragged.id === token.id ? 0 : Math.sin(t * 2.2 + idx) * 6;
     const y = baseY + bob;
-    const w = token.w * width * scale;
-    const h = token.h * height * scale;
-    const drawX = isDragging ? x - (w - token.w * width) / 2 : x;
-    const drawY = isDragging ? y - (h - token.h * height) / 2 : y;
+    const w = token.w * width;
+    const h = token.h * height;
 
-    // Shadow
-    const shadowY = drawY + h * 0.92;
-    const shadowW = w * 0.6;
+    const shadowY = y + h * 0.9;
+    const shadowW = w * 0.62;
     const shadowH = h * 0.1;
     const g = ctx.createRadialGradient(
-      drawX + w / 2, shadowY, shadowW * 0.1,
-      drawX + w / 2, shadowY, shadowW,
+      x + w / 2,
+      shadowY,
+      shadowW * 0.1,
+      x + w / 2,
+      shadowY,
+      shadowW,
     );
-    g.addColorStop(0, "rgba(20,60,20,0.3)");
+    g.addColorStop(0, "rgba(20,60,20,0.25)");
     g.addColorStop(1, "rgba(20,60,20,0)");
     ctx.fillStyle = g;
     ctx.beginPath();
-    ctx.ellipse(drawX + w / 2, shadowY, shadowW, shadowH, 0, 0, Math.PI * 2);
+    ctx.ellipse(x + w / 2, shadowY, shadowW, shadowH, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Try to draw apple SVG image as token background
-    const appleImg = images[MAP1_APPLE_PATHS[idx % MAP1_APPLE_PATHS.length]];
-    if (appleImg) {
-      ctx.drawImage(appleImg, drawX, drawY, w, h * 0.85);
-    } else {
-      // Fallback: draw colored card
-      const cardFill = ctx.createLinearGradient(drawX, drawY, drawX, drawY + h);
-      cardFill.addColorStop(0, `hsla(${token.hue}, 96%, 74%, 0.95)`);
-      cardFill.addColorStop(1, `hsla(${token.hue + 18}, 90%, 58%, 0.96)`);
-      ctx.fillStyle = cardFill;
-      ctx.strokeStyle = "rgba(255,255,255,0.86)";
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.roundRect(drawX, drawY, w, h, 16);
-      ctx.fill();
-      ctx.stroke();
-    }
-
-    // Number badge circle on the apple
-    const badgeR = Math.max(16, w * 0.22);
-    const badgeX = drawX + w / 2;
-    const badgeY = drawY + h * 0.52;
-    ctx.fillStyle = "rgba(255,255,255,0.92)";
+    const cardFill = ctx.createLinearGradient(x, y, x, y + h);
+    cardFill.addColorStop(0, `hsla(${token.hue}, 96%, 74%, 0.95)`);
+    cardFill.addColorStop(1, `hsla(${token.hue + 18}, 90%, 58%, 0.96)`);
+    ctx.fillStyle = cardFill;
+    ctx.strokeStyle = "rgba(255,255,255,0.86)";
+    ctx.lineWidth = 2.5;
     ctx.beginPath();
-    ctx.arc(badgeX, badgeY, badgeR, 0, Math.PI * 2);
+    ctx.roundRect(x, y, w, h, 16);
     ctx.fill();
-    ctx.strokeStyle = "rgba(73,45,11,0.35)";
-    ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Number text
+    ctx.fillStyle = "rgba(255,255,255,0.24)";
+    ctx.beginPath();
+    ctx.roundRect(x + 4, y + 4, w - 8, h * 0.35, 12);
+    ctx.fill();
+
     ctx.fillStyle = "rgba(73,45,11,0.95)";
-    ctx.font = `900 ${Math.max(20, Math.floor(badgeR * 1.3))}px ${VI_FONT_STACK}`;
+    ctx.font = `900 ${Math.max(22, Math.floor(height * 0.062))}px ${VI_FONT_STACK}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(String(token.value), badgeX, badgeY + 1);
+    ctx.fillText(String(token.value), x + w / 2, y + h * 0.56);
 
-    // Dragging indicator glow
-    if (isDragging) {
-      ctx.strokeStyle = `rgba(255,230,100,${0.5 + Math.sin(t * 8) * 0.3})`;
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.roundRect(drawX - 4, drawY - 4, w + 8, h + 4, 18);
-      ctx.stroke();
-    }
+    ctx.strokeStyle = "rgba(76,47,8,0.28)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x + w * 0.18, y + h * 0.74);
+    ctx.lineTo(x + w * 0.82, y + h * 0.74);
+    ctx.stroke();
   };
 
   fixedTokens.forEach((token, idx) => drawNumberToken(token, idx));
@@ -532,22 +474,11 @@ function drawMap1InteractiveLayer(
 
 const SCENES: SceneDef[] = [
   {
-    title: "Map 1 — Vườn Số Kỳ Diệu",
-    subtitle: "Kéo đúng số vào bên trái hoặc bên phải của số mốc",
-    background: MAP1_BG,
-    props: [
-      { path: MAP1_TREE_BIG, x: 0.0, y: 0.28, w: 0.16, h: 0.40, z: 0 },
-      { path: MAP1_TREE_SMALL, x: 0.85, y: 0.34, w: 0.12, h: 0.30, z: 0 },
-      { path: MAP1_FENCE, x: 0.10, y: 0.58, w: 0.80, h: 0.08, z: 1 },
-      { path: MAP1_FLOWER_RED, x: 0.18, y: 0.60, w: 0.04, h: 0.08, bob: 3, z: 2 },
-      { path: MAP1_FLOWER_YELLOW, x: 0.32, y: 0.62, w: 0.035, h: 0.07, bob: 4, z: 2 },
-      { path: MAP1_FLOWER_RED, x: 0.58, y: 0.61, w: 0.038, h: 0.076, bob: 3, z: 2 },
-      { path: MAP1_FLOWER_YELLOW, x: 0.76, y: 0.60, w: 0.04, h: 0.08, bob: 4, z: 2 },
-      { path: MAP1_BUTTERFLY, x: 0.50, y: 0.08, w: 0.06, h: 0.05, bob: 12, z: 5 },
-      { path: MAP1_BUTTERFLY, x: 0.25, y: 0.14, w: 0.05, h: 0.04, bob: 10, z: 5 },
-      { path: MAP1_SIGN_BOARD, x: 0.42, y: 0.26, w: 0.10, h: 0.12, z: 1 },
-      { path: "/robot.png", x: 0.88, y: 0.55, w: 0.10, h: 0.20, bob: 5, z: 3 },
-    ],
+    title: "Map 1 - So Lien Truoc Lien Sau",
+    subtitle: "Keo dung so vao ben trai hoac ben phai cua so moc",
+    background:
+      "/assets/matific-pack/map2-dom/map2-bridge/map2-bg-river-bridge.svg",
+    props: [],
   },
   {
     title: "Map 2 - Cay Cau So",
@@ -1024,8 +955,6 @@ export function NumberSequenceCanvasPreview() {
     });
     unique.add(MAP1_PREV_SLOT_ICON);
     unique.add(MAP1_NEXT_SLOT_ICON);
-    unique.add(MAP1_SIGN_BOARD);
-    MAP1_APPLE_PATHS.forEach((p) => unique.add(p));
     unique.add("/assets/matific-pack/map2-dom/rewards/victory-medal-gold.svg");
     unique.add(
       "/assets/matific-pack/map2-dom/rewards/victory-certificate-kids.svg",
