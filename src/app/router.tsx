@@ -64,10 +64,14 @@ export function RouterProvider() {
         />
         <Route path="quiz/math2-b1" element={<Math2B1QuizPage />} />
         <Route path="result/math2-b1" element={<Math2ResultPage />} />
-        <Route path="game/number-sequence" element={<NumberSequenceGame />} />
+
+        {/* New 3D quiz route - Lesson 46 */}
         <Route path="game/math2-quiz-3d" element={<Math2Quiz3DPage />} />
+
+        {/* Lesson 2 */}
         <Route path="theory/math2-b2" element={<Math2B2TheoryPage />} />
         <Route path="game/math2-b2" element={<Math2B2GamePage />} />
+        <Route path="game/number-sequence" element={<NumberSequenceGame />} />
         <Route path="quiz/math2-b2" element={<Math2QuizPage />} />
         <Route path="result/math2-b2" element={<Math2ResultPage />} />
       </Route>

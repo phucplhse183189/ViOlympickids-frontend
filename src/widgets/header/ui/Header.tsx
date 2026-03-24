@@ -20,6 +20,9 @@ export function Header() {
     { href: "#contact", label: t.nav.contact },
   ];
 
+  const currentLangLabel = lang === "vi" ? "🇻🇳 Tiếng Việt" : "🌐 English";
+  const nextLangLabel = lang === "vi" ? "🌐 English" : "🇻🇳 Tiếng Việt";
+
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", onScroll);
@@ -36,30 +39,30 @@ export function Header() {
             : "bg-white/60 backdrop-blur-md border-b border-white/40"
         }`}
       >
-        <div className="w-full max-w-5xl mx-auto px-4 md:px-6 h-14 grid grid-cols-3 items-center gap-2">
+        <div className="w-full max-w-[1280px] mx-auto px-3 sm:px-4 lg:px-6 h-16 flex items-center justify-between gap-3 sm:gap-4">
           {/* ── Logo (trái) ── */}
           <a
             href="/"
-            className="flex items-center gap-2 shrink-0 group select-none justify-self-start"
+            className="flex items-center gap-2 sm:gap-2.5 shrink-0 group select-none"
           >
             <img
               src="/robot-head.png"
               alt="ViOlympicKids"
               className="w-9 h-9 object-contain drop-shadow-md group-hover:scale-110 transition-transform duration-300"
             />
-            <span className="text-base font-extrabold tracking-tight whitespace-nowrap">
+            <span className="text-[1.05rem] font-extrabold tracking-tight whitespace-nowrap leading-none">
               <span className="text-blue-500">ViOlympic</span>
               <span style={{ color: "var(--brand-primary)" }}>Kids</span>
             </span>
           </a>
 
           {/* ── Nav Pill (giữa) ── */}
-          <nav className="hidden lg:flex items-center justify-center p-0.5 rounded-xl bg-gray-100/70 backdrop-blur-sm border border-gray-200/60 gap-0 justify-self-center w-fit">
+          <nav className="hidden lg:flex items-center justify-center p-1 rounded-xl bg-gray-100/70 backdrop-blur-sm border border-gray-200/60 gap-0.5 flex-1 max-w-max mx-4 xl:mx-6">
             {navLinks.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
-                className="px-3.5 py-1.5 text-sm font-semibold text-gray-500 rounded-lg
+                className="px-3.5 xl:px-4 py-1.5 text-sm font-semibold text-gray-500 rounded-lg
                   hover:text-gray-900 hover:bg-white hover:shadow-sm
                   transition-all duration-200 whitespace-nowrap"
               >
@@ -67,13 +70,12 @@ export function Header() {
               </a>
             ))}
           </nav>
-          <div className="lg:hidden" />
 
           {/* ── Actions (phải) ── */}
-          <div className="flex items-center gap-2 justify-self-end mr-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {user ? (
               /* Avatar button (logged in) */
-              <div className="hidden md:flex items-center gap-2">
+              <div className="hidden md:flex items-center gap-2.5">
                 <span className="text-sm font-semibold text-gray-600 hidden lg:block">
                   {user.nickname}
                 </span>
@@ -89,7 +91,7 @@ export function Header() {
                 {/* Login */}
                 <a
                   href="/login"
-                  className="hidden md:inline-flex items-center px-3.5 py-2 rounded-lg text-sm font-semibold
+                  className="hidden md:inline-flex items-center h-10 px-4 rounded-lg text-sm font-semibold
                     text-gray-600 hover:text-gray-900 border border-gray-200 hover:border-gray-300
                     bg-white/80 hover:bg-white hover:shadow-sm transition-all duration-200"
                 >
@@ -99,7 +101,7 @@ export function Header() {
                 {/* Register CTA */}
                 <a
                   href="/register"
-                  className="hidden md:inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-white
+                  className="hidden md:inline-flex items-center gap-1.5 h-10 px-4.5 rounded-lg text-sm font-bold text-white
                     transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
                   style={{
                     background:
@@ -232,9 +234,9 @@ export function Header() {
                   text-gray-600 border border-gray-200 bg-white hover:bg-gray-50
                   transition-all duration-200 text-sm"
               >
-                <span>{lang === "vi" ? "🇻🇳 Tiếng Việt" : "🌐 English"}</span>
+                <span>{currentLangLabel}</span>
                 <span className="text-gray-400">→</span>
-                <span>{lang === "vi" ? "�🇳 Tiếng Việt" : "🌐 English"}</span>
+                <span>{nextLangLabel}</span>
               </button>
             </div>
           </div>

@@ -12,7 +12,11 @@ function getPin(): string {
   return localStorage.getItem(PARENT_PIN_KEY) || DEFAULT_PARENT_PIN;
 }
 
-export function ParentGate({ onSuccess, onClose, onInteract }: ParentGateProps) {
+export function ParentGate({
+  onSuccess,
+  onClose,
+  onInteract,
+}: ParentGateProps) {
   const [digits, setDigits] = useState(["", "", "", ""]);
   const [error, setError] = useState(false);
   const [shake, setShake] = useState(false);
@@ -22,40 +26,135 @@ export function ParentGate({ onSuccess, onClose, onInteract }: ParentGateProps) 
     inputRefs.current[0]?.focus();
   }, []);
 
-  function handleChange(index: number, value: string) {
-    onInteract?.();
-    if (!/^\d*$/.test(value)) return;
-    const newDigits = [...digits];
-    newDigits[index] = value.slice(-1);
-    setDigits(newDigits);
-    setError(false);
+  function validatePin(pinDigits: string[]) {
+    if (!pinDigits.every((d) => d !== "")) return;
+    const pin = pinDigits.join("");
+    if (pin === getPin()) {
+      onSuccess();
+      return;
+    }
+    setError(true);
+    setShake(true);
+    setTimeout(() => {
+      setShake(false);
+      setDigits(["", "", "", ""]);
+      inputRefs.current[0]?.focus();
+    }, 600);
+  }
 
-    if (value && index < 3) {
+  function setDigitAt(index: number, digit: string) {
+    setDigits((prev) => {
+      const next = [...prev];
+      next[index] = digit;
+      return next;
+    });
+    setError(false);
+    if (index < 3) {
       inputRefs.current[index + 1]?.focus();
     }
+  }
 
-    // Auto-submit when all 4 digits entered
-    if (newDigits.every((d) => d !== "")) {
-      const pin = newDigits.join("");
-      if (pin === getPin()) {
-        onSuccess();
-      } else {
-        setError(true);
-        setShake(true);
-        setTimeout(() => {
-          setShake(false);
-          setDigits(["", "", "", ""]);
-          inputRefs.current[0]?.focus();
-        }, 600);
-      }
+  function handleChange(index: number, value: string) {
+    onInteract?.();
+    const sanitized = value.replace(/\D/g, "");
+    if (!sanitized) {
+      setDigits((prev) => {
+        const next = [...prev];
+        next[index] = "";
+        return next;
+      });
+      setError(false);
+      return;
     }
+
+    // Support mobile autofill/paste-like input in a single box.
+    if (sanitized.length > 1) {
+      setDigits((prev) => {
+        const next = [...prev];
+        let cursor = index;
+        for (const ch of sanitized) {
+          if (cursor > 3) break;
+          next[cursor] = ch;
+          cursor += 1;
+        }
+        return next;
+      });
+      const nextFocus = Math.min(index + sanitized.length, 3);
+      inputRefs.current[nextFocus]?.focus();
+      setError(false);
+      return;
+    }
+
+    setDigitAt(index, sanitized);
+  }
+
+  useEffect(() => {
+    validatePin(digits);
+  }, [digits]);
+
+  function handlePaste(
+    index: number,
+    e: React.ClipboardEvent<HTMLInputElement>,
+  ) {
+    onInteract?.();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "");
+    if (!pasted) return;
+    e.preventDefault();
+
+    setDigits((prev) => {
+      const next = [...prev];
+      let cursor = index;
+      for (const ch of pasted) {
+        if (cursor > 3) break;
+        next[cursor] = ch;
+        cursor += 1;
+      }
+      return next;
+    });
+    setError(false);
+
+    const nextFocus = Math.min(index + pasted.length, 3);
+    inputRefs.current[nextFocus]?.focus();
   }
 
   function handleKeyDown(index: number, e: React.KeyboardEvent) {
     onInteract?.();
-    if (e.key === "Backspace" && !digits[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
+    if (/^\d$/.test(e.key)) {
+      e.preventDefault();
+      setDigitAt(index, e.key);
+      return;
     }
+
+    if (e.key === "Backspace") {
+      e.preventDefault();
+      setDigits((prev) => {
+        const next = [...prev];
+        if (next[index]) {
+          next[index] = "";
+          return next;
+        }
+        if (index > 0) {
+          next[index - 1] = "";
+          inputRefs.current[index - 1]?.focus();
+        }
+        return next;
+      });
+      setError(false);
+      return;
+    }
+
+    if (e.key === "ArrowLeft" && index > 0) {
+      e.preventDefault();
+      inputRefs.current[index - 1]?.focus();
+      return;
+    }
+
+    if (e.key === "ArrowRight" && index < 3) {
+      e.preventDefault();
+      inputRefs.current[index + 1]?.focus();
+      return;
+    }
+
     if (e.key === "Escape") onClose();
   }
 
@@ -104,9 +203,11 @@ export function ParentGate({ onSuccess, onClose, onInteract }: ParentGateProps) 
               }}
               type="text"
               inputMode="numeric"
+              autoComplete="one-time-code"
               maxLength={1}
               value={digit}
               onChange={(e) => handleChange(i, e.target.value)}
+              onPaste={(e) => handlePaste(i, e)}
               onKeyDown={(e) => handleKeyDown(i, e)}
               className={`w-14 h-14 text-center text-2xl font-extrabold rounded-2xl border-2 outline-none transition-all ${
                 error
