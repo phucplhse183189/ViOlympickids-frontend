@@ -1,4 +1,13 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+type VercelRequestLike = {
+  method?: string;
+  body?: unknown;
+  on: (event: "data" | "end" | "error", cb: (...args: any[]) => void) => void;
+};
+
+type VercelResponseLike = {
+  status: (code: number) => VercelResponseLike;
+  json: (payload: unknown) => void;
+};
 
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
@@ -12,19 +21,23 @@ type GeminiResponse = {
   }>;
 };
 
-async function readJson(req: VercelRequest): Promise<any> {
-  if (req.body && typeof req.body === "object") return req.body;
+async function readJson(req: VercelRequestLike): Promise<Record<string, unknown>> {
+  if (req.body && typeof req.body === "object") {
+    return req.body as Record<string, unknown>;
+  }
+
   const chunks: Buffer[] = [];
   await new Promise<void>((resolve, reject) => {
-    req.on("data", (chunk) => chunks.push(chunk));
+    req.on("data", (chunk: Buffer) => chunks.push(chunk));
     req.on("end", () => resolve());
     req.on("error", reject);
   });
+
   const raw = Buffer.concat(chunks).toString("utf-8");
-  return raw ? JSON.parse(raw) : {};
+  return raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: VercelRequestLike, res: VercelResponseLike) {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
     return;
