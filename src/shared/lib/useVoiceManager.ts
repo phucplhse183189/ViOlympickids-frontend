@@ -117,7 +117,7 @@ export interface VoiceManagerAPI {
   /** Phát 1 voice line tùy ý */
   playVoice: (event: keyof VoiceConfig) => string;
   /** Nói text tùy ý bằng TTS (giọng cute tiếng Việt) */
-  speakText: (text: string, onEnd?: () => void) => void;
+  speakText: (text: string, onEnd?: () => void, options?: { rate?: number; pitch?: number; volume?: number }) => void;
   /** Dừng tất cả giọng nói */
   stopVoice: () => void;
   /** Bật/tắt voice — trả về trạng thái mới */
@@ -172,7 +172,12 @@ export function useVoiceManager(config: VoiceConfig = defaultVoiceConfig): Voice
     return enabledRef.current;
   }, []);
 
-  const speakText = useCallback((text: string, onEnd?: () => void) => {
+  const speakText = useCallback(
+    (
+      text: string,
+      onEnd?: () => void,
+      options?: { rate?: number; pitch?: number; volume?: number },
+    ) => {
     if (!enabledRef.current || !("speechSynthesis" in window)) {
       if (onEnd) onEnd();
       return;
@@ -197,11 +202,11 @@ export function useVoiceManager(config: VoiceConfig = defaultVoiceConfig): Voice
 
     const utterance = new SpeechSynthesisUtterance(processedText);
     utterance.lang = "vi-VN";
-    
+
     // Playful, cartoonish voice settings
-    utterance.rate = 1.35;
-    utterance.pitch = 2.0;
-    utterance.volume = 1.0;
+    utterance.rate = options?.rate ?? 1.35;
+    utterance.pitch = options?.pitch ?? 2.0;
+    utterance.volume = options?.volume ?? 1.0;
 
     // Handle callbacks
     if (onEnd) {
@@ -210,7 +215,9 @@ export function useVoiceManager(config: VoiceConfig = defaultVoiceConfig): Voice
     }
 
     window.speechSynthesis.speak(utterance);
-  }, []);
+    },
+    [],
+  );
 
   const isEnabled = useCallback(() => enabledRef.current, []);
 

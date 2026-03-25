@@ -163,8 +163,8 @@ export function useGameSound(voiceConfig?: VoiceConfig) {
 
   /** Nói text tùy ý bằng TTS (giọng cute tiếng Việt) */
   const speak = useCallback(
-    (text: string, onEnd?: () => void) => {
-      voice.speakText(text, onEnd);
+    (text: string, onEnd?: () => void, options?: { rate?: number; pitch?: number; volume?: number }) => {
+      voice.speakText(text, onEnd, options);
     },
     [voice],
   );
