@@ -60,7 +60,14 @@ function useSounds(): GameSoundAPI {
 }
 
 const ROBOT_VOICE_STORAGE_KEY = "robotVoiceName";
-const LOCK_CHATBOX_TO_MAP_VOICE = true;
+const FPT_VOICE_OPTIONS = [
+  { id: "banmai", label: "Ban Mai (nữ)" },
+  { id: "lannhi", label: "Lan Nhi (nữ)" },
+  { id: "leminh", label: "Lê Minh (nam)" },
+  { id: "myan", label: "Mỹ An (nữ)" },
+  { id: "thuminh", label: "Thu Minh (nữ)" },
+  { id: "giahuy", label: "Gia Huy (nam)" },
+];
 let currentRobotTtsAudio: HTMLAudioElement | null = null;
 
 function readStoredRobotVoiceName(): string {
@@ -111,6 +118,12 @@ async function speakWithUnifiedRobotVoice(
 ): Promise<void> {
   if (typeof window === "undefined" || !text) return;
 
+  const storedVoice = readStoredRobotVoiceName();
+  const pickedVoice = voiceName || storedVoice || "banmai";
+  const fptVoice = FPT_VOICE_OPTIONS.some((v) => v.id === pickedVoice)
+    ? pickedVoice
+    : "banmai";
+
   // Ưu tiên server TTS để giọng ổn định trên Vercel
   try {
     const ttsRes = await fetch("/api/tts", {
@@ -118,7 +131,7 @@ async function speakWithUnifiedRobotVoice(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         text,
-        voice: "banmai",
+        voice: fptVoice,
         format: "mp3",
       }),
     });
@@ -204,7 +217,6 @@ function RobotAskBar({
   autoSendOnVoice?: boolean;
 }>) {
   const [listening, setListening] = useState(false);
-  const [voiceOptions, setVoiceOptions] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<string>("");
   const recognitionRef = useRef<any>(null);
 
@@ -223,53 +235,22 @@ function RobotAskBar({
           return "";
         }
       })()) ||
-    "";
-
-  const isVietnameseVoice = useCallback((voice: SpeechSynthesisVoice) => {
-    return (
-      /^vi\b/i.test(voice.lang) ||
-      /vietnamese|tiếng việt|viet/i.test(voice.name)
-    );
-  }, []);
+    "banmai";
 
   useEffect(() => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    if (typeof window === "undefined") return;
 
-    const loadVoices = () => {
-      const voices = window.speechSynthesis.getVoices();
-      const vietnameseVoices = voices.filter(isVietnameseVoice);
-      const mapVoice = pickUnifiedRobotVoice(voices);
-
-      if (LOCK_CHATBOX_TO_MAP_VOICE) {
-        setVoiceOptions(mapVoice ? [mapVoice] : voices.slice(0, 1));
-      } else {
-        setVoiceOptions(
-          vietnameseVoices.length > 0 ? vietnameseVoices : voices.slice(0, 1),
-        );
-      }
-
-      const pick = mapVoice || voices[0];
-      if (pick) {
-        setSelectedVoice(pick.name);
-        try {
-          localStorage.setItem(ROBOT_VOICE_STORAGE_KEY, pick.name);
-        } catch {
-          // ignore storage errors
-        }
-      }
-    };
-
-    loadVoices();
-    window.speechSynthesis.addEventListener("voiceschanged", loadVoices);
-    const retryShort = window.setTimeout(loadVoices, 400);
-    const retryLong = window.setTimeout(loadVoices, 1200);
-
-    return () => {
-      window.speechSynthesis.removeEventListener("voiceschanged", loadVoices);
-      window.clearTimeout(retryShort);
-      window.clearTimeout(retryLong);
-    };
-  }, [selectedVoice, isVietnameseVoice]);
+    try {
+      const stored = localStorage.getItem(ROBOT_VOICE_STORAGE_KEY) || "";
+      const validStored = FPT_VOICE_OPTIONS.some((v) => v.id === stored)
+        ? stored
+        : "banmai";
+      setSelectedVoice(validStored);
+      localStorage.setItem(ROBOT_VOICE_STORAGE_KEY, validStored);
+    } catch {
+      setSelectedVoice("banmai");
+    }
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -377,7 +358,6 @@ function RobotAskBar({
           <select
             value={resolvedVoiceName}
             onChange={(e) => {
-              if (LOCK_CHATBOX_TO_MAP_VOICE) return;
               const next = e.target.value;
               setSelectedVoice(next);
               try {
@@ -386,13 +366,11 @@ function RobotAskBar({
                 // ignore storage errors
               }
             }}
-            className="w-full min-w-0 appearance-none bg-white/85 text-xs sm:text-sm font-bold text-slate-600 border border-amber-200 rounded-full pl-3 pr-8 py-1.5 outline-none focus:ring-2 focus:ring-amber-200 truncate disabled:opacity-80 disabled:cursor-not-allowed"
-            disabled={LOCK_CHATBOX_TO_MAP_VOICE}
+            className="w-full min-w-0 appearance-none bg-white/85 text-xs sm:text-sm font-bold text-slate-600 border border-amber-200 rounded-full pl-3 pr-8 py-1.5 outline-none focus:ring-2 focus:ring-amber-200 truncate"
           >
-            {voiceOptions.length === 0 && <option value="">Mặc định</option>}
-            {voiceOptions.map((voice) => (
-              <option key={voice.name} value={voice.name}>
-                {voice.name} ({voice.lang})
+            {FPT_VOICE_OPTIONS.map((voice) => (
+              <option key={voice.id} value={voice.id}>
+                {voice.label}
               </option>
             ))}
           </select>
