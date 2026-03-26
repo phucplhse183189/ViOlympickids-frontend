@@ -179,10 +179,10 @@ export const MAPS: MapInfo[] = [
   },
   {
     id: 2,
-    name: "Cây Cầu Số",
-    emoji: "🌉",
-    description: "Nhảy qua bậc đá theo số liền sau",
-    bgGradient: "from-sky-300 via-blue-200 to-cyan-100",
+    name: "Tìm Kho Báu Trên Tia Số",
+    emoji: "💎",
+    description: "Tìm số đúng trên tia số để mở kho báu!",
+    bgGradient: "from-amber-300 via-yellow-200 to-orange-100",
     unlocked: true,
   },
   {
@@ -248,8 +248,8 @@ export const ROBOT_HINTS: Record<number, string[]> = {
     "Kéo quả táo vào ô trống tương ứng nhé!",
   ],
   2: [
-    "Số liền sau lớn hơn 1 đơn vị!",
-    "Số liền trước nhỏ hơn 1 đơn vị!",
+    "Hãy tìm kho báu! Số liền sau lớn hơn 1 đơn vị!",
+    "Số liền trước nhỏ hơn 1 đơn vị! Kho báu đang chờ!",
   ],
   3: [
     "Hãy tìm quy luật của dãy số!",

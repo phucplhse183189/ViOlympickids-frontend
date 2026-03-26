@@ -928,7 +928,7 @@ function AppleGardenMap({
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// MAP 2: CÂY CẦU SỐ — Robot nhảy qua bậc đá (số liền trước/sau)
+// MAP 2: TÌM KHO BÁU TRÊN TIA SỐ — Chọn số đúng trên tia số để mở kho báu
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function BridgeMap({
@@ -950,6 +950,7 @@ function BridgeMap({
   const [robotChatOpen, setRobotChatOpen] = useState(false);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [attempts, setAttempts] = useState(0);
+  const [showTreasure, setShowTreasure] = useState(false);
 
   useEffect(() => {
     const p = generateBridgePuzzle(difficulty);
@@ -959,6 +960,7 @@ function BridgeMap({
     setSelected(null);
     setIsCorrect(null);
     setAttempts(0);
+    setShowTreasure(false);
     setRobotMsg(initialInstruction);
   }, [difficulty, initialInstruction]);
 
@@ -1012,7 +1014,7 @@ function BridgeMap({
       setAnswered(true);
       const msg = sound.correctVoice();
       setRobotMsg(msg);
-      // Robot jumps across stones
+      // Explorer moves across number-line posts toward treasure
       let pos = 0;
       const jump = () => {
         pos++;
@@ -1020,6 +1022,7 @@ function BridgeMap({
         if (pos < puzzle.stones.length - 1) {
           setTimeout(jump, 320);
         } else {
+          setShowTreasure(true);
           const stars = attempts === 0 ? 3 : attempts <= 1 ? 2 : 1;
           setTimeout(() => onComplete(stars), 600);
         }
@@ -1048,101 +1051,172 @@ function BridgeMap({
       : `Số liền trước của ${questionRef} là bao nhiêu?`;
 
   return (
-    <div className="relative space-y-6 pb-32 sm:pb-36">
-      {/* Bridge scene */}
-      <div className="relative bg-gradient-to-b from-sky-200 to-blue-300 rounded-3xl p-4 sm:p-6 shadow-inner min-h-[220px] overflow-hidden">
-        {/* Water  */}
-        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-blue-500/60 to-blue-400/30 rounded-b-3xl" />
-        {/* Waves */}
-        <div className="absolute bottom-2 left-0 right-0 flex justify-around opacity-50">
-          {[0, 1, 2, 3, 4].map((i) => (
-            <span
-              key={i}
-              className="text-lg animate-float-slow"
-              style={{ animationDelay: `${i * 0.5}s` }}
-            >
-              〰️
-            </span>
-          ))}
-        </div>
+    <div className="relative space-y-5 pb-32 sm:pb-36">
+      {/* ── Adventure scene with background image ── */}
+      <div
+        className="relative rounded-[28px] overflow-hidden border-2 border-amber-700/30 shadow-[0_12px_32px_rgba(120,80,20,0.22)]"
+        style={{
+          backgroundImage: "url('/map2_bai2/bg_adventure.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        {/* Soft overlay for contrast */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-black/20 pointer-events-none" />
 
-        {/* Stones */}
-        <div className="relative flex items-end justify-center gap-2 sm:gap-3 pb-16 pt-10">
-          {puzzle.stones.map((num, idx) => {
-            const isMissing = idx === puzzle.missingIndex && !answered;
-            const isRobotHere = idx === robotPos;
+        <div className="relative z-10 px-3 py-4 sm:px-6 sm:py-5 min-h-[340px] sm:min-h-[400px] flex flex-col">
+          {/* ── Title sign image ── */}
+          <div className="flex justify-center mb-3">
+            <img
+              src="/map2_bai2/title_sign.png"
+              alt="Tìm Kho Báu Trên Tia Số!"
+              className="w-[60%] sm:w-[45%] max-w-[380px] object-contain drop-shadow-lg"
+            />
+          </div>
 
-            return (
-              <div
-                key={`stone-${idx}`}
-                className="flex flex-col items-center relative"
-              >
-                {/* Robot on stone */}
-                {isRobotHere && (
-                  <div className="absolute -top-14 z-20 robot-jump">
-                    <div className="w-11 h-11 bg-gradient-to-b from-sky-400 to-sky-500 rounded-xl border-3 border-sky-300 flex flex-col items-center justify-center shadow-lg">
-                      <div className="flex gap-1 text-white text-xs font-bold">
-                        <span>◕</span>
-                        <span>◕</span>
+          {/* ── Number-line with wooden sign posts ── */}
+          <div className="flex-1 flex items-center justify-center">
+            <div className="relative flex items-end justify-center gap-1.5 sm:gap-3 pb-4">
+              {/* Number-line wooden rail underneath posts */}
+              <div className="absolute bottom-6 left-4 right-4 h-3 sm:h-4 rounded-full bg-gradient-to-r from-amber-700 via-amber-600 to-amber-700 border border-amber-800/40 shadow-inner" />
+
+              {puzzle.stones.map((num, idx) => {
+                const isMissing = idx === puzzle.missingIndex && !answered;
+                const isRobotHere = idx === robotPos;
+                const isAnsweredSlot = answered && idx === puzzle.missingIndex;
+
+                return (
+                  <div
+                    key={`post-${idx}`}
+                    className="flex flex-col items-center relative z-10"
+                  >
+                    {/* Explorer marker on post */}
+                    {isRobotHere && (
+                      <div className="absolute -top-10 sm:-top-12 z-20 robot-jump">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-b from-amber-400 to-orange-500 border-2 border-amber-300 flex items-center justify-center shadow-lg">
+                          <span className="text-sm sm:text-base">🧭</span>
+                        </div>
                       </div>
-                      <span className="text-white text-[10px]">◡</span>
-                    </div>
-                    {/* Robot legs */}
-                    <div className="flex justify-center gap-1 -mt-0.5">
-                      <div className="w-2 h-3 bg-sky-600 rounded-b" />
-                      <div className="w-2 h-3 bg-sky-600 rounded-b" />
+                    )}
+
+                    {/* Wooden sign post */}
+                    <div
+                      className={`
+                        relative flex flex-col items-center transition-all duration-300
+                        ${isMissing ? "animate-pulse-slow" : ""}
+                      `}
+                    >
+                      {/* Sign head */}
+                      <div
+                        className={`
+                          w-11 h-9 sm:w-14 sm:h-11 rounded-md flex items-center justify-center
+                          font-extrabold text-base sm:text-xl transition-all duration-300 relative
+                          ${
+                            isMissing
+                              ? "bg-amber-200 border-2 border-dashed border-amber-500 text-amber-700 shadow-lg"
+                              : isAnsweredSlot
+                                ? "bg-emerald-400 border-2 border-emerald-300 text-white shadow-lg shadow-emerald-300/40"
+                                : "bg-gradient-to-b from-amber-600 to-amber-800 border-2 border-amber-900/40 text-white shadow-md"
+                          }
+                        `}
+                        style={
+                          !isMissing && !isAnsweredSlot
+                            ? {
+                                backgroundImage:
+                                  "linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 50%)",
+                              }
+                            : undefined
+                        }
+                      >
+                        {isMissing ? "❓" : num}
+                      </div>
+                      {/* Sign pole */}
+                      <div className="w-2 h-5 sm:h-7 bg-gradient-to-b from-amber-700 to-amber-900 rounded-b-sm" />
                     </div>
                   </div>
-                )}
+                );
+              })}
 
-                {/* Stone block */}
-                <div
+              {/* Treasure chest at the end of the number line */}
+              <div className="flex flex-col items-center relative z-10 ml-1 sm:ml-2">
+                <img
+                  src="/map2_bai2/treasure_chest.png"
+                  alt="Kho báu"
                   className={`
-                    w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center
-                    font-extrabold text-lg sm:text-xl transition-all duration-300 relative z-10
-                    ${
-                      isMissing
-                        ? "bg-amber-300 border-3 border-amber-400 text-amber-700 animate-pulse-slow shadow-lg"
-                        : answered && idx === puzzle.missingIndex
-                          ? "bg-green-400 border-3 border-green-300 text-white shadow-lg"
-                          : "bg-gradient-to-b from-stone-300 to-stone-400 border-3 border-stone-500 text-white shadow-md"
-                    }
+                    w-12 h-12 sm:w-16 sm:h-16 object-contain drop-shadow-lg transition-all duration-500
+                    ${showTreasure ? "scale-125 animate-kids-bounce-in" : "opacity-70 grayscale-[30%]"}
                   `}
-                >
-                  {isMissing ? "❓" : num}
-                </div>
+                />
               </div>
-            );
-          })}
+            </div>
+          </div>
+
+          {/* ── Jump arrow indicator (shows puzzle type) ── */}
+          {!answered && (
+            <div className="flex justify-center mt-1">
+              <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-full px-4 py-1.5 shadow-sm border border-amber-200">
+                <img
+                  src="/map2_bai2/jump_arrow.png"
+                  alt="Bước nhảy"
+                  className={`w-8 h-6 sm:w-10 sm:h-7 object-contain ${puzzle.type === "prev" ? "scale-x-[-1]" : ""}`}
+                />
+                <span className="text-xs sm:text-sm font-extrabold text-amber-800">
+                  {puzzle.type === "next" ? "Tìm số liền sau" : "Tìm số liền trước"}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Question & options */}
+      {/* ── Question & answer options ── */}
       {!answered && (
         <div className="text-center space-y-4">
-          <p className="font-extrabold text-sky-700 text-base sm:text-lg">
+          <p className="font-extrabold text-amber-800 text-base sm:text-lg drop-shadow-sm">
             {questionText}
           </p>
-          <div className="flex justify-center gap-4">
+          <div className="flex justify-center gap-3 sm:gap-4">
             {puzzle.options.map((opt) => (
               <button
                 key={`opt-${opt}`}
                 onClick={() => handleSelect(opt)}
                 className={`
-                  w-16 h-16 sm:w-18 sm:h-18 rounded-2xl font-extrabold text-2xl
-                  transition-all duration-200 shadow-md
+                  relative w-16 h-[72px] sm:w-20 sm:h-[84px] rounded-lg font-extrabold text-xl sm:text-2xl
+                  transition-all duration-200 shadow-lg flex flex-col items-center justify-center
                   ${
                     selected === opt && isCorrect === false
-                      ? "bg-red-400 text-white scale-90 animate-shake"
+                      ? "bg-red-400 text-white scale-90 animate-shake border-2 border-red-300"
                       : selected === opt && isCorrect === true
-                        ? "bg-green-400 text-white scale-110"
-                        : "bg-white text-gray-700 hover:bg-sky-50 hover:scale-105 active:scale-95 border-2 border-sky-200"
+                        ? "bg-emerald-400 text-white scale-110 border-2 border-emerald-300"
+                        : "bg-gradient-to-b from-amber-500 to-amber-700 text-white hover:from-amber-400 hover:to-amber-600 hover:scale-105 active:scale-95 border-2 border-amber-800/40"
                   }
                 `}
+                style={
+                  !(selected === opt)
+                    ? {
+                        backgroundImage:
+                          "linear-gradient(135deg, rgba(255,255,255,0.18) 0%, transparent 50%)",
+                      }
+                    : undefined
+                }
               >
-                {opt}
+                <span className="relative z-10">{opt}</span>
+                {/* Wooden sign pole */}
+                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-2.5 h-3 bg-amber-900 rounded-b-sm" />
               </button>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Answered: treasure found message */}
+      {answered && (
+        <div className="text-center animate-fade-in-down">
+          <div className="inline-flex items-center gap-2 bg-amber-50/90 backdrop-blur-sm rounded-full px-5 py-2.5 shadow-md border border-amber-200">
+            <span className="text-2xl">💎</span>
+            <span className="font-extrabold text-amber-700 text-sm sm:text-base">
+              Tìm được kho báu rồi! Giỏi lắm!
+            </span>
           </div>
         </div>
       )}
@@ -1156,7 +1230,7 @@ function BridgeMap({
           setRobotChatOpen(opening);
           if (opening) {
             const supportPrompt =
-              "Đến Cây Cầu Số rồi! Bạn muốn tìm số liền trước hay liền sau?";
+              "Hãy tìm kho báu trên tia số! Bạn cần Tí Tách gợi ý không?";
             setRobotMsg(supportPrompt);
             speakRobotAnswer(supportPrompt);
           }
@@ -3007,7 +3081,7 @@ export function NumberSequenceGame() {
                       key={mapKey}
                       onComplete={handleMapComplete}
                       difficulty={difficulty}
-                      initialInstruction="Tìm số liền trước hoặc liền sau để giúp robot nhảy qua cầu nhé! 🌉"
+                      initialInstruction="Tìm số đúng trên tia số để mở kho báu nhé! 💎"
                     />
                   )}
                   {activeMap === 3 && (
