@@ -38,9 +38,9 @@ export default async function handler(req: VercelRequestLike, res: VercelRespons
     return;
   }
 
-  const apiKey = process.env.FPT_API_KEY;
+  const apiKey = process.env.fpt_api;
   if (!apiKey) {
-    res.status(500).json({ error: "Missing FPT_API_KEY" });
+    res.status(500).json({ error: "Missing fpt_api" });
     return;
   }
 
