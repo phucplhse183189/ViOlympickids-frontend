@@ -759,7 +759,7 @@ function AppleGardenMap({
 
   return (
     <div
-      className="relative rounded-[30px] overflow-hidden border-2 border-emerald-900/35 shadow-[0_16px_35px_rgba(21,84,52,0.24)]"
+      className="relative h-full rounded-[30px] overflow-hidden border-2 border-emerald-900/35 shadow-[0_16px_35px_rgba(21,84,52,0.24)]"
       style={{
         backgroundImage: "url('/NenVuonTao.jpg')",
         backgroundSize: "cover",
@@ -768,7 +768,7 @@ function AppleGardenMap({
     >
       <div className="absolute inset-0 bg-gradient-to-b from-white/5 via-transparent to-black/10 pointer-events-none" />
 
-      <div className="relative z-10 max-w-5xl mx-auto px-4 py-5 sm:py-6 min-h-[560px] sm:min-h-[620px]">
+      <div className="relative z-10 h-full max-w-none mx-auto px-3 sm:px-5 py-3 sm:py-4">
         <div className="absolute left-1/2 -translate-x-1/2 top-5 sm:top-6 w-[76%] max-w-[620px]">
           <img
             src="/bang.png"
@@ -915,7 +915,6 @@ function BridgeMap({
   const missionJump = 2;
   const missionOptions = [4, 5, 6];
   const correctAnswer = missionStart + missionJump;
-  const [robotPos, setRobotPos] = useState(0);
   const [answered, setAnswered] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
   const [robotMsg, setRobotMsg] = useState("");
@@ -926,7 +925,6 @@ function BridgeMap({
   const [attempts, setAttempts] = useState(0);
 
   useEffect(() => {
-    setRobotPos(0);
     setAnswered(false);
     setSelected(null);
     setIsCorrect(null);
@@ -987,7 +985,7 @@ function BridgeMap({
       setRobotMsg(msg);
       speakRobotAnswer(msg);
       const stars = attempts === 0 ? 3 : attempts <= 1 ? 2 : 1;
-      setTimeout(() => onComplete(stars), 1200);
+      setTimeout(() => onComplete(stars), 2200);
     } else {
       setIsCorrect(false);
       setAttempts((a) => a + 1);
@@ -1002,145 +1000,116 @@ function BridgeMap({
     }
   };
 
-  const questionText = `Từ biển số ${missionStart}, nhảy ${missionJump} bước sang phải,bạn tới số nào?`;
+  const questionText = "Robot Tí Tách đang ở biển 3, cần tiến thêm 2 bước để tới đúng chỗ của kho báu. Hãy giúp Tí Tách đến đúng nơi có cất giấu kho báu nào!";
+  const plusTwoArrowLeft = "35%";
+  const plusTwoArrowTop = "38%";
 
   return (
-    <div className="relative h-[calc(100vh-170px)] min-h-[620px] flex flex-col justify-between gap-3 overflow-hidden">
+    <div className="relative h-full flex flex-col justify-between gap-2 overflow-hidden">
       {/* ── Adventure scene with background image ── */}
       <div
         className="relative flex-1 rounded-[28px] overflow-hidden border-2 border-amber-700/30 shadow-[0_12px_32px_rgba(120,80,20,0.22)]"
         style={{
-          backgroundImage: "url('/map2_bai2/bg_adventure.png')",
+          backgroundImage: `url('${answered ? "/map2_bai2/nen_dap_an.png" : "/map2_bai2/nen.png"}')`,
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
       >
-        {/* Soft overlay for contrast */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-black/20 pointer-events-none" />
-
-        <div className="relative z-10 px-3 py-3 sm:px-5 sm:py-4 h-full flex flex-col">
-          {/* ── Title sign image ── */}
-          <div className="flex justify-center mb-2">
+        <div className="relative z-10 h-full">
+          {/* Title sign at original top-center position */}
+          <div className="absolute left-1/2 -translate-x-1/2 top-2 sm:top-3 z-20 w-[52%] sm:w-[40%] max-w-[340px]">
             <img
               src="/map2_bai2/title_sign.png"
               alt="Tìm Kho Báu Trên Tia Số!"
-              className="w-[52%] sm:w-[40%] max-w-[340px] object-contain drop-shadow-lg"
+              className="w-full object-contain drop-shadow-lg"
+              draggable={false}
             />
           </div>
 
-          {/* ── Number-line image (number_line.png) + clickable hotspots ── */}
-          <div className="flex-1 flex items-center justify-center">
-            <div className="relative w-[92%] max-w-[1040px]">
-              <img
-                src="/map2_bai2/number_line.png"
-                alt="Tia số"
-                className="w-full h-auto object-contain select-none pointer-events-none"
-                draggable={false}
-              />
-
-              {/* Explorer marker */}
-              <div
-                className="absolute z-20 robot-jump"
-                style={{
-                  left: `${13 + ((robotPos + 1) / 7) * 67}%`,
-                  top: "32%",
-                  transform: "translate(-50%, -100%)",
-                }}
-              >
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-b from-amber-400 to-orange-500 border-2 border-amber-300 flex items-center justify-center shadow-lg">
-                  <span className="text-sm sm:text-base">🧭</span>
-                </div>
-              </div>
-
-            </div>
-          </div>
-
-          {/* ── Jump arrow indicator ── */}
-          {!answered && (
-            <div className="flex justify-center mt-1 mb-3 sm:mb-4">
-              <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-full px-4 py-1.5 shadow-sm border border-amber-200">
-                <img
-                  src="/map2_bai2/jump_arrow.png"
-                  alt="Bước nhảy"
-                  className="w-8 h-6 sm:w-10 sm:h-7 object-contain"
-                />
-                <span className="text-xs sm:text-sm font-extrabold text-amber-800">
-                  Nhảy 2 bước sang phải từ số 3
-                </span>
-              </div>
-            </div>
+          {/* +2 arrow hint shown after correct answer, above number 3 -> 5 */}
+          {answered && (
+            <img
+              src="/map2_bai2/jump_arrow.png"
+              alt="Nhảy thêm 2 bước"
+              className="absolute z-20 w-[16%] sm:w-[12%] max-w-[220px] object-contain pointer-events-none"
+              style={{ left: "50%", top: "46%", transform: "translate(-50%, -50%)" }}
+              draggable={false}
+            />
           )}
         </div>
       </div>
 
-      {/* ── Question + choice signs below map ── */}
-      {!answered && (
-        <div className="text-center space-y-2">
-          <p className="font-extrabold text-amber-800 text-base sm:text-lg drop-shadow-sm">
-            {questionText}
-          </p>
-          <p className="text-[11px] sm:text-xs text-amber-700/80 font-bold">
-            Hãy nhấn vào biển số 4, 5 hoặc 6 ở phía dưới tia số để trả lời.
-          </p>
+      {/* ── Question / result overlay pinned inside map area (no extra page height) ── */}
+      <div className="pointer-events-none absolute left-0 right-0 bottom-2 sm:bottom-3 z-20 px-2 sm:px-4">
+        {!answered ? (
+          <div className="text-center space-y-1.5 pointer-events-auto">
+            <div className="inline-flex max-w-[min(760px,95%)] flex-col items-center gap-1.5 rounded-2xl border border-amber-200/90 bg-white/92 px-3 py-2 shadow-[0_8px_24px_rgba(120,80,20,0.18)] backdrop-blur-sm">
+              <p className="font-extrabold text-amber-800 text-sm sm:text-base drop-shadow-sm">
+                {questionText}
+              </p>
+              <p className="text-[10px] sm:text-[11px] text-amber-700/85 font-bold">
+                Hãy nhấn vào biển số 4, 5 hoặc 6 để trả lời.
+              </p>
+            </div>
 
-          <div className="flex items-center justify-center gap-6 sm:gap-10 w-full pt-2">
-            {missionOptions.map((num) => {
-              const isSelectedWrong = selected === num && isCorrect === false;
-              const isSelectedCorrect = selected === num && isCorrect === true;
+            <div className="flex items-center justify-center gap-4 sm:gap-6 w-full pt-1">
+              {missionOptions.map((num) => {
+                const isSelectedWrong = selected === num && isCorrect === false;
+                const isSelectedCorrect = selected === num && isCorrect === true;
 
-              return (
-                <button
-                  key={`choice-sign-${num}`}
-                  type="button"
-                  onClick={() => handleSelect(num)}
-                  className={`
-                    relative transition-all duration-200
-                    ${
-                      isSelectedWrong
-                        ? "scale-85 animate-shake"
-                        : isSelectedCorrect
-                          ? "scale-120"
-                          : "hover:scale-105 active:scale-95"
-                    }
-                  `}
-                >
-                  <img
-                    src={`/map2_bai2/sign_${num}.png`}
-                    alt={`Biển số ${num}`}
-                    className={`w-28 h-[126px] sm:w-32 sm:h-[144px] object-contain drop-shadow-lg ${
-                      isSelectedWrong
-                        ? "brightness-90 saturate-125"
-                        : isSelectedCorrect
-                          ? "brightness-110 saturate-125"
-                          : ""
-                    }`}
-                    draggable={false}
-                  />
-                </button>
-              );
-            })}
+                return (
+                  <button
+                    key={`choice-sign-${num}`}
+                    type="button"
+                    onClick={() => handleSelect(num)}
+                    className={`
+                      relative transition-all duration-200
+                      ${
+                        isSelectedWrong
+                          ? "scale-85 animate-shake"
+                          : isSelectedCorrect
+                            ? "scale-120"
+                            : "hover:scale-105 active:scale-95"
+                      }
+                    `}
+                  >
+                    <img
+                      src={`/map2_bai2/sign_${num}.png`}
+                      alt={`Biển số ${num}`}
+                      className={`w-20 h-[90px] sm:w-24 sm:h-[108px] object-contain drop-shadow-lg ${
+                        isSelectedWrong
+                          ? "brightness-90 saturate-125"
+                          : isSelectedCorrect
+                            ? "brightness-110 saturate-125"
+                            : ""
+                      }`}
+                      draggable={false}
+                    />
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="text-center animate-fade-in-down space-y-2 pointer-events-auto">
+            <div className="inline-flex items-center gap-2 bg-amber-50/90 backdrop-blur-sm rounded-full px-4 py-2 shadow-md border border-amber-200">
+              <span className="text-xl">⭐</span>
+              <span className="font-extrabold text-amber-700 text-xs sm:text-sm">
+                Chính xác! Kho báu đã mở rồi!
+              </span>
+            </div>
 
-      {/* Answered: treasure found message */}
-      {answered && (
-        <div className="text-center animate-fade-in-down space-y-2">
-          <div className="inline-flex items-center gap-2 bg-amber-50/90 backdrop-blur-sm rounded-full px-5 py-2.5 shadow-md border border-amber-200">
-            <span className="text-2xl">⭐</span>
-            <span className="font-extrabold text-amber-700 text-sm sm:text-base">
-              Chính xác! Kho báu đã mở rồi!
-            </span>
+            <div className="flex items-center justify-center">
+              <img
+                src="/map2_bai2/treasure_chest.png"
+                alt="Kho báu mở"
+                className="w-20 h-[90px] sm:w-24 sm:h-[108px] object-contain drop-shadow-xl"
+                draggable={false}
+              />
+            </div>
           </div>
-          <div className="flex justify-center">
-            <img
-              src="/map2_bai2/treasure_chest.png"
-              alt="Kho báu mở"
-              className="w-24 h-24 sm:w-28 sm:h-28 object-contain animate-kids-bounce-in drop-shadow-[0_8px_20px_rgba(180,120,20,0.45)]"
-            />
-          </div>
-        </div>
-      )}
+        )}
+      </div>
 
       <FloatingTitechAssistant
         robotMsg={robotMsg}
@@ -2533,7 +2502,7 @@ function MapProgressBar({
 // MAIN GAME COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const ROUNDS_PER_MAP: Record<number, number> = { 1: 1, 2: 2, 3: 3, 4: 3, 5: 3 };
+const ROUNDS_PER_MAP: Record<number, number> = { 1: 1, 2: 1, 3: 3, 4: 3, 5: 3 };
 
 export function NumberSequenceGame() {
   const navigate = useNavigate();
@@ -2956,7 +2925,7 @@ export function NumberSequenceGame() {
           )}
 
           {/* ── Content ── */}
-          <div className="flex-1 flex flex-col justify-center w-full relative">
+          <div className="flex-1 flex flex-col justify-start w-full relative overflow-hidden">
             {gameState === "intro" && (
               <IntroScreen onStart={handleStart} voiceOn={voiceOn} />
             )}
@@ -2984,7 +2953,7 @@ export function NumberSequenceGame() {
                   completedMaps={completedMaps}
                 />
 
-                <div className="bg-white/40 backdrop-blur-sm rounded-3xl shadow-lg border-2 border-white/60 p-2 sm:p-3 overflow-hidden">
+                <div className="bg-white/40 backdrop-blur-sm rounded-3xl shadow-lg border-2 border-white/60 p-2 sm:p-3 overflow-hidden h-full min-h-0 mt-1 sm:mt-2">
                   {activeMap === 1 && (
                     <AppleGardenMap
                       key={mapKey}
