@@ -10,6 +10,7 @@ import {
   type TouchEvent as ReactTouchEvent,
 } from "react";
 import { useNavigate } from "react-router-dom";
+import { createPortal } from "react-dom";
 import {
   ArrowLeft,
   Star,
@@ -301,52 +302,56 @@ function RobotAskBar({
 
   return (
     <div className="bg-[#F7F3E8]/95 backdrop-blur rounded-3xl shadow-lg border-2 border-amber-200 px-3 py-2.5 sm:px-4 sm:py-3 flex flex-col gap-2.5 overflow-hidden">
-      <div className="flex items-center gap-2 min-w-0">
-        <div className="flex-1 min-w-0 rounded-2xl bg-white/70 border border-amber-100 px-3 py-2">
-          <input
+      <div className="min-w-0 space-y-2">
+        <div className="w-full min-w-0 rounded-2xl bg-white/70 border border-amber-100 px-3 py-2">
+          <textarea
             value={value}
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") {
+              if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
                 onSend();
               }
             }}
-            placeholder="Nhập câu hỏi toán lớp 2..."
-            className="w-full bg-transparent text-sm sm:text-base font-bold text-slate-600 outline-none placeholder:text-slate-400 truncate"
+            placeholder="Nhập câu hỏi toán lớp 2... (Shift+Enter để xuống dòng)"
+            rows={3}
+            className="w-full resize-none bg-transparent text-sm sm:text-base font-bold text-slate-600 outline-none placeholder:text-slate-400 leading-relaxed"
           />
         </div>
-        <button
-          type="button"
-          onClick={handleToggleVoice}
-          className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center shadow transition active:scale-95 ${
-            listening
-              ? "bg-rose-400 text-white"
-              : "bg-white text-amber-500 border border-amber-200"
-          } ${!supportsVoice || loading ? "opacity-45 cursor-not-allowed" : ""}`}
-          aria-label={listening ? "Đang nghe" : "Nói câu hỏi"}
-          disabled={!supportsVoice || loading}
-        >
-          {listening ? <MicOff size={16} /> : <Mic size={16} />}
-        </button>
-        <button
-          type="button"
-          onClick={onSend}
-          className="shrink-0 px-4 sm:px-5 py-2 rounded-full bg-amber-400 text-white text-sm sm:text-base font-extrabold shadow active:scale-95 transition disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={loading}
-        >
-          Gửi
-        </button>
-        {onClose && (
+
+        <div className="flex items-center justify-end gap-2">
           <button
             type="button"
-            onClick={onClose}
-            className="shrink-0 w-9 h-9 rounded-full bg-white text-gray-500 border border-gray-200 hover:bg-gray-50 transition active:scale-95"
-            aria-label="Đóng khung chat"
+            onClick={handleToggleVoice}
+            className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center shadow transition active:scale-95 ${
+              listening
+                ? "bg-rose-400 text-white"
+                : "bg-white text-amber-500 border border-amber-200"
+            } ${!supportsVoice || loading ? "opacity-45 cursor-not-allowed" : ""}`}
+            aria-label={listening ? "Đang nghe" : "Nói câu hỏi"}
+            disabled={!supportsVoice || loading}
           >
-            ✕
+            {listening ? <MicOff size={16} /> : <Mic size={16} />}
           </button>
-        )}
+          <button
+            type="button"
+            onClick={onSend}
+            className="shrink-0 px-4 sm:px-5 py-2 rounded-full bg-amber-400 text-white text-sm sm:text-base font-extrabold shadow active:scale-95 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={loading}
+          >
+            Gửi
+          </button>
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="shrink-0 w-9 h-9 rounded-full bg-white text-gray-500 border border-gray-200 hover:bg-gray-50 transition active:scale-95"
+              aria-label="Đóng khung chat"
+            >
+              ✕
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center gap-2 min-w-0">
@@ -385,7 +390,6 @@ function RobotAskBar({
 function FloatingTitechAssistant({
   robotMsg,
   robotChatOpen,
-  showSpeechBubble = true,
   onToggle,
   value,
   onChange,
@@ -395,7 +399,6 @@ function FloatingTitechAssistant({
 }: Readonly<{
   robotMsg: string;
   robotChatOpen: boolean;
-  showSpeechBubble?: boolean;
   onToggle: () => void;
   value: string;
   onChange: (value: string) => void;
@@ -423,34 +426,47 @@ function FloatingTitechAssistant({
         </button>
       </div>
 
-      {showSpeechBubble && robotChatOpen && (
-        <div className="absolute z-30 left-1/2 -translate-x-1/2 top-2 sm:top-3 w-[72%] sm:w-[52%] md:w-[40%] min-w-[220px] max-w-[390px]">
-          <img
-            src="/khungThoai.png"
-            alt="Khung thoại"
-            className="w-full object-contain"
-          />
-          <div className="absolute left-[14%] right-[14%] top-[18%] bottom-[28%] flex flex-col justify-center">
-            <div className="max-h-[96px] overflow-y-auto scrollbar-hide p-4 flex flex-col justify-center">
-              <p className="text-[13px] sm:text-[16px] font-black text-gray-800 text-center leading-tight whitespace-pre-line">
-                {robotMsg}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      {robotChatOpen && typeof document !== "undefined"
+        ? createPortal(
+            <div className="fixed z-[9999] right-0 top-[84px] h-[calc(100vh-84px)] w-[340px] max-w-[calc(100vw-1.5rem)] rounded-l-3xl border-2 border-cyan-200/70 bg-white/95 backdrop-blur-md shadow-[0_14px_36px_rgba(8,47,73,0.3)] p-3 flex-col gap-3 hidden lg:flex">
+              <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-2">
+                  <img
+                    src="/robot%20(1).png"
+                    alt="Tí Tách"
+                    className="w-9 h-9 object-contain"
+                  />
+                  <div>
+                    <p className="text-sm font-black text-cyan-700 leading-tight">Tí Tách AI</p>
+                    <p className="text-[11px] font-bold text-slate-500 leading-tight">Hỏi đáp bài học</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="rounded-full border border-cyan-200 bg-white px-2.5 py-1 text-xs font-black text-cyan-700 hover:bg-cyan-50"
+                >
+                  Đóng
+                </button>
+              </div>
 
-      {robotChatOpen && (
-        <div className="absolute z-40 left-2 right-2 bottom-3 sm:left-[17%] sm:right-4 sm:bottom-4 md:left-[18%] lg:left-[19%] w-auto max-w-[700px]">
-          <RobotAskBar
-            value={value}
-            onChange={onChange}
-            onSend={onSend}
-            loading={loading}
-            onClose={onClose}
-          />
-        </div>
-      )}
+              <div className="flex-1 overflow-y-auto rounded-2xl border border-cyan-100 bg-cyan-50/40 p-3">
+                <p className="text-sm font-bold text-slate-700 whitespace-pre-line leading-relaxed">
+                  {robotMsg}
+                </p>
+              </div>
+
+              <RobotAskBar
+                value={value}
+                onChange={onChange}
+                onSend={onSend}
+                loading={loading}
+                onClose={onClose}
+              />
+            </div>,
+            document.body,
+          )
+        : null}
     </>
   );
 }
@@ -602,7 +618,6 @@ function AppleGardenMap({
   const [robotInput, setRobotInput] = useState("");
   const [robotLoading, setRobotLoading] = useState(false);
   const [robotChatOpen, setRobotChatOpen] = useState(false);
-  const [showChatCoachmark, setShowChatCoachmark] = useState(false);
 
   const [attempts, setAttempts] = useState(0);
   const [shake, setShake] = useState<number | null>(null);
@@ -621,17 +636,6 @@ function AppleGardenMap({
     completedRef.current = false;
   }, [difficulty, initialInstruction]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const coachmarkSeen = window.localStorage.getItem(
-      "map1-ai-chat-coachmark-seen",
-    );
-    if (!coachmarkSeen) {
-      setShowChatCoachmark(true);
-      const timer = window.setTimeout(() => setShowChatCoachmark(false), 6500);
-      return () => window.clearTimeout(timer);
-    }
-  }, []);
 
   const sound = useSounds();
 
@@ -773,63 +777,6 @@ function AppleGardenMap({
           />
         </div>
 
-        <div className="absolute left-0 bottom-3 sm:left-0 sm:bottom-4 z-40">
-          <button
-            type="button"
-            onClick={() => {
-              const opening = !robotChatOpen;
-              setRobotChatOpen(opening);
-              setShowChatCoachmark(false);
-              if (typeof window !== "undefined") {
-                window.localStorage.setItem("map1-ai-chat-coachmark-seen", "1");
-              }
-
-              if (opening) {
-                const supportPrompt =
-                  "Đây là Vườn Táo Số! Bạn cần Tí Tách gợi ý số nào nè?";
-                setRobotMsg(supportPrompt);
-                speakRobotAnswer(supportPrompt);
-              }
-            }}
-            className="relative w-[16vw] min-w-[84px] max-w-[132px] focus:outline-none"
-            aria-label="Mở khung chat AI của robot"
-          >
-            <img
-              src="/robot%20(1).png"
-              alt="Robot"
-              className="w-full object-contain drop-shadow animate-pulse"
-            />
-            <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 rounded-full bg-white/92 text-emerald-700 text-[10px] sm:text-[11px] font-black px-2.5 py-0.5 border border-emerald-200 shadow-sm whitespace-nowrap">
-              Hỏi Tí Tách
-            </span>
-          </button>
-
-          {showChatCoachmark && !robotChatOpen && (
-            <div className="absolute bottom-[96%] left-[58%] sm:left-[70%] -translate-x-1/2 mb-2 rounded-2xl bg-white/95 border border-amber-300 shadow-lg px-3 py-2 w-[170px] sm:w-[210px]">
-              <p className="text-[11px] sm:text-xs font-bold text-amber-700 text-center leading-snug">
-                Bấm vào robot để hỏi AI khi bạn cần gợi ý nhé!
-              </p>
-            </div>
-          )}
-        </div>
-
-        {robotChatOpen && (
-          <div className="absolute z-30 left-1/2 -translate-x-1/2 top-[22%] sm:top-[24%] w-[72%] sm:w-[52%] md:w-[40%] min-w-[220px] max-w-[390px]">
-            <img
-              src="/khungThoai.png"
-              alt="Khung thoại"
-              className="w-full object-contain"
-            />
-            <div className="absolute left-[14%] right-[14%] top-[18%] bottom-[28%] flex flex-col justify-center">
-              <div className="max-h-[96px] overflow-y-auto scrollbar-hide p-4 flex flex-col justify-center">
-                <p className="text-[13px] sm:text-[16px] font-black text-gray-800 text-center leading-tight whitespace-pre-line">
-                  {robotMsg}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
         <div className="absolute left-1/2 -translate-x-1/2 top-[56%] w-[78%]">
           <div className="h-[7px] bg-amber-500 rounded-full shadow-[inset_0_1px_2px_rgba(0,0,0,0.25)]" />
           <div className="absolute right-[-8px] top-1/2 -translate-y-1/2 w-0 h-0 border-l-[16px] border-l-amber-500 border-y-[10px] border-y-transparent" />
@@ -908,17 +855,25 @@ function AppleGardenMap({
           ))}
         </div>
 
-        {robotChatOpen && (
-          <div className="absolute z-40 left-2 right-2 bottom-3 sm:left-[17%] sm:right-4 sm:bottom-4 md:left-[18%] lg:left-[19%] w-auto max-w-[700px]">
-            <RobotAskBar
-              value={robotInput}
-              onChange={setRobotInput}
-              onSend={() => void sendRobotQuestion()}
-              loading={robotLoading}
-              onClose={() => setRobotChatOpen(false)}
-            />
-          </div>
-        )}
+        <FloatingTitechAssistant
+          robotMsg={robotMsg}
+          robotChatOpen={robotChatOpen}
+          onToggle={() => {
+            const opening = !robotChatOpen;
+            setRobotChatOpen(opening);
+            if (opening) {
+              const supportPrompt =
+                "Đây là Vườn Táo Số! Bạn cần Tí Tách gợi ý số nào nè?";
+              setRobotMsg(supportPrompt);
+              speakRobotAnswer(supportPrompt);
+            }
+          }}
+          value={robotInput}
+          onChange={setRobotInput}
+          onSend={() => void sendRobotQuestion()}
+          loading={robotLoading}
+          onClose={() => setRobotChatOpen(false)}
+        />
       </div>
 
       {touchDragValue !== null && touchPos && (
@@ -1190,7 +1145,6 @@ function BridgeMap({
       <FloatingTitechAssistant
         robotMsg={robotMsg}
         robotChatOpen={robotChatOpen}
-        showSpeechBubble={false}
         onToggle={() => {
           const opening = !robotChatOpen;
           setRobotChatOpen(opening);
@@ -1371,7 +1325,7 @@ function TrainMap({
   }, [placed, puzzle.missingIndices, attempts, onComplete, remaining]);
 
   return (
-    <div className="relative space-y-6 pb-32 sm:pb-36">
+    <div className="relative h-full flex flex-col gap-3 overflow-hidden">
       <div className="bg-gradient-to-b from-amber-100 to-yellow-200 rounded-3xl p-4 sm:p-6 shadow-inner">
         <p className="text-center text-amber-700 font-extrabold text-sm mb-4">
           🚂 Đường ray tàu số
@@ -1504,7 +1458,6 @@ function TrainMap({
       <FloatingTitechAssistant
         robotMsg={robotMsg}
         robotChatOpen={robotChatOpen}
-        showSpeechBubble={false}
         onToggle={() => {
           const opening = !robotChatOpen;
           setRobotChatOpen(opening);
@@ -1804,7 +1757,6 @@ function BalloonCityMap({
       <FloatingTitechAssistant
         robotMsg={robotMsg}
         robotChatOpen={robotChatOpen}
-        showSpeechBubble={false}
         onToggle={() => {
           const opening = !robotChatOpen;
           setRobotChatOpen(opening);
@@ -2042,7 +1994,6 @@ function RabbitRaceMap({
       <FloatingTitechAssistant
         robotMsg={robotMsg}
         robotChatOpen={robotChatOpen}
-        showSpeechBubble={false}
         onToggle={() => {
           const opening = !robotChatOpen;
           setRobotChatOpen(opening);
@@ -2856,7 +2807,7 @@ export function NumberSequenceGame() {
     <GameSoundContext.Provider value={sound}>
       <div
         ref={gameContainerRef}
-        className="min-h-screen relative overflow-hidden flex flex-col"
+        className="h-screen relative overflow-hidden flex flex-col"
       >
         {/* Background Base */}
         <div
@@ -2905,9 +2856,9 @@ export function NumberSequenceGame() {
           ☁️
         </div>
 
-        <div className="relative flex-1 flex flex-col z-10 w-full max-w-none mx-auto px-3 sm:px-6 lg:px-10 py-4">
+        <div className="relative flex-1 flex flex-col z-10 w-full max-w-none mx-auto px-3 sm:px-6 lg:px-10 py-2 sm:py-3 overflow-hidden">
           {/* ── Header ── */}
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-2 sm:mb-3">
             <button
               onClick={handleBackToMenu}
               className="flex items-center gap-2 bg-white/80 hover:bg-white rounded-2xl px-4 py-2
@@ -2995,7 +2946,7 @@ export function NumberSequenceGame() {
 
           {/* Hint */}
           {showHint && gameState === "playing" && (
-            <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl px-4 py-3 mb-4 text-sm font-bold text-amber-700 animate-fade-in-down flex items-start gap-2">
+            <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl px-4 py-2.5 mb-2 text-sm font-bold text-amber-700 animate-fade-in-down flex items-start gap-2">
               <span className="text-lg">💡</span>
               <span>
                 {ROBOT_HINTS[activeMap]?.[0] ??
@@ -3033,7 +2984,7 @@ export function NumberSequenceGame() {
                   completedMaps={completedMaps}
                 />
 
-                <div className="bg-white/40 backdrop-blur-sm rounded-3xl shadow-lg border-2 border-white/60 p-3 sm:p-4 overflow-hidden">
+                <div className="bg-white/40 backdrop-blur-sm rounded-3xl shadow-lg border-2 border-white/60 p-2 sm:p-3 overflow-hidden">
                   {activeMap === 1 && (
                     <AppleGardenMap
                       key={mapKey}
