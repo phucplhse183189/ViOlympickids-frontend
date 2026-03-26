@@ -185,7 +185,7 @@ export interface VoiceManagerAPI {
   /** Phát 1 voice line tùy ý */
   playVoice: (event: keyof VoiceConfig) => string;
   /** Nói text tùy ý bằng TTS (giọng cute tiếng Việt) */
-  speakText: (text: string, onEnd?: () => void) => void;
+  speakText: (text: string, onEnd?: () => void, options?: { rate?: number; pitch?: number; volume?: number }) => void;
   /** Dừng tất cả giọng nói */
   stopVoice: () => void;
   /** Bật/tắt voice — trả về trạng thái mới */
@@ -389,7 +389,12 @@ export function useVoiceManager(
   // Lưu callback hiện tại để vô hiệu hoá callback cũ khi cancel()
   const currentOnEndRef = useRef<(() => void) | null>(null);
 
-  const speakText = useCallback((text: string, onEnd?: () => void) => {
+  const speakText = useCallback(
+    (
+      text: string,
+      onEnd?: () => void,
+      options?: { rate?: number; pitch?: number; volume?: number },
+    ) => {
     if (!enabledRef.current) {
       if (onEnd) onEnd();
       return;
@@ -444,6 +449,9 @@ export function useVoiceManager(
       // Dùng Web Speech API tự nhiên
       const utterance = new SpeechSynthesisUtterance(text);
       configureKidVietnameseUtterance(utterance);
+      if (options?.rate !== undefined) utterance.rate = options.rate;
+      if (options?.pitch !== undefined) utterance.pitch = options.pitch;
+      if (options?.volume !== undefined) utterance.volume = options.volume;
 
       utterance.onend = wrappedOnEnd;
       utterance.onerror = wrappedOnEnd;
