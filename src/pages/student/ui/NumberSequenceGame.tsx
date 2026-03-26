@@ -61,6 +61,7 @@ function useSounds(): GameSoundAPI {
 
 const ROBOT_VOICE_STORAGE_KEY = "robotVoiceName";
 const LOCK_CHATBOX_TO_MAP_VOICE = true;
+let currentRobotTtsAudio: HTMLAudioElement | null = null;
 
 function readStoredRobotVoiceName(): string {
   if (typeof window === "undefined") return "";
@@ -104,43 +105,81 @@ function pickUnifiedRobotVoice(
   );
 }
 
-function speakWithUnifiedRobotVoice(text: string, voiceName?: string): void {
+async function speakWithUnifiedRobotVoice(
+  text: string,
+  voiceName?: string,
+): Promise<void> {
   if (typeof window === "undefined" || !text) return;
 
-  waitForVoices(3000).then(() => {
-    if (!("speechSynthesis" in window)) {
-      playGoogleTTSFallback(text);
-      return;
+  // Ưu tiên server TTS để giọng ổn định trên Vercel
+  try {
+    const ttsRes = await fetch("/api/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        text,
+        voice: "banmai",
+        format: "mp3",
+      }),
+    });
+
+    if (ttsRes.ok) {
+      const ttsData = (await ttsRes.json()) as { audioUrl?: string };
+      if (ttsData?.audioUrl) {
+        window.speechSynthesis.cancel();
+        if (currentRobotTtsAudio) {
+          currentRobotTtsAudio.pause();
+          currentRobotTtsAudio.currentTime = 0;
+        }
+        const audio = new Audio(ttsData.audioUrl);
+        currentRobotTtsAudio = audio;
+        audio.onended = () => {
+          if (currentRobotTtsAudio === audio) currentRobotTtsAudio = null;
+        };
+        audio.onerror = () => {
+          if (currentRobotTtsAudio === audio) currentRobotTtsAudio = null;
+        };
+        await audio.play();
+        return;
+      }
     }
+  } catch {
+    // fallback to local voice
+  }
 
-    const voices = window.speechSynthesis.getVoices();
-    const finalVoice = pickUnifiedRobotVoice(
-      voices,
-      voiceName || readStoredRobotVoiceName(),
-    );
+  await waitForVoices(3000);
+  if (!("speechSynthesis" in window)) {
+    playGoogleTTSFallback(text);
+    return;
+  }
 
-    if (!finalVoice) {
-      playGoogleTTSFallback(text);
-      return;
-    }
+  const voices = window.speechSynthesis.getVoices();
+  const finalVoice = pickUnifiedRobotVoice(
+    voices,
+    voiceName || readStoredRobotVoiceName(),
+  );
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.voice = finalVoice;
-    utterance.lang = finalVoice.lang || "vi-VN";
-    // Keep the same bright kid-friendly tone as intro speech.
-    utterance.rate = 1.15;
-    utterance.pitch = 1.6;
-    utterance.volume = 1;
+  if (!finalVoice) {
+    playGoogleTTSFallback(text);
+    return;
+  }
 
-    try {
-      window.localStorage.setItem(ROBOT_VOICE_STORAGE_KEY, finalVoice.name);
-    } catch {
-      // ignore storage errors
-    }
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.voice = finalVoice;
+  utterance.lang = finalVoice.lang || "vi-VN";
+  // Keep the same bright kid-friendly tone as intro speech.
+  utterance.rate = 1.15;
+  utterance.pitch = 1.6;
+  utterance.volume = 1;
 
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utterance);
-  });
+  try {
+    window.localStorage.setItem(ROBOT_VOICE_STORAGE_KEY, finalVoice.name);
+  } catch {
+    // ignore storage errors
+  }
+
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(utterance);
 }
 
 export default NumberSequenceGame;
