@@ -139,39 +139,21 @@ async function speakWithUnifiedRobotVoice(
     if (ttsRes.ok) {
       const ttsData = (await ttsRes.json()) as { audioUrl?: string };
       if (ttsData?.audioUrl) {
-        const waitUntilReady = async (url: string): Promise<boolean> => {
-          const start = Date.now();
-          const timeoutMs = 8000;
-          while (Date.now() - start < timeoutMs) {
-            try {
-              const head = await fetch(url, { method: "HEAD", cache: "no-store" });
-              if (head.ok) return true;
-            } catch {
-              // ignore and retry
-            }
-            await new Promise((r) => setTimeout(r, 500));
-          }
-          return false;
-        };
-
-        const ready = await waitUntilReady(ttsData.audioUrl);
-        if (ready) {
-          window.speechSynthesis.cancel();
-          if (currentRobotTtsAudio) {
-            currentRobotTtsAudio.pause();
-            currentRobotTtsAudio.currentTime = 0;
-          }
-          const audio = new Audio(ttsData.audioUrl);
-          currentRobotTtsAudio = audio;
-          audio.onended = () => {
-            if (currentRobotTtsAudio === audio) currentRobotTtsAudio = null;
-          };
-          audio.onerror = () => {
-            if (currentRobotTtsAudio === audio) currentRobotTtsAudio = null;
-          };
-          await audio.play();
-          return;
+        window.speechSynthesis.cancel();
+        if (currentRobotTtsAudio) {
+          currentRobotTtsAudio.pause();
+          currentRobotTtsAudio.currentTime = 0;
         }
+        const audio = new Audio(ttsData.audioUrl);
+        currentRobotTtsAudio = audio;
+        audio.onended = () => {
+          if (currentRobotTtsAudio === audio) currentRobotTtsAudio = null;
+        };
+        audio.onerror = () => {
+          if (currentRobotTtsAudio === audio) currentRobotTtsAudio = null;
+        };
+        await audio.play();
+        return;
       }
     }
   } catch {
