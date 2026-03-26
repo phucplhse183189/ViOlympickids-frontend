@@ -1161,6 +1161,7 @@ function TrainMap({
   const [touchPos, setTouchPos] = useState<{ x: number; y: number } | null>(
     null,
   );
+  const [trainRunOut, setTrainRunOut] = useState(false);
   const dropZoneRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const completedRef = useRef(false);
 
@@ -1173,6 +1174,7 @@ function TrainMap({
     setPlaced(init);
     setAttempts(0);
     setRobotMsg(initialInstruction);
+    setTrainRunOut(false);
     completedRef.current = false;
   }, [difficulty, initialInstruction]);
 
@@ -1288,8 +1290,9 @@ function TrainMap({
     );
     if (allFilled && remaining.length === 0) {
       completedRef.current = true;
+      setTrainRunOut(true);
       const stars = attempts === 0 ? 3 : attempts <= 2 ? 2 : 1;
-      setTimeout(() => onComplete(stars), 600);
+      setTimeout(() => onComplete(stars), 2000);
     }
   }, [placed, puzzle.missingIndices, attempts, onComplete, remaining]);
 
@@ -1311,7 +1314,7 @@ function TrainMap({
             ))}
           </div>
 
-          <div className="flex items-end justify-center gap-1 sm:gap-2 pb-10 relative z-10">
+          <div className={`flex items-end justify-center gap-1 sm:gap-2 pb-10 relative z-10 transition-transform duration-[1600ms] ease-in-out ${trainRunOut ? "-translate-x-[120vw]" : "translate-x-0"}`}>
             {/* Locomotive */}
             <div className="flex flex-col items-center mr-1">
               <div className="w-14 h-16 bg-gradient-to-b from-red-500 to-red-600 rounded-t-2xl rounded-b-lg border-3 border-red-400 flex items-center justify-center shadow-lg">
