@@ -38,7 +38,6 @@ import {
   ROBOT_GREETINGS,
   getRandomItem,
   personalizeRobotGreeting,
-  generateBridgePuzzle,
   generateTrainPuzzle,
   generateBalloonPuzzle,
   generateRabbitPuzzle,
@@ -957,7 +956,10 @@ function BridgeMap({
   difficulty: number;
   initialInstruction: string;
 }>) {
-  const [puzzle, setPuzzle] = useState(() => generateBridgePuzzle(difficulty));
+  const missionStart = 3;
+  const missionJump = 2;
+  const missionOptions = [4, 5, 6];
+  const correctAnswer = missionStart + missionJump;
   const [robotPos, setRobotPos] = useState(0);
   const [answered, setAnswered] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
@@ -967,17 +969,13 @@ function BridgeMap({
   const [robotChatOpen, setRobotChatOpen] = useState(false);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [attempts, setAttempts] = useState(0);
-  const [showTreasure, setShowTreasure] = useState(false);
 
   useEffect(() => {
-    const p = generateBridgePuzzle(difficulty);
-    setPuzzle(p);
     setRobotPos(0);
     setAnswered(false);
     setSelected(null);
     setIsCorrect(null);
     setAttempts(0);
-    setShowTreasure(false);
     setRobotMsg(initialInstruction);
   }, [difficulty, initialInstruction]);
 
@@ -1026,30 +1024,22 @@ function BridgeMap({
     if (answered) return;
     setSelected(value);
     sound.click();
-    if (value === puzzle.correctAnswer) {
+
+    if (value === correctAnswer) {
       setIsCorrect(true);
       setAnswered(true);
       const msg = sound.correctVoice();
       setRobotMsg(msg);
-      // Explorer moves across number-line posts toward treasure
-      let pos = 0;
-      const jump = () => {
-        pos++;
-        setRobotPos(pos);
-        if (pos < puzzle.stones.length - 1) {
-          setTimeout(jump, 320);
-        } else {
-          setShowTreasure(true);
-          const stars = attempts === 0 ? 3 : attempts <= 1 ? 2 : 1;
-          setTimeout(() => onComplete(stars), 600);
-        }
-      };
-      setTimeout(jump, 300);
+      speakRobotAnswer(msg);
+      const stars = attempts === 0 ? 3 : attempts <= 1 ? 2 : 1;
+      setTimeout(() => onComplete(stars), 1200);
     } else {
       setIsCorrect(false);
       setAttempts((a) => a + 1);
-      const msg = sound.wrongVoice();
-      setRobotMsg(msg);
+      const hintMsg = "Bạn đếm lại từng vạch nhé";
+      setRobotMsg(hintMsg);
+      sound.wrong();
+      speakRobotAnswer(hintMsg);
       setTimeout(() => {
         setSelected(null);
         setIsCorrect(null);
@@ -1057,21 +1047,13 @@ function BridgeMap({
     }
   };
 
-  // Determine question text
-  const questionRef =
-    puzzle.type === "next"
-      ? puzzle.stones[puzzle.missingIndex - 1]
-      : puzzle.stones[puzzle.missingIndex + 1];
-  const questionText =
-    puzzle.type === "next"
-      ? `Số liền sau của ${questionRef} là bao nhiêu?`
-      : `Số liền trước của ${questionRef} là bao nhiêu?`;
+  const questionText = `Từ biển số ${missionStart}, nhảy ${missionJump} bước sang phải,bạn tới số nào?`;
 
   return (
-    <div className="relative space-y-5 pb-32 sm:pb-36">
+    <div className="relative h-[calc(100vh-170px)] min-h-[620px] flex flex-col justify-between gap-3 overflow-hidden">
       {/* ── Adventure scene with background image ── */}
       <div
-        className="relative rounded-[28px] overflow-hidden border-2 border-amber-700/30 shadow-[0_12px_32px_rgba(120,80,20,0.22)]"
+        className="relative flex-1 rounded-[28px] overflow-hidden border-2 border-amber-700/30 shadow-[0_12px_32px_rgba(120,80,20,0.22)]"
         style={{
           backgroundImage: "url('/map2_bai2/bg_adventure.png')",
           backgroundSize: "cover",
@@ -1081,104 +1063,54 @@ function BridgeMap({
         {/* Soft overlay for contrast */}
         <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-black/20 pointer-events-none" />
 
-        <div className="relative z-10 px-3 py-4 sm:px-6 sm:py-5 min-h-[340px] sm:min-h-[400px] flex flex-col">
+        <div className="relative z-10 px-3 py-3 sm:px-5 sm:py-4 h-full flex flex-col">
           {/* ── Title sign image ── */}
-          <div className="flex justify-center mb-3">
+          <div className="flex justify-center mb-2">
             <img
               src="/map2_bai2/title_sign.png"
               alt="Tìm Kho Báu Trên Tia Số!"
-              className="w-[60%] sm:w-[45%] max-w-[380px] object-contain drop-shadow-lg"
+              className="w-[52%] sm:w-[40%] max-w-[340px] object-contain drop-shadow-lg"
             />
           </div>
 
-          {/* ── Number-line with wooden sign posts ── */}
+          {/* ── Number-line image (number_line.png) + clickable hotspots ── */}
           <div className="flex-1 flex items-center justify-center">
-            <div className="relative flex items-end justify-center gap-1.5 sm:gap-3 pb-4">
-              {/* Number-line wooden rail underneath posts */}
-              <div className="absolute bottom-6 left-4 right-4 h-3 sm:h-4 rounded-full bg-gradient-to-r from-amber-700 via-amber-600 to-amber-700 border border-amber-800/40 shadow-inner" />
+            <div className="relative w-[92%] max-w-[1040px]">
+              <img
+                src="/map2_bai2/number_line.png"
+                alt="Tia số"
+                className="w-full h-auto object-contain select-none pointer-events-none"
+                draggable={false}
+              />
 
-              {puzzle.stones.map((num, idx) => {
-                const isMissing = idx === puzzle.missingIndex && !answered;
-                const isRobotHere = idx === robotPos;
-                const isAnsweredSlot = answered && idx === puzzle.missingIndex;
-
-                return (
-                  <div
-                    key={`post-${idx}`}
-                    className="flex flex-col items-center relative z-10"
-                  >
-                    {/* Explorer marker on post */}
-                    {isRobotHere && (
-                      <div className="absolute -top-10 sm:-top-12 z-20 robot-jump">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-b from-amber-400 to-orange-500 border-2 border-amber-300 flex items-center justify-center shadow-lg">
-                          <span className="text-sm sm:text-base">🧭</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Wooden sign post */}
-                    <div
-                      className={`
-                        relative flex flex-col items-center transition-all duration-300
-                        ${isMissing ? "animate-pulse-slow" : ""}
-                      `}
-                    >
-                      {/* Sign head */}
-                      <div
-                        className={`
-                          w-11 h-9 sm:w-14 sm:h-11 rounded-md flex items-center justify-center
-                          font-extrabold text-base sm:text-xl transition-all duration-300 relative
-                          ${
-                            isMissing
-                              ? "bg-amber-200 border-2 border-dashed border-amber-500 text-amber-700 shadow-lg"
-                              : isAnsweredSlot
-                                ? "bg-emerald-400 border-2 border-emerald-300 text-white shadow-lg shadow-emerald-300/40"
-                                : "bg-gradient-to-b from-amber-600 to-amber-800 border-2 border-amber-900/40 text-white shadow-md"
-                          }
-                        `}
-                        style={
-                          !isMissing && !isAnsweredSlot
-                            ? {
-                                backgroundImage:
-                                  "linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 50%)",
-                              }
-                            : undefined
-                        }
-                      >
-                        {isMissing ? "❓" : num}
-                      </div>
-                      {/* Sign pole */}
-                      <div className="w-2 h-5 sm:h-7 bg-gradient-to-b from-amber-700 to-amber-900 rounded-b-sm" />
-                    </div>
-                  </div>
-                );
-              })}
-
-              {/* Treasure chest at the end of the number line */}
-              <div className="flex flex-col items-center relative z-10 ml-1 sm:ml-2">
-                <img
-                  src="/map2_bai2/treasure_chest.png"
-                  alt="Kho báu"
-                  className={`
-                    w-12 h-12 sm:w-16 sm:h-16 object-contain drop-shadow-lg transition-all duration-500
-                    ${showTreasure ? "scale-125 animate-kids-bounce-in" : "opacity-70 grayscale-[30%]"}
-                  `}
-                />
+              {/* Explorer marker */}
+              <div
+                className="absolute z-20 robot-jump"
+                style={{
+                  left: `${13 + ((robotPos + 1) / 7) * 67}%`,
+                  top: "32%",
+                  transform: "translate(-50%, -100%)",
+                }}
+              >
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-b from-amber-400 to-orange-500 border-2 border-amber-300 flex items-center justify-center shadow-lg">
+                  <span className="text-sm sm:text-base">🧭</span>
+                </div>
               </div>
+
             </div>
           </div>
 
-          {/* ── Jump arrow indicator (shows puzzle type) ── */}
+          {/* ── Jump arrow indicator ── */}
           {!answered && (
-            <div className="flex justify-center mt-1">
+            <div className="flex justify-center mt-1 mb-3 sm:mb-4">
               <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm rounded-full px-4 py-1.5 shadow-sm border border-amber-200">
                 <img
                   src="/map2_bai2/jump_arrow.png"
                   alt="Bước nhảy"
-                  className={`w-8 h-6 sm:w-10 sm:h-7 object-contain ${puzzle.type === "prev" ? "scale-x-[-1]" : ""}`}
+                  className="w-8 h-6 sm:w-10 sm:h-7 object-contain"
                 />
                 <span className="text-xs sm:text-sm font-extrabold text-amber-800">
-                  {puzzle.type === "next" ? "Tìm số liền sau" : "Tìm số liền trước"}
+                  Nhảy 2 bước sang phải từ số 3
                 </span>
               </div>
             </div>
@@ -1186,54 +1118,71 @@ function BridgeMap({
         </div>
       </div>
 
-      {/* ── Question & answer options ── */}
+      {/* ── Question + choice signs below map ── */}
       {!answered && (
-        <div className="text-center space-y-4">
+        <div className="text-center space-y-2">
           <p className="font-extrabold text-amber-800 text-base sm:text-lg drop-shadow-sm">
             {questionText}
           </p>
-          <div className="flex justify-center gap-3 sm:gap-4">
-            {puzzle.options.map((opt) => (
-              <button
-                key={`opt-${opt}`}
-                onClick={() => handleSelect(opt)}
-                className={`
-                  relative w-16 h-[72px] sm:w-20 sm:h-[84px] rounded-lg font-extrabold text-xl sm:text-2xl
-                  transition-all duration-200 shadow-lg flex flex-col items-center justify-center
-                  ${
-                    selected === opt && isCorrect === false
-                      ? "bg-red-400 text-white scale-90 animate-shake border-2 border-red-300"
-                      : selected === opt && isCorrect === true
-                        ? "bg-emerald-400 text-white scale-110 border-2 border-emerald-300"
-                        : "bg-gradient-to-b from-amber-500 to-amber-700 text-white hover:from-amber-400 hover:to-amber-600 hover:scale-105 active:scale-95 border-2 border-amber-800/40"
-                  }
-                `}
-                style={
-                  !(selected === opt)
-                    ? {
-                        backgroundImage:
-                          "linear-gradient(135deg, rgba(255,255,255,0.18) 0%, transparent 50%)",
-                      }
-                    : undefined
-                }
-              >
-                <span className="relative z-10">{opt}</span>
-                {/* Wooden sign pole */}
-                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-2.5 h-3 bg-amber-900 rounded-b-sm" />
-              </button>
-            ))}
+          <p className="text-[11px] sm:text-xs text-amber-700/80 font-bold">
+            Hãy nhấn vào biển số 4, 5 hoặc 6 ở phía dưới tia số để trả lời.
+          </p>
+
+          <div className="flex items-center justify-center gap-6 sm:gap-10 w-full pt-2">
+            {missionOptions.map((num) => {
+              const isSelectedWrong = selected === num && isCorrect === false;
+              const isSelectedCorrect = selected === num && isCorrect === true;
+
+              return (
+                <button
+                  key={`choice-sign-${num}`}
+                  type="button"
+                  onClick={() => handleSelect(num)}
+                  className={`
+                    relative transition-all duration-200
+                    ${
+                      isSelectedWrong
+                        ? "scale-85 animate-shake"
+                        : isSelectedCorrect
+                          ? "scale-120"
+                          : "hover:scale-105 active:scale-95"
+                    }
+                  `}
+                >
+                  <img
+                    src={`/map2_bai2/sign_${num}.png`}
+                    alt={`Biển số ${num}`}
+                    className={`w-28 h-[126px] sm:w-32 sm:h-[144px] object-contain drop-shadow-lg ${
+                      isSelectedWrong
+                        ? "brightness-90 saturate-125"
+                        : isSelectedCorrect
+                          ? "brightness-110 saturate-125"
+                          : ""
+                    }`}
+                    draggable={false}
+                  />
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
 
       {/* Answered: treasure found message */}
       {answered && (
-        <div className="text-center animate-fade-in-down">
+        <div className="text-center animate-fade-in-down space-y-2">
           <div className="inline-flex items-center gap-2 bg-amber-50/90 backdrop-blur-sm rounded-full px-5 py-2.5 shadow-md border border-amber-200">
-            <span className="text-2xl">💎</span>
+            <span className="text-2xl">⭐</span>
             <span className="font-extrabold text-amber-700 text-sm sm:text-base">
-              Tìm được kho báu rồi! Giỏi lắm!
+              Chính xác! Kho báu đã mở rồi!
             </span>
+          </div>
+          <div className="flex justify-center">
+            <img
+              src="/map2_bai2/treasure_chest.png"
+              alt="Kho báu mở"
+              className="w-24 h-24 sm:w-28 sm:h-28 object-contain animate-kids-bounce-in drop-shadow-[0_8px_20px_rgba(180,120,20,0.45)]"
+            />
           </div>
         </div>
       )}
@@ -2450,7 +2399,7 @@ function FinalVictoryScreen({
               className="text-center font-black text-white text-lg sm:text-xl tracking-wide drop-shadow-md"
               style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.3)" }}
             >
-              TUYỆT VỜI! CON ĐÃ HOÀN THÀNH XUẤT SẮC BÀI 2!
+              TUYỆT VỜI! BẠN ĐÃ HOÀN THÀNH XUẤT SẮC BÀI 2!
             </h1>
           </div>
         </div>
@@ -2518,7 +2467,7 @@ function FinalVictoryScreen({
             <p className="font-extrabold text-gray-700 text-sm leading-snug">
               Giỏi quá!
               <br />
-              Cố lên con nhé! 🥰
+              Cố lên bạn nhé! 🥰
             </p>
             <span className="text-xl absolute -bottom-1 right-4">🎤</span>
             {/* Bubble tail */}
@@ -3084,7 +3033,7 @@ export function NumberSequenceGame() {
                   completedMaps={completedMaps}
                 />
 
-                <div className="bg-white/40 backdrop-blur-sm rounded-3xl shadow-lg border-2 border-white/60 p-4 sm:p-6">
+                <div className="bg-white/40 backdrop-blur-sm rounded-3xl shadow-lg border-2 border-white/60 p-3 sm:p-4 overflow-hidden">
                   {activeMap === 1 && (
                     <AppleGardenMap
                       key={mapKey}
