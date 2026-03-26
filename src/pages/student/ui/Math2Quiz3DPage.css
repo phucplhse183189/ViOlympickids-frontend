@@ -104,7 +104,8 @@
   transition: width 220ms ease;
 }
 
-.l46-level-menu {
+.l46-level-menu,
+.l46-intro-panel {
   position: fixed;
   inset: 0;
   z-index: 35;
@@ -114,13 +115,42 @@
   backdrop-filter: blur(4px);
 }
 
-.l46-level-card {
+.l46-intro-dock {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 36;
+  width: min(760px, calc(100vw - 24px));
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 14px 36px rgba(2, 6, 23, 0.35);
+  padding: 10px;
+}
+
+.l46-intro-title {
+  text-align: center;
+  font-weight: 900;
+  color: #e2e8f0;
+  font-size: 0.95rem;
+  margin-bottom: 8px;
+}
+
+.l46-level-card,
+.l46-intro-card {
   width: min(540px, calc(100vw - 26px));
   border-radius: 20px;
   border: 1.5px solid rgba(165, 243, 252, 0.65);
   background: linear-gradient(160deg, rgba(248, 250, 252, 0.97), rgba(224, 242, 254, 0.9));
   box-shadow: 0 22px 54px rgba(15, 23, 42, 0.35);
   padding: 20px;
+}
+
+.l46-intro-card {
+  border-color: rgba(125, 211, 252, 0.75);
+  background: linear-gradient(160deg, rgba(248, 250, 252, 0.97), rgba(207, 250, 254, 0.9));
 }
 
 .l46-level-title {
@@ -167,6 +197,34 @@
   color: #052e16;
   background: linear-gradient(135deg, #86efac, #67e8f9);
   cursor: pointer;
+}
+
+.l46-level-start:disabled {
+  cursor: not-allowed;
+  color: #64748b;
+  background: linear-gradient(135deg, #dbeafe, #e2e8f0);
+}
+
+.l46-intro-actions {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.l46-intro-btn {
+  border: 0;
+  border-radius: 10px;
+  min-height: 38px;
+  font-size: 0.86rem;
+  font-weight: 900;
+  color: #0f172a;
+  background: linear-gradient(135deg, #bae6fd, #a7f3d0);
+  cursor: pointer;
+}
+
+.l46-intro-btn.ghost {
+  background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
 }
 
 .l46-fireworks {
@@ -354,6 +412,24 @@
 
   .l46-level-card {
     padding: 16px;
+  }
+
+  .l46-intro-card {
+    padding: 16px;
+  }
+
+  .l46-intro-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .l46-intro-dock {
+    bottom: 8px;
+    width: calc(100vw - 16px);
+    padding: 8px;
+  }
+
+  .l46-intro-title {
+    font-size: 0.82rem;
   }
 
   .l46-level-title {
