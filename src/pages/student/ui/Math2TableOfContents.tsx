@@ -493,6 +493,18 @@ export function Math2TableOfContents() {
       }
 
       let robotLesson: string | null = next;
+      const preferredRobotLesson = "math2-b2";
+      const canUsePreferred = MATH2_TOPICS.some((topic) =>
+        topic.lessons.some(
+          (lesson) =>
+            lesson.id === preferredRobotLesson &&
+            canAccessLesson(lesson, profile.plan),
+        ),
+      );
+      if (canUsePreferred) {
+        robotLesson = preferredRobotLesson;
+      }
+
       if (!robotLesson) {
         for (const topic of MATH2_TOPICS) {
           for (const lesson of topic.lessons) {
