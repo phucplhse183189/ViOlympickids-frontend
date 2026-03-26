@@ -29,6 +29,8 @@ type HiddenChallengeLevel = {
   bgUrl: string;
 };
 
+type IntroFocus = "sphere" | "cylinder";
+
 const HIDDEN_LEVELS: HiddenChallengeLevel[] = [
   {
     id: 1,
@@ -173,7 +175,7 @@ export default function Math2Quiz3DPage() {
   const navigate = useNavigate();
   const sound = useGameSound();
 
-  const [phase, setPhase] = useState<"menu" | "playing" | "finished">("menu");
+  const [phase, setPhase] = useState<"intro-explain" | "menu" | "playing" | "finished">("intro-explain");
   const [levelIndex, setLevelIndex] = useState(0);
   const [hiddenObjects, setHiddenObjects] = useState<HiddenRoomObject[]>([]);
   const [hiddenTargetTotal, setHiddenTargetTotal] = useState(0);
@@ -181,7 +183,14 @@ export default function Math2Quiz3DPage() {
   const [score, setScore] = useState(0);
   const [stars, setStars] = useState(0);
   const [showFireworks, setShowFireworks] = useState(false);
-  const [robotLine, setRobotLine] = useState("Nhấn bắt đầu để vào Level 1 nhé!");
+  const [robotLine, setRobotLine] = useState(
+    "Chào bé! Đây là phòng khám phá hình khối. Chạm vào khối cầu hoặc khối trụ để nghe giải thích nhé!",
+  );
+  const [introFocus, setIntroFocus] = useState<IntroFocus>("sphere");
+  const [sphereSplit, setSphereSplit] = useState(0);
+  const [cylinderOpen, setCylinderOpen] = useState(0);
+  const [sphereExplained, setSphereExplained] = useState(false);
+  const [cylinderExplained, setCylinderExplained] = useState(false);
 
   const timersRef = useRef<number[]>([]);
   const currentHiddenLevel = HIDDEN_LEVELS[levelIndex] ?? HIDDEN_LEVELS[0];
@@ -234,6 +243,37 @@ export default function Math2Quiz3DPage() {
     setStars(0);
     startLevel(0);
   }, [sound, startLevel]);
+
+  const openLevelMenu = useCallback(() => {
+    if (!sphereExplained || !cylinderExplained) {
+      speakRobot("Bé cần xem giải thích cả khối cầu và khối trụ trước nhé!");
+      return;
+    }
+    setPhase("menu");
+    speakRobot("Bé đã khám phá xong. Bây giờ mình chọn thử thách và bắt đầu 3 level nhé!");
+  }, [cylinderExplained, speakRobot, sphereExplained]);
+
+  const explainSphere = useCallback(() => {
+    setIntroFocus("sphere");
+    setSphereSplit(1);
+    setSphereExplained(true);
+    speakRobot("Khối cầu tròn đều mọi phía, không có cạnh và không có đỉnh. Ví dụ như quả bóng hoặc viên bi.");
+  }, [speakRobot]);
+
+  const explainCylinder = useCallback(() => {
+    setIntroFocus("cylinder");
+    setCylinderOpen(1);
+    setCylinderExplained(true);
+    speakRobot(
+      "Khối trụ có hai mặt đáy hình tròn và một mặt cong xung quanh. Ví dụ như lon nước, cái cốc hoặc ống giấy.",
+    );
+  }, [speakRobot]);
+
+  const resetIntroModels = useCallback(() => {
+    setSphereSplit(0);
+    setCylinderOpen(0);
+    speakRobot("Bé có thể xoay để nhìn mô hình từ nhiều hướng, rồi bấm bắt đầu để vào 3 level nhé!");
+  }, [speakRobot]);
 
   const onCorrectFlyDone = useCallback((id: string) => {
     setHiddenObjects((prev) => prev.map((obj) => (obj.id === id ? { ...obj, state: "gone" } : obj)));
@@ -307,6 +347,87 @@ export default function Math2Quiz3DPage() {
           <directionalLight position={[6, 10, 5]} intensity={1.1} />
           <pointLight position={[-5, 4, 4]} intensity={0.55} color="#93c5fd" />
 
+          {phase === "intro-explain" ? (
+            <group>
+              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]}>
+                <planeGeometry args={[18, 11]} />
+                <meshStandardMaterial color="#ffffff" transparent opacity={0.16} />
+              </mesh>
+
+              <group
+                position={[-2.15, 1.35, 0]}
+                onClick={(evt) => {
+                  evt.stopPropagation();
+                  explainSphere();
+                }}
+              >
+                <mesh position={[-sphereSplit * 0.56, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
+                  <sphereGeometry args={[0.85, 40, 40, 0, Math.PI]} />
+                  <meshStandardMaterial
+                    color={introFocus === "sphere" ? "#f97316" : "#fb923c"}
+                    roughness={0.28}
+                    metalness={0.06}
+                  />
+                </mesh>
+                <mesh position={[sphereSplit * 0.56, 0, 0]} rotation={[0, -Math.PI / 2, 0]}>
+                  <sphereGeometry args={[0.85, 40, 40, 0, Math.PI]} />
+                  <meshStandardMaterial
+                    color={introFocus === "sphere" ? "#ea580c" : "#fdba74"}
+                    roughness={0.28}
+                    metalness={0.06}
+                  />
+                </mesh>
+              </group>
+
+              <group
+                position={[2.35, 1.32, 0]}
+                onClick={(evt) => {
+                  evt.stopPropagation();
+                  explainCylinder();
+                }}
+              >
+                <mesh position={[0, 0.58 + cylinderOpen * 0.46, 0]}>
+                  <cylinderGeometry args={[0.58, 0.58, 0.15, 40]} />
+                  <meshStandardMaterial
+                    color={introFocus === "cylinder" ? "#0ea5e9" : "#38bdf8"}
+                    roughness={0.2}
+                    metalness={0.24}
+                  />
+                </mesh>
+
+                <mesh>
+                  <cylinderGeometry args={[0.58, 0.58, 1.22, 40, 1, true]} />
+                  <meshStandardMaterial
+                    color={introFocus === "cylinder" ? "#0284c7" : "#7dd3fc"}
+                    roughness={0.2}
+                    metalness={0.22}
+                    transparent
+                    opacity={0.95}
+                    side={THREE.DoubleSide}
+                  />
+                </mesh>
+
+                <mesh position={[0, -0.58 - cylinderOpen * 0.46, 0]}>
+                  <cylinderGeometry args={[0.58, 0.58, 0.15, 40]} />
+                  <meshStandardMaterial
+                    color={introFocus === "cylinder" ? "#0369a1" : "#0ea5e9"}
+                    roughness={0.2}
+                    metalness={0.24}
+                  />
+                </mesh>
+              </group>
+
+              <mesh position={[-2.15, 0.2, 0]}>
+                <boxGeometry args={[2.2, 0.16, 1.4]} />
+                <meshStandardMaterial color="#fed7aa" />
+              </mesh>
+              <mesh position={[2.35, 0.2, 0]}>
+                <boxGeometry args={[2.2, 0.16, 1.4]} />
+                <meshStandardMaterial color="#bae6fd" />
+              </mesh>
+            </group>
+          ) : null}
+
           {(phase === "playing" || phase === "finished") ? (
             <group>
               <Image
@@ -338,19 +459,25 @@ export default function Math2Quiz3DPage() {
             enablePan={false}
             minDistance={5.8}
             maxDistance={8.8}
-            minPolarAngle={0.78}
-            maxPolarAngle={1.42}
+            minPolarAngle={0.68}
+            maxPolarAngle={1.5}
           />
         </Canvas>
       </div>
 
+      {phase !== "intro-explain" ? (
       <div className="l46-hud-top">
-        <div className="l46-chip">Cấp độ {currentHiddenLevel.id}/3</div>
+        <div className="l46-chip">
+          {phase === "menu" ? "Menu 3 level" : `Cấp độ ${currentHiddenLevel.id}/3`}
+        </div>
         <div className="l46-chip">Điểm: {score}</div>
         <div className="l46-chip">Ngôi sao: {stars}</div>
-        <div className="l46-chip">Cần tìm: {remainingTargetCount}/{hiddenTargetTotal}</div>
+        <div className="l46-chip">
+          {phase === "menu" ? "Sẵn sàng bắt đầu" : `Cần tìm: ${remainingTargetCount}/${hiddenTargetTotal}`}
+        </div>
         <button type="button" className="l46-back" onClick={() => navigate("/student")}>Quay lại</button>
       </div>
+      ) : null}
 
       {phase === "playing" ? (
         <div className="l46-mission-panel">
@@ -369,7 +496,7 @@ export default function Math2Quiz3DPage() {
           <div className="l46-win-title">Hoàn thành cả 3 level. Bé làm rất giỏi!</div>
           <div className="l46-win-actions">
             <button type="button" className="l46-win-btn" onClick={() => navigate("/student")}>Quay lại</button>
-            <button type="button" className="l46-win-btn alt" onClick={() => setPhase("menu")}>Chơi lại</button>
+            <button type="button" className="l46-win-btn alt" onClick={() => setPhase("intro-explain")}>Chơi lại</button>
           </div>
         </div>
       ) : null}
@@ -378,7 +505,15 @@ export default function Math2Quiz3DPage() {
         <button
           type="button"
           className="l46-robot-avatar"
-          onClick={() => speakRobot(currentHiddenLevel.introLine)}
+          onClick={() =>
+            speakRobot(
+              phase === "intro-explain"
+                ? "Bé hãy chạm vào khối cầu hoặc khối trụ để nghe giải thích, rồi bấm tiếp tục để vào menu 3 level nhé!"
+                : phase === "menu"
+                ? "Nếu sẵn sàng, bé bấm bắt đầu 3 level nhé!"
+                : currentHiddenLevel.introLine,
+            )
+          }
           aria-label="Robot hướng dẫn"
         >
           <video
@@ -398,6 +533,23 @@ export default function Math2Quiz3DPage() {
         </div>
       </div>
 
+      {phase === "intro-explain" ? (
+        <div className="l46-intro-dock">
+          <div className="l46-intro-title">Bài 46: Khối Trụ & Khối Cầu</div>
+          <div className="l46-intro-actions">
+            <button type="button" className="l46-intro-btn" onClick={explainSphere}>Giải thích khối cầu</button>
+            <button type="button" className="l46-intro-btn" onClick={explainCylinder}>Giải thích khối trụ</button>
+            <button type="button" className="l46-intro-btn ghost" onClick={resetIntroModels}>Đóng mô hình</button>
+          </div>
+
+          {sphereExplained && cylinderExplained ? (
+            <button type="button" className="l46-level-start" onClick={openLevelMenu}>
+              Tiếp tục tới menu 3 level
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
       {phase === "menu" ? (
         <div className="l46-level-menu">
           <div className="l46-level-card">
@@ -408,7 +560,8 @@ export default function Math2Quiz3DPage() {
               <div className="l46-level-item">Level 2: Nhận biết Khối Trụ (siêu thị/nhà bếp)</div>
               <div className="l46-level-item">Level 3: Thử thách tổng hợp (xưởng phép thuật)</div>
             </div>
-            <button type="button" className="l46-level-start" onClick={onStartGame}>Bắt đầu Level 1</button>
+
+            <button type="button" className="l46-level-start" onClick={onStartGame}>Bắt đầu 3 level</button>
           </div>
         </div>
       ) : null}
