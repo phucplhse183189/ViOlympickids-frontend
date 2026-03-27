@@ -211,10 +211,10 @@ export default function Math2B46WarehouseGame() {
                 Chơi lại
               </button>
               <button
-                onClick={() => navigate("/student")}
+                onClick={() => navigate("/student/game/math2-b46-detective")}
                 className="rounded-2xl bg-white border border-emerald-300 text-emerald-700 font-black py-3"
               >
-                Quay lại mục lục
+                Sang map 2: Mắt Tinh Tìm Khối
               </button>
             </div>
           </div>
