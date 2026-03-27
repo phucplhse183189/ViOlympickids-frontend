@@ -115,7 +115,10 @@ Câu hỏi của học sinh: ${question}`,
       return;
     }
 
-    res.status(200).json({ answer: text });
+    const normalized = text.replace(/\s+/g, " ").trim();
+    const answer = /[.!?…]$/.test(normalized) ? normalized : `${normalized}.`;
+
+    res.status(200).json({ answer });
   } catch (error: any) {
     res.status(500).json({ error: error?.message ?? "Unknown error" });
   }
