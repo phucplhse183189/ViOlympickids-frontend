@@ -139,7 +139,7 @@ export const translations = {
     cta: {
       title: "Sẵn sàng giúp con yêu Toán học?",
       subtitle: "Tham gia cùng các phụ huynh khác ngay hôm nay",
-      emailPlaceholder: "Nhập email/số điện thoạigit của bạn",
+      emailPlaceholder: "Nhập email/số điện thoại của bạn",
       button: "Nhận ưu đãi",
       footnote: "Miễn phí 7 ngày • Không cần thẻ tín dụng",
     },

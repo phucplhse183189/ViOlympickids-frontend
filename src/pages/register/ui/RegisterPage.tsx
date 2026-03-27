@@ -109,11 +109,11 @@ export function RegisterPage() {
   // ── Step 3 (final) ─────────────────────────────
   function handleFinish() {
     const avatar = AVATAR_OPTIONS[selectedAvatar];
-    const identifier = phone;
 
     login({
       nickname: childName.trim() || "Phụ huynh",
-      email: identifier,
+      phone: phone,
+      email: "",
       avatarId: "fox",
     });
 

@@ -14,7 +14,7 @@ interface ParentProfileForm {
 const INITIAL: ParentProfileForm = {
   name: MOCK_PARENT_PROFILE.name,
   phone: "0901 234 567",
-  email: "phhuynh@email.com",
+  email: "",
   avatarUrl: null,
 };
 
@@ -172,7 +172,8 @@ export function ProfilePage() {
   const [form, setForm] = useState<ParentProfileForm>({
     ...INITIAL,
     name: user?.nickname ?? INITIAL.name,
-    email: user?.email ?? INITIAL.email,
+    phone: user?.phone ?? INITIAL.phone,
+    email: user?.email || INITIAL.email,
   });
   const [saved, setSaved] = useState(false);
 
@@ -250,13 +251,13 @@ export function ProfilePage() {
           type="tel"
           onChange={(v) => update("phone", v)}
         />
-        <EditableField
+        {/* <EditableField
           label="Email"
           value={form.email}
           placeholder="VD: email@example.com"
           type="email"
           onChange={(v) => update("email", v)}
-        />
+        /> */}
 
         {/* Role badge – read only */}
         <div className="flex flex-col gap-1.5">
