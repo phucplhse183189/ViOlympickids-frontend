@@ -211,10 +211,10 @@ export default function Math2B46WarehouseGame() {
                 Chơi lại
               </button>
               <button
-                onClick={() => navigate("/student/game/math2-quiz-3d-shapes")}
+                onClick={() => navigate("/student/game/math2-b46-detective")}
                 className="rounded-2xl bg-white border border-emerald-300 text-emerald-700 font-black py-3"
               >
-                Về bài 46
+                Sang map 2: Mắt Tinh Tìm Khối
               </button>
             </div>
 

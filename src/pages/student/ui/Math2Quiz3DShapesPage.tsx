@@ -450,13 +450,15 @@ export default function Math2Quiz3DShapesPage() {
               : "Mẹo: Nhấn đúp để mở hình, giữ chuột phải để giữ nguyên trạng thái mở."}
           </p>
 
-          <button
-            type="button"
-            onClick={() => navigate("/student/game/math2-b46-warehouse")}
-            className="mt-3 inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-orange-400 to-amber-500 px-5 py-2.5 text-sm sm:text-base font-black text-white shadow-lg hover:from-orange-500 hover:to-amber-600 active:scale-95 transition"
-          >
-            Chơi game: Nhà Kho Của Tí Tách
-          </button>
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => navigate("/student/game/math2-b46-warehouse")}
+              className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-orange-400 to-amber-500 px-5 py-2.5 text-sm sm:text-base font-black text-white shadow-lg hover:from-orange-500 hover:to-amber-600 active:scale-95 transition"
+            >
+              Chơi game: Nhà Kho Của Tí Tách
+            </button>
+          </div>
         </div>
       </div>
     </div>
