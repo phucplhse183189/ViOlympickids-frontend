@@ -313,7 +313,7 @@ function RobotAskBar({
                 onSend();
               }
             }}
-            placeholder="Nhập câu hỏi toán lớp 2... (Shift+Enter để xuống dòng)"
+            placeholder="Hãy nhập câu hỏi của bạn để Tí Tách trả lời nhé"
             rows={3}
             className="w-full resize-none bg-transparent text-sm sm:text-base font-bold text-slate-600 outline-none placeholder:text-slate-400 leading-relaxed"
           />
