@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import type { ThreeEvent } from "@react-three/fiber";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
@@ -311,6 +312,7 @@ function SphereShape({
 }
 
 export default function Math2Quiz3DShapesPage() {
+  const navigate = useNavigate();
   const [message, setMessage] = useState(
     "Nhấn 1 lần để phản ứng vui nhộn, nhấn đúp để mở hình. Giữ chuột phải để giữ trạng thái mở.",
   );
@@ -447,6 +449,14 @@ export default function Math2Quiz3DShapesPage() {
               ? "Đang giữ chuột phải: thả ra để gập lại."
               : "Mẹo: Nhấn đúp để mở hình, giữ chuột phải để giữ nguyên trạng thái mở."}
           </p>
+
+          <button
+            type="button"
+            onClick={() => navigate("/student/game/math2-b46-warehouse")}
+            className="mt-3 inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-orange-400 to-amber-500 px-5 py-2.5 text-sm sm:text-base font-black text-white shadow-lg hover:from-orange-500 hover:to-amber-600 active:scale-95 transition"
+          >
+            Chơi game: Nhà Kho Của Tí Tách
+          </button>
         </div>
       </div>
     </div>

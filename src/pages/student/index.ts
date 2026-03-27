@@ -3,6 +3,7 @@ export { NumberSequenceGame } from "./ui/NumberSequenceGame";
 export { Math2QuizPage } from "./ui/Math2QuizPage";
 export { default as Math2Quiz3DPage } from "./ui/Math2Quiz3DPage";
 export { default as Math2Quiz3DShapesPage } from "./ui/Math2Quiz3DShapesPage";
+export { default as Math2B46WarehouseGame } from "./ui/Math2B46WarehouseGame";
 export { Math2ResultPage } from "./ui/Math2ResultPage";
 export { Math2B1Game } from "./ui/Math2B1Game";
 export { Math2B1QuizPage } from "./ui/Math2B1QuizPage";
