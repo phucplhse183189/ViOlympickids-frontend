@@ -43,9 +43,9 @@ export default async function handler(req: VercelRequestLike, res: VercelRespons
     return;
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.Gemini_Key;
   if (!apiKey) {
-    res.status(500).json({ error: "Missing GEMINI_API_KEY" });
+    res.status(500).json({ error: "Missing Gemini_Key" });
     return;
   }
 

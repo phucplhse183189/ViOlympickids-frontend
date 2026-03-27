@@ -54,7 +54,7 @@ function CylinderShape({
   useEffect(() => {
     openApi.start({
       openProgress: isOpen ? 1 : 0,
-      config: isHolding ? { tension: 250, friction: 24 } : config.slow,
+      config: isHolding ? { tension: 260, friction: 24 } : config.slow,
     });
   }, [isOpen, isHolding, openApi]);
 
@@ -120,57 +120,69 @@ function CylinderShape({
       onDoubleClick={handleDoubleClick}
       onPointerDown={handleRightPointerDown}
     >
-      {/* Tube body (closed state) */}
-      <animated.mesh castShadow receiveShadow scale-x={openProgress.to((v) => 1 - 0.94 * v)}>
-        <cylinderGeometry args={[CYLINDER_RADIUS, CYLINDER_RADIUS, CYLINDER_HEIGHT, 64, 1, true]} />
+      {/* Closed cylinder mesh (fade out when opening) */}
+      <animated.mesh castShadow receiveShadow renderOrder={0}>
+        <cylinderGeometry args={[CYLINDER_RADIUS, CYLINDER_RADIUS, CYLINDER_HEIGHT, 64, 1, false]} />
         <animated.meshStandardMaterial
           color={color}
           roughness={0.35}
           metalness={0.15}
           transparent
           opacity={openProgress.to((v) => 1 - v)}
+          depthWrite={false}
           side={THREE.DoubleSide}
         />
       </animated.mesh>
 
-      {/* Net rectangle (open state) */}
-      <animated.mesh
-        castShadow
-        receiveShadow
-        rotation-y={openProgress.to((v) => -Math.PI * 0.15 * v)}
-        scale-x={openProgress.to((v) => 0.08 + 0.92 * v)}
-      >
-        <planeGeometry args={[2 * Math.PI * CYLINDER_RADIUS, CYLINDER_HEIGHT]} />
-        <animated.meshStandardMaterial
-          color="#fed7aa"
-          roughness={0.62}
-          metalness={0.05}
-          transparent
-          opacity={openProgress.to((v) => 0.06 + 0.94 * v)}
-          side={THREE.DoubleSide}
-        />
-      </animated.mesh>
-
-      {/* TOP LID with precise hinge at top edge of net (z = +radius rim) */}
+      {/* Unfolded net components (fade in when opening) */}
       <animated.group
-        position={[0, CYLINDER_HEIGHT / 2, CYLINDER_RADIUS]}
-        rotation-x={openProgress.to((v) => -Math.PI / 2 * v)}
+        scale={openProgress.to((v) => 0.2 + 0.8 * v)}
+        visible={true}
+        renderOrder={1}
       >
-        <mesh position={[0, 0, -CYLINDER_RADIUS]} castShadow receiveShadow>
-          <circleGeometry args={[CYLINDER_RADIUS, 64]} />
-          <meshStandardMaterial color={color} roughness={0.35} metalness={0.15} side={THREE.DoubleSide} />
-        </mesh>
-      </animated.group>
+        {/* Tan rectangular net (side) */}
+        <animated.mesh
+          castShadow
+          receiveShadow
+          renderOrder={1}
+          rotation-y={openProgress.to((v) => 0.6 * (1 - v))}
+          position-z={openProgress.to((v) => CYLINDER_RADIUS * (1 - v) * 0.6 + 0.01)}
+        >
+          <planeGeometry args={[2 * Math.PI * CYLINDER_RADIUS, CYLINDER_HEIGHT]} />
+          <animated.meshStandardMaterial
+            color="#fed7aa"
+            roughness={0.62}
+            metalness={0.05}
+            transparent
+            opacity={openProgress.to((v) => v)}
+            depthWrite={false}
+            side={THREE.DoubleSide}
+          />
+        </animated.mesh>
 
-      {/* BOTTOM LID with precise hinge at bottom edge of net (z = +radius rim) */}
-      <animated.group
-        position={[0, -CYLINDER_HEIGHT / 2, CYLINDER_RADIUS]}
-        rotation-x={openProgress.to((v) => Math.PI / 2 * v)}
-      >
-        <mesh position={[0, 0, -CYLINDER_RADIUS]} castShadow receiveShadow>
-          <circleGeometry args={[CYLINDER_RADIUS, 64]} />
-          <meshStandardMaterial color={color} roughness={0.35} metalness={0.15} side={THREE.DoubleSide} />
-        </mesh>
+        {/* TOP lid hinge: exact edge of net (z = +radius) */}
+        <animated.group
+          position={[0, CYLINDER_HEIGHT / 2, CYLINDER_RADIUS + 0.02]}
+          rotation-x={openProgress.to((v) => -Math.PI / 2 * v)}
+          renderOrder={2}
+        >
+          <mesh position={[0, 0, -CYLINDER_RADIUS]} castShadow receiveShadow>
+            <circleGeometry args={[CYLINDER_RADIUS, 64]} />
+            <meshStandardMaterial color={color} roughness={0.35} metalness={0.15} side={THREE.DoubleSide} depthWrite={false} />
+          </mesh>
+        </animated.group>
+
+        {/* BOTTOM lid hinge: exact edge of net (z = +radius) */}
+        <animated.group
+          position={[0, -CYLINDER_HEIGHT / 2, CYLINDER_RADIUS + 0.02]}
+          rotation-x={openProgress.to((v) => Math.PI / 2 * v)}
+          renderOrder={2}
+        >
+          <mesh position={[0, 0, -CYLINDER_RADIUS]} castShadow receiveShadow>
+            <circleGeometry args={[CYLINDER_RADIUS, 64]} />
+            <meshStandardMaterial color={color} roughness={0.35} metalness={0.15} side={THREE.DoubleSide} />
+          </mesh>
+        </animated.group>
       </animated.group>
     </animated.group>
   );
@@ -211,7 +223,7 @@ function SphereShape({
   useEffect(() => {
     splitApi.start({
       splitProgress: isOpen ? 1 : 0,
-      config: isHolding ? { tension: 250, friction: 24 } : config.slow,
+      config: isHolding ? { tension: 260, friction: 24 } : config.slow,
     });
   }, [isOpen, isHolding, splitApi]);
 
@@ -275,10 +287,9 @@ function SphereShape({
       onDoubleClick={handleDoubleClick}
       onPointerDown={handleRightPointerDown}
     >
-      {/* Upper hemisphere */}
       <animated.mesh
-        position-x={splitProgress.to((v) => -1.7 * v)}
-        position-y={splitProgress.to((v) => 0.04 * v)}
+        position-x={splitProgress.to((v) => -2.6 * v)}
+        position-y={splitProgress.to((v) => 0.08 * v)}
         castShadow
         receiveShadow
       >
@@ -286,10 +297,9 @@ function SphereShape({
         <meshStandardMaterial color={color} roughness={0.28} metalness={0.1} side={THREE.DoubleSide} />
       </animated.mesh>
 
-      {/* Lower hemisphere */}
       <animated.mesh
-        position-x={splitProgress.to((v) => 1.7 * v)}
-        position-y={splitProgress.to((v) => -0.04 * v)}
+        position-x={splitProgress.to((v) => 2.6 * v)}
+        position-y={splitProgress.to((v) => -0.08 * v)}
         castShadow
         receiveShadow
       >
@@ -393,8 +403,10 @@ export default function Math2Quiz3DShapesPage() {
                 setMessage("Khối trụ đang lắc như thạch!");
               }}
               onDoubleClickOpen={() => {
-                setIsCylinderOpen(true);
-                setMessage("Khối trụ mở: nắp xoay theo bản lề, thân trụ trải thành hình chữ nhật.");
+                if (!isCylinderOpen) {
+                  setIsCylinderOpen(true);
+                  setMessage("Khối trụ mở: nắp xoay theo bản lề, thân trụ trải thành hình chữ nhật.");
+                }
               }}
               onRightHoldStart={() => {
                 setIsCylinderRightClickHolding(true);
@@ -412,8 +424,10 @@ export default function Math2Quiz3DShapesPage() {
                 setMessage("Khối cầu bật nảy như bóng cao su!");
               }}
               onDoubleClickOpen={() => {
-                setIsSphereOpen(true);
-                setMessage("Khối cầu đã tách thành 2 bán cầu, tách rời rõ ràng.");
+                if (!isSphereOpen) {
+                  setIsSphereOpen(true);
+                  setMessage("Khối cầu đã tách thành 2 bán cầu, tách rời rõ ràng.");
+                }
               }}
               onRightHoldStart={() => {
                 setIsSphereRightClickHolding(true);
