@@ -1055,7 +1055,7 @@ export function getMath2LessonPlayRoute(lesson: Math2Lesson): string | null {
     case "matific-canvas-game":
       return "/student/game/matific-canvas";
     case "math2-quiz-3d":
-      return "/student/game/math2-quiz-3d";
+      return "/student/game/math2-quiz-3d-shapes";
     default:
       return null;
   }
