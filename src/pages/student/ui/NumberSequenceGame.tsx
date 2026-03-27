@@ -1001,8 +1001,6 @@ function BridgeMap({
   };
 
   const questionText = "Robot Tí Tách đang ở biển 3, cần tiến thêm 2 bước để tới đúng chỗ của kho báu. Hãy giúp Tí Tách đến đúng nơi có cất giấu kho báu nào!";
-  const plusTwoArrowLeft = "35%";
-  const plusTwoArrowTop = "38%";
 
   return (
     <div className="relative h-full flex flex-col justify-between gap-2 overflow-hidden">
