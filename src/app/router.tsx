@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { HomePage } from "@/pages/home";
 import { LoginPage } from "@/pages/login";
 import { RegisterPage } from "@/pages/register";
@@ -33,6 +33,13 @@ import {
 import { AddChildPage } from "@/pages/add-child";
 import { ParentDashboardLayout } from "@/widgets/dashboard-layout";
 import { StudentLayout } from "@/widgets/student-layout";
+import {
+  AdminOverviewPage,
+  AdminPerformancePage,
+  AdminFinancePage,
+  AdminUsersPage,
+} from "@/pages/admin";
+import { AdminLayout } from "@/widgets/admin-layout";
 
 export function RouterProvider() {
   return (
@@ -70,9 +77,18 @@ export function RouterProvider() {
 
         {/* Lesson 46 routes */}
         <Route path="game/math2-quiz-3d" element={<Math2Quiz3DPage />} />
-        <Route path="game/math2-quiz-3d-shapes" element={<Math2Quiz3DShapesPage />} />
-        <Route path="game/math2-b46-warehouse" element={<Math2B46WarehouseGame />} />
-        <Route path="game/math2-b46-detective" element={<Math2B46DetectiveGame />} />
+        <Route
+          path="game/math2-quiz-3d-shapes"
+          element={<Math2Quiz3DShapesPage />}
+        />
+        <Route
+          path="game/math2-b46-warehouse"
+          element={<Math2B46WarehouseGame />}
+        />
+        <Route
+          path="game/math2-b46-detective"
+          element={<Math2B46DetectiveGame />}
+        />
 
         {/* Lesson 2 */}
         <Route path="theory/math2-b2" element={<Math2B2TheoryPage />} />
@@ -80,6 +96,17 @@ export function RouterProvider() {
         <Route path="game/number-sequence" element={<NumberSequenceGame />} />
         <Route path="quiz/math2-b2" element={<Math2QuizPage />} />
         <Route path="result/math2-b2" element={<Math2ResultPage />} />
+      </Route>
+
+      {/* Admin */}
+      <Route path="/admin-login" element={<Navigate to="/login" replace />} />
+      <Route path="/login-admin" element={<Navigate to="/login" replace />} />
+      <Route path="/admin." element={<Navigate to="/admin" replace />} />
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<AdminOverviewPage />} />
+        <Route path="performance" element={<AdminPerformancePage />} />
+        <Route path="finance" element={<AdminFinancePage />} />
+        <Route path="users" element={<AdminUsersPage />} />
       </Route>
     </Routes>
   );

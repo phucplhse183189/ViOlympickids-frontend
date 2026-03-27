@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/shared/lib/auth";
+import { ADMIN_ACCOUNT } from "@/shared/api/adminMockData";
+
+const ADMIN_SESSION_KEY = "vio_admin_session";
 
 // Single parent account – all roles handled via profile picker
 const MOCK_ACCOUNT = {
@@ -18,6 +21,10 @@ interface LoginErrors {
 
 function validatePhone(phone: string): boolean {
   return /^(0[3|5|7|8|9])[0-9]{8}$/.test(phone);
+}
+
+function normalizePhone(value: string): string {
+  return value.replace(/\D/g, "");
 }
 
 export function useLoginForm() {
@@ -55,9 +62,33 @@ export function useLoginForm() {
     const errs = validate();
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
+
+    const normalizedPhone = normalizePhone(phone);
     setIsLoading(true);
+
     setTimeout(() => {
-      if (phone === MOCK_ACCOUNT.phone && password === MOCK_ACCOUNT.password) {
+      if (
+        normalizedPhone === normalizePhone(ADMIN_ACCOUNT.username) &&
+        password === ADMIN_ACCOUNT.password
+      ) {
+        sessionStorage.setItem(
+          ADMIN_SESSION_KEY,
+          JSON.stringify({
+            username: ADMIN_ACCOUNT.username,
+            displayName: ADMIN_ACCOUNT.displayName,
+            role: ADMIN_ACCOUNT.role,
+            loggedInAt: new Date().toISOString(),
+          }),
+        );
+        navigate("/admin");
+        setIsLoading(false);
+        return;
+      }
+
+      if (
+        normalizedPhone === normalizePhone(MOCK_ACCOUNT.phone) &&
+        password === MOCK_ACCOUNT.password
+      ) {
         login({
           nickname: MOCK_ACCOUNT.nickname,
           email: MOCK_ACCOUNT.phone,
@@ -65,6 +96,7 @@ export function useLoginForm() {
           tier: "free",
         });
         navigate("/profile-picker");
+        setIsLoading(false);
       } else {
         setErrors({ general: "Số điện thoại hoặc mật khẩu không đúng." });
         setIsLoading(false);
