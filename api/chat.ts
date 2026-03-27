@@ -104,7 +104,11 @@ Câu hỏi của học sinh: ${question}`,
     });
 
     const data = (await response.json()) as GeminiResponse;
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    const parts = data?.candidates?.[0]?.content?.parts ?? [];
+    const text = parts
+      .map((p) => p?.text ?? "")
+      .join("")
+      .trim();
 
     if (!text) {
       res.status(502).json({ error: "Empty response", raw: data });
