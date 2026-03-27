@@ -1,11 +1,29 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { ThreeEvent } from "@react-three/fiber";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { animated, config, useSpring } from "@react-spring/three";
 import * as THREE from "three";
+import { Volume2, VolumeX, X, Gamepad2, RotateCcw, Sparkles } from "lucide-react";
 
+/* ─── TTS helper ─────────────────────────────────────────────── */
+function speak(text: string, onEnd?: () => void) {
+  if (!("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "vi-VN";
+  u.rate = 0.92;
+  u.pitch = 1.15;
+  // Try to pick a Vietnamese voice
+  const voices = window.speechSynthesis.getVoices();
+  const vi = voices.find((v) => v.lang.startsWith("vi"));
+  if (vi) u.voice = vi;
+  if (onEnd) u.onend = onEnd;
+  window.speechSynthesis.speak(u);
+}
+
+/* ─── Shape types ────────────────────────────────────────────── */
 type ShapeProps = {
   position: [number, number, number];
   color: string;
@@ -20,6 +38,7 @@ const CYLINDER_RADIUS = 1;
 const CYLINDER_HEIGHT = 2.2;
 const CLICK_DELAY_MS = 220;
 
+/* ─── CylinderShape ─────────────────────────────────────────── */
 function CylinderShape({
   position,
   color,
@@ -37,12 +56,10 @@ function CylinderShape({
     scale: 1,
     config: config.stiff,
   }));
-
   const [{ wobbleZ }, wobbleApi] = useSpring(() => ({
     wobbleZ: 0,
     config: config.default,
   }));
-
   const [{ openProgress }, openApi] = useSpring(() => ({
     openProgress: 0,
     config: config.slow,
@@ -121,7 +138,6 @@ function CylinderShape({
       onDoubleClick={handleDoubleClick}
       onPointerDown={handleRightPointerDown}
     >
-      {/* Closed cylinder mesh (fade out when opening) */}
       <animated.mesh castShadow receiveShadow renderOrder={0}>
         <cylinderGeometry args={[CYLINDER_RADIUS, CYLINDER_RADIUS, CYLINDER_HEIGHT, 64, 1, false]} />
         <animated.meshStandardMaterial
@@ -135,38 +151,21 @@ function CylinderShape({
         />
       </animated.mesh>
 
-      {/* Unfolded net components (fade in when opening) */}
-      <animated.group
-        scale={openProgress.to((v) => 0.2 + 0.8 * v)}
-        visible={true}
-        renderOrder={1}
-      >
-        {/* Tan rectangular net (side) */}
+      <animated.group scale={openProgress.to((v) => 0.2 + 0.8 * v)} visible={true} renderOrder={1}>
         <animated.mesh
-          castShadow
-          receiveShadow
-          renderOrder={1}
+          castShadow receiveShadow renderOrder={1}
           rotation-y={openProgress.to((v) => 0.6 * (1 - v))}
           position-z={openProgress.to((v) => CYLINDER_RADIUS * (1 - v) * 0.6 + 0.01)}
         >
           <planeGeometry args={[2 * Math.PI * CYLINDER_RADIUS, CYLINDER_HEIGHT]} />
-          <animated.meshStandardMaterial
-            color={color}
-            roughness={0.35}
-            metalness={0.15}
-            transparent
-            opacity={openProgress.to((v) => v)}
-            depthWrite={false}
-            side={THREE.DoubleSide}
-          />
+          <animated.meshStandardMaterial color={color} roughness={0.35} metalness={0.15} transparent opacity={openProgress.to((v) => v)} depthWrite={false} side={THREE.DoubleSide} />
         </animated.mesh>
 
-        {/* TOP lid hinge: exact edge of net (z = +radius) */}
         <animated.group
           position-x={0}
           position-y={openProgress.to((v) => CYLINDER_HEIGHT / 2 + v * 0.95)}
           position-z={CYLINDER_RADIUS + 0.02}
-          rotation-x={openProgress.to((v) => -Math.PI / 2 * v)}
+          rotation-x={openProgress.to((v) => (-Math.PI / 2) * v)}
           renderOrder={2}
         >
           <mesh position={[0, 0, -CYLINDER_RADIUS]} castShadow receiveShadow>
@@ -175,12 +174,11 @@ function CylinderShape({
           </mesh>
         </animated.group>
 
-        {/* BOTTOM lid hinge: exact edge of net (z = +radius) */}
         <animated.group
           position-x={0}
           position-y={openProgress.to((v) => -CYLINDER_HEIGHT / 2 - v * 0.95)}
           position-z={CYLINDER_RADIUS + 0.02}
-          rotation-x={openProgress.to((v) => Math.PI / 2 * v)}
+          rotation-x={openProgress.to((v) => (Math.PI / 2) * v)}
           renderOrder={2}
         >
           <mesh position={[0, 0, -CYLINDER_RADIUS]} castShadow receiveShadow>
@@ -193,6 +191,7 @@ function CylinderShape({
   );
 }
 
+/* ─── SphereShape ────────────────────────────────────────────── */
 function SphereShape({
   position,
   color,
@@ -206,20 +205,9 @@ function SphereShape({
   const groupRef = useRef<THREE.Group | null>(null);
   const clickTimerRef = useRef<number | null>(null);
 
-  const [{ scale }, scaleApi] = useSpring(() => ({
-    scale: 1,
-    config: config.stiff,
-  }));
-
-  const [{ bounceY }, bounceApi] = useSpring(() => ({
-    bounceY: 0,
-    config: config.default,
-  }));
-
-  const [{ splitProgress }, splitApi] = useSpring(() => ({
-    splitProgress: 0,
-    config: config.slow,
-  }));
+  const [{ scale }, scaleApi] = useSpring(() => ({ scale: 1, config: config.stiff }));
+  const [{ bounceY }, bounceApi] = useSpring(() => ({ bounceY: 0, config: config.default }));
+  const [{ splitProgress }, splitApi] = useSpring(() => ({ splitProgress: 0, config: config.slow }));
 
   useEffect(() => {
     scaleApi.start({ scale: hovered ? 1.1 : 1 });
@@ -292,22 +280,11 @@ function SphereShape({
       onDoubleClick={handleDoubleClick}
       onPointerDown={handleRightPointerDown}
     >
-      <animated.mesh
-        position-x={splitProgress.to((v) => -2.6 * v)}
-        position-y={splitProgress.to((v) => 0.08 * v)}
-        castShadow
-        receiveShadow
-      >
+      <animated.mesh position-x={splitProgress.to((v) => -2.6 * v)} position-y={splitProgress.to((v) => 0.08 * v)} castShadow receiveShadow>
         <sphereGeometry args={[1.2, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2]} />
         <meshStandardMaterial color={color} roughness={0.28} metalness={0.1} side={THREE.DoubleSide} />
       </animated.mesh>
-
-      <animated.mesh
-        position-x={splitProgress.to((v) => 2.6 * v)}
-        position-y={splitProgress.to((v) => -0.08 * v)}
-        castShadow
-        receiveShadow
-      >
+      <animated.mesh position-x={splitProgress.to((v) => 2.6 * v)} position-y={splitProgress.to((v) => -0.08 * v)} castShadow receiveShadow>
         <sphereGeometry args={[1.2, 64, 32, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2]} />
         <meshStandardMaterial color={color} roughness={0.28} metalness={0.1} side={THREE.DoubleSide} />
       </animated.mesh>
@@ -315,19 +292,116 @@ function SphereShape({
   );
 }
 
+/* ─── Floating particle decoration ───────────────────────────── */
+function FloatingParticle({ emoji, className }: { emoji: string; className: string }) {
+  return (
+    <div className={`absolute select-none pointer-events-none animate-float-slow ${className}`}>
+      <span className="text-2xl sm:text-3xl opacity-20">{emoji}</span>
+    </div>
+  );
+}
+
+/* ─── Shape info card ─────────────────────────────────────────── */
+function ShapeInfoCard({
+  emoji,
+  name,
+  features,
+  color,
+  isActive,
+  onClick,
+}: {
+  emoji: string;
+  name: string;
+  features: string[];
+  color: string;
+  isActive: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex-1 min-w-[140px] rounded-2xl border-2 p-3 sm:p-4 text-left transition-all duration-300 hover:scale-[1.03] active:scale-95"
+      style={{
+        borderColor: isActive ? color : "#e2e8f0",
+        background: isActive
+          ? `linear-gradient(135deg, ${color}15, ${color}08)`
+          : "rgba(255,255,255,0.8)",
+        boxShadow: isActive
+          ? `0 4px 20px ${color}30`
+          : "0 2px 8px rgba(0,0,0,0.04)",
+      }}
+    >
+      <div className="text-3xl sm:text-4xl mb-2">{emoji}</div>
+      <p className="text-sm sm:text-base font-extrabold" style={{ color }}>
+        {name}
+      </p>
+      <ul className="mt-1.5 space-y-0.5">
+        {features.map((f) => (
+          <li key={f} className="text-[11px] sm:text-xs text-slate-500 flex items-start gap-1">
+            <span className="text-[10px] mt-0.5">✦</span>
+            {f}
+          </li>
+        ))}
+      </ul>
+    </button>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Main Page
+   ═══════════════════════════════════════════════════════════════ */
 export default function Math2Quiz3DShapesPage() {
   const navigate = useNavigate();
-  const [message, setMessage] = useState(
-    "Nhấn 1 lần để phản ứng vui nhộn, nhấn đúp để mở hình. Giữ chuột phải để giữ trạng thái mở.",
-  );
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [activeShape, setActiveShape] = useState<"cylinder" | "sphere" | null>(null);
+
+  const defaultMsg = "Nhấn vào hình 3D để khám phá! Nhấn đúp để mở hình, giữ chuột phải để giữ mở.";
+  const [message, setMessage] = useState(defaultMsg);
 
   const [isCylinderOpen, setIsCylinderOpen] = useState(false);
   const [isSphereOpen, setIsSphereOpen] = useState(false);
-
   const [isCylinderRightClickHolding, setIsCylinderRightClickHolding] = useState(false);
   const [isSphereRightClickHolding, setIsSphereRightClickHolding] = useState(false);
 
   const anyHolding = isCylinderRightClickHolding || isSphereRightClickHolding;
+
+  // Speak message when it changes
+  const speakMessage = useCallback(
+    (text: string) => {
+      if (!voiceEnabled) return;
+      setIsSpeaking(true);
+      speak(text, () => setIsSpeaking(false));
+    },
+    [voiceEnabled],
+  );
+
+  // Auto-speak on message change
+  const prevMsgRef = useRef(message);
+  useEffect(() => {
+    if (message !== prevMsgRef.current) {
+      prevMsgRef.current = message;
+      speakMessage(message);
+    }
+  }, [message, speakMessage]);
+
+  // Speak intro on first load
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      speakMessage("Bài 46: Khối trụ và Khối cầu. " + defaultMsg);
+    }, 600);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Load voices
+  useEffect(() => {
+    window.speechSynthesis?.getVoices();
+    window.speechSynthesis?.addEventListener?.("voiceschanged", () => {
+      window.speechSynthesis.getVoices();
+    });
+  }, []);
 
   const handleGlobalRightRelease = useMemo(
     () => () => {
@@ -348,30 +422,115 @@ export default function Math2Quiz3DShapesPage() {
     const onMouseUp = (e: MouseEvent) => {
       if (e.button === 2) handleGlobalRightRelease();
     };
-
     window.addEventListener("contextmenu", preventContextMenu);
     window.addEventListener("mouseup", onMouseUp);
-
     return () => {
       window.removeEventListener("contextmenu", preventContextMenu);
       window.removeEventListener("mouseup", onMouseUp);
     };
   }, [handleGlobalRightRelease]);
 
+  function handleReset() {
+    setIsCylinderOpen(false);
+    setIsSphereOpen(false);
+    setIsCylinderRightClickHolding(false);
+    setIsSphereRightClickHolding(false);
+    setActiveShape(null);
+    setMessage(defaultMsg);
+  }
+
+  function toggleVoice() {
+    if (voiceEnabled) {
+      window.speechSynthesis?.cancel();
+      setIsSpeaking(false);
+    }
+    setVoiceEnabled(!voiceEnabled);
+  }
+
   return (
     <div
-      className="w-full min-h-screen bg-gradient-to-b from-cyan-50 via-sky-50 to-indigo-100 p-4 sm:p-6"
+      className="w-full min-h-screen relative overflow-hidden"
+      style={{
+        background: "linear-gradient(145deg, #e0f2fe 0%, #f0f9ff 30%, #fdf4ff 60%, #ede9fe 100%)",
+      }}
       onContextMenu={(e) => e.preventDefault()}
     >
-      <div className="mx-auto max-w-6xl">
-        <h1 className="text-center text-2xl sm:text-3xl font-black text-sky-700 mb-2">
-          Bài 46: Khối trụ và Khối cầu
-        </h1>
-        <p className="text-center text-sm sm:text-base font-bold text-slate-600 mb-4">
-          Nhấn đúp để mở hình. Giữ chuột phải để giữ mở, thả chuột phải để gập lại.
-        </p>
+      {/* ── Floating decorations ──────────────────────────────── */}
+      <FloatingParticle emoji="🔵" className="top-[8%] left-[5%]" />
+      <FloatingParticle emoji="🟠" className="top-[12%] right-[8%]" />
+      <FloatingParticle emoji="⭐" className="bottom-[20%] left-[10%]" />
+      <FloatingParticle emoji="✨" className="top-[30%] right-[4%]" />
+      <FloatingParticle emoji="🫧" className="bottom-[10%] right-[15%]" />
+      <FloatingParticle emoji="🎯" className="top-[50%] left-[3%]" />
 
-        <div className="h-[500px] w-full rounded-3xl border-2 border-sky-200 bg-white/60 shadow-xl overflow-hidden">
+      <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 py-4 sm:py-6">
+        {/* ── Header ───────────────────────────────────────────── */}
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-white/80 backdrop-blur border border-white/60 shadow-lg flex items-center justify-center text-slate-500 hover:text-red-500 hover:bg-red-50 transition-all active:scale-90"
+            title="Đóng"
+          >
+            <X size={20} strokeWidth={2.5} />
+          </button>
+
+          <div className="text-center flex-1 px-4">
+            <h1 className="text-xl sm:text-3xl font-black bg-gradient-to-r from-sky-600 via-blue-600 to-violet-600 bg-clip-text text-transparent leading-tight">
+              Bài 46: Khối trụ và Khối cầu
+            </h1>
+            <p className="text-[11px] sm:text-sm font-semibold text-slate-400 mt-0.5">
+              Khám phá hình khối 3D • Lớp 2
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={toggleVoice}
+              title={voiceEnabled ? "Tắt giọng đọc" : "Bật giọng đọc"}
+              className={`w-10 h-10 sm:w-11 sm:h-11 rounded-2xl backdrop-blur border shadow-lg flex items-center justify-center transition-all active:scale-90 ${
+                voiceEnabled
+                  ? "bg-green-50 border-green-200 text-green-600 hover:bg-green-100"
+                  : "bg-white/80 border-white/60 text-slate-400 hover:text-slate-600"
+              } ${isSpeaking ? "animate-pulse" : ""}`}
+            >
+              {voiceEnabled ? <Volume2 size={19} /> : <VolumeX size={19} />}
+            </button>
+          </div>
+        </div>
+
+        {/* ── 3D Canvas ────────────────────────────────────────── */}
+        <div
+          className="relative rounded-3xl overflow-hidden shadow-2xl border-2"
+          style={{
+            borderColor: "rgba(148,163,184,0.2)",
+            background: "linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 50%, #bae6fd 100%)",
+            height: "clamp(320px, 50vh, 520px)",
+          }}
+        >
+          {/* Gradient overlay at bottom */}
+          <div
+            className="absolute inset-x-0 bottom-0 h-16 z-10 pointer-events-none"
+            style={{ background: "linear-gradient(transparent, rgba(186,230,253,0.5))" }}
+          />
+
+          {/* Shape labels */}
+          <div className="absolute top-4 left-0 right-0 z-10 flex justify-center gap-8 sm:gap-20 pointer-events-none">
+            <div
+              className="px-3 py-1 rounded-full text-xs sm:text-sm font-extrabold text-white shadow-lg"
+              style={{ background: "linear-gradient(135deg, #fb923c, #f97316)" }}
+            >
+              🟠 Khối trụ
+            </div>
+            <div
+              className="px-3 py-1 rounded-full text-xs sm:text-sm font-extrabold text-white shadow-lg"
+              style={{ background: "linear-gradient(135deg, #38bdf8, #0ea5e9)" }}
+            >
+              🔵 Khối cầu
+            </div>
+          </div>
+
           <Canvas
             shadows
             camera={{ position: [0, 1.8, 8], fov: 50 }}
@@ -384,20 +543,13 @@ export default function Math2Quiz3DShapesPage() {
             }}
           >
             <color attach="background" args={["#eef9ff"]} />
-
             <ambientLight intensity={0.72} />
-            <directionalLight
-              position={[6, 8, 5]}
-              intensity={1.2}
-              castShadow
-              shadow-mapSize-width={1024}
-              shadow-mapSize-height={1024}
-            />
+            <directionalLight position={[6, 8, 5]} intensity={1.2} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
             <directionalLight position={[-5, 4, -4]} intensity={0.45} color="#dbeafe" />
 
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.9, 0]} receiveShadow>
               <planeGeometry args={[20, 20]} />
-              <shadowMaterial opacity={0.2} />
+              <shadowMaterial opacity={0.15} />
             </mesh>
 
             <CylinderShape
@@ -406,18 +558,21 @@ export default function Math2Quiz3DShapesPage() {
               isOpen={isCylinderOpen}
               isHolding={isCylinderRightClickHolding}
               onSingleClick={() => {
-                setMessage("Khối trụ đang lắc như thạch!");
+                setActiveShape("cylinder");
+                setMessage("Khối trụ có 2 mặt đáy hình tròn và 1 mặt bên cong.");
               }}
               onDoubleClickOpen={() => {
                 if (!isCylinderOpen) {
                   setIsCylinderOpen(true);
-                  setMessage("Khối trụ mở: nắp xoay theo bản lề, thân trụ trải thành hình chữ nhật.");
+                  setActiveShape("cylinder");
+                  setMessage("Wow! Khối trụ khi mở ra gồm: 2 hình tròn ở 2 đáy và 1 hình chữ nhật bao quanh thân.");
                 }
               }}
               onRightHoldStart={() => {
                 setIsCylinderRightClickHolding(true);
                 setIsCylinderOpen(true);
-                setMessage("Đang giữ chuột phải: khối trụ được giữ ở trạng thái mở.");
+                setActiveShape("cylinder");
+                setMessage("Giữ chuột phải để quan sát khối trụ đang mở. Thả ra để gập lại nhé!");
               }}
             />
 
@@ -427,18 +582,21 @@ export default function Math2Quiz3DShapesPage() {
               isOpen={isSphereOpen}
               isHolding={isSphereRightClickHolding}
               onSingleClick={() => {
-                setMessage("Khối cầu bật nảy như bóng cao su!");
+                setActiveShape("sphere");
+                setMessage("Khối cầu chỉ có 1 mặt cong, không có cạnh và đỉnh nào cả!");
               }}
               onDoubleClickOpen={() => {
                 if (!isSphereOpen) {
                   setIsSphereOpen(true);
-                  setMessage("Khối cầu đã tách thành 2 bán cầu, tách rời rõ ràng.");
+                  setActiveShape("sphere");
+                  setMessage("Khối cầu tách thành 2 bán cầu. Mỗi bán cầu có 1 mặt phẳng và 1 mặt cong.");
                 }
               }}
               onRightHoldStart={() => {
                 setIsSphereRightClickHolding(true);
                 setIsSphereOpen(true);
-                setMessage("Đang giữ chuột phải: khối cầu được giữ ở trạng thái tách.");
+                setActiveShape("sphere");
+                setMessage("Giữ chuột phải để quan sát khối cầu đang tách. Thả ra để ghép lại!");
               }}
             />
 
@@ -446,23 +604,125 @@ export default function Math2Quiz3DShapesPage() {
           </Canvas>
         </div>
 
-        <div className="mt-4 rounded-2xl border border-cyan-200 bg-white/80 px-4 py-3 text-center">
-          <p className="text-base sm:text-lg font-extrabold text-cyan-700">{message}</p>
-          <p className="mt-1 text-xs font-bold text-slate-500">
-            {anyHolding
-              ? "Đang giữ chuột phải: thả ra để gập lại."
-              : "Mẹo: Nhấn đúp để mở hình, giữ chuột phải để giữ nguyên trạng thái mở."}
-          </p>
+        {/* ── Message bubble with voice indicator ──────────────── */}
+        <div
+          className="mt-4 rounded-2xl px-5 py-4 text-center transition-all duration-300 relative overflow-hidden"
+          style={{
+            background: "linear-gradient(135deg, rgba(255,255,255,0.9), rgba(240,249,255,0.9))",
+            border: "2px solid rgba(56,189,248,0.2)",
+            boxShadow: "0 4px 24px rgba(14,165,233,0.1)",
+          }}
+        >
+          {/* Speaking glow animation */}
+          {isSpeaking && (
+            <div
+              className="absolute inset-0 animate-pulse pointer-events-none rounded-2xl"
+              style={{ boxShadow: "inset 0 0 30px rgba(34,197,94,0.1)" }}
+            />
+          )}
 
-          <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
-            <button
-              type="button"
-              onClick={() => navigate("/student/game/math2-b46-warehouse")}
-              className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-orange-400 to-amber-500 px-5 py-2.5 text-sm sm:text-base font-black text-white shadow-lg hover:from-orange-500 hover:to-amber-600 active:scale-95 transition"
-            >
-              Chơi game: Nhà Kho Của Tí Tách
-            </button>
+          <div className="flex items-start gap-3 justify-center">
+            {isSpeaking && (
+              <div className="shrink-0 mt-1">
+                <div className="flex items-end gap-0.5 h-5">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div
+                      key={i}
+                      className="w-1 bg-green-400 rounded-full animate-bounce"
+                      style={{
+                        animationDelay: `${i * 0.12}s`,
+                        height: `${8 + Math.random() * 12}px`,
+                        animationDuration: "0.6s",
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            <p className="text-sm sm:text-base font-bold text-sky-700 leading-relaxed">
+              {message}
+            </p>
           </div>
+
+          <p className="mt-2 text-[11px] font-semibold text-slate-400">
+            {anyHolding
+              ? "🖱️ Đang giữ chuột phải — thả ra để gập lại"
+              : "💡 Mẹo: Nhấn 1 lần để xem thông tin, nhấn đúp để mở hình, giữ chuột phải để giữ mở"}
+          </p>
+        </div>
+
+        {/* ── Shape info cards ─────────────────────────────────── */}
+        <div className="mt-4 flex flex-col sm:flex-row gap-3">
+          <ShapeInfoCard
+            emoji="🧡"
+            name="Khối trụ"
+            features={[
+              "Có 2 mặt đáy hình tròn",
+              "Có 1 mặt bên cong (mặt xung quanh)",
+              "Khi trải ra: 2 hình tròn + 1 hình chữ nhật",
+              "Ví dụ: lon nước, ống tre",
+            ]}
+            color="#f97316"
+            isActive={activeShape === "cylinder"}
+            onClick={() => {
+              setActiveShape("cylinder");
+              const text = "Khối trụ có 2 mặt đáy hình tròn và 1 mặt bên cong bao xung quanh. Khi trải ra ta được 2 hình tròn và 1 hình chữ nhật.";
+              setMessage(text);
+            }}
+          />
+          <ShapeInfoCard
+            emoji="💙"
+            name="Khối cầu"
+            features={[
+              "Chỉ có 1 mặt cong duy nhất",
+              "Không có cạnh, không có đỉnh",
+              "Khi cắt đôi: 2 bán cầu",
+              "Ví dụ: quả bóng, trái cam",
+            ]}
+            color="#0ea5e9"
+            isActive={activeShape === "sphere"}
+            onClick={() => {
+              setActiveShape("sphere");
+              const text = "Khối cầu chỉ có 1 mặt cong duy nhất, không có cạnh và không có đỉnh. Khi cắt đôi ta được 2 bán cầu.";
+              setMessage(text);
+            }}
+          />
+        </div>
+
+        {/* ── Bottom actions ───────────────────────────────────── */}
+        <div className="mt-4 mb-6 flex flex-wrap items-center justify-center gap-3">
+          <button
+            type="button"
+            onClick={handleReset}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-white/80 backdrop-blur border border-slate-200 text-sm font-bold text-slate-600 shadow hover:bg-slate-50 hover:shadow-md active:scale-95 transition-all"
+          >
+            <RotateCcw size={16} />
+            Đặt lại
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const text = "Bài 46: Khối trụ và Khối cầu. Khối trụ có 2 mặt tròn ở hai đầu và 1 mặt cong bao quanh. Khối cầu chỉ có 1 mặt cong duy nhất, không có cạnh và đỉnh.";
+              setMessage(text);
+            }}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-violet-500 to-purple-600 text-sm font-bold text-white shadow-lg hover:shadow-xl active:scale-95 transition-all"
+            style={{ boxShadow: "0 4px 14px rgba(139,92,246,0.35)" }}
+          >
+            <Sparkles size={16} />
+            Tóm tắt bài học
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate("/student/game/math2-b46-warehouse")}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-extrabold text-white shadow-lg hover:shadow-xl active:scale-95 transition-all"
+            style={{
+              background: "linear-gradient(135deg, #fb923c, #f97316)",
+              boxShadow: "0 4px 14px rgba(249,115,22,0.35)",
+            }}
+          >
+            <Gamepad2 size={16} />
+            Chơi game: Nhà Kho Của Tí Tách
+          </button>
         </div>
       </div>
     </div>

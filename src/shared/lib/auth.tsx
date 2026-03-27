@@ -17,6 +17,7 @@ export const AVATARS = [
 
 export interface User {
   nickname: string;
+  phone?: string;
   email: string;
   avatarId: string;
   tier?: "free" | "premium";
