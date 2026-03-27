@@ -15,7 +15,7 @@ const GAME_ITEMS: Item[] = [
   { id: "football", name: "Quả bóng đá", emoji: "⚽", shape: "sphere" },
   { id: "marble", name: "Viên bi", emoji: "🔵", shape: "sphere" },
   { id: "globe", name: "Quả địa cầu", emoji: "🌍", shape: "sphere" },
-  { id: "soda", name: "Lon nước ngọt", emoji: "🥤", shape: "cylinder" },
+  { id: "soda", name: "lon", emoji: "🥫", shape: "cylinder" },
   { id: "toilet-roll", name: "Cuộn giấy", emoji: "🧻", shape: "cylinder" },
   { id: "drum", name: "Cái trống", emoji: "🥁", shape: "cylinder" },
   { id: "battery", name: "Cục pin", emoji: "🔋", shape: "cylinder" },
@@ -41,7 +41,7 @@ function Basket({
         e.preventDefault();
         onDropItem(type);
       }}
-      className={`relative flex-1 min-h-[220px] rounded-3xl border-4 p-4 sm:p-6 transition-all ${
+      className={`relative flex-1 min-h-[300px] rounded-[32px] border-4 p-6 sm:p-8 transition-all ${
         isCylinder
           ? "border-orange-300 bg-orange-50/85"
           : "border-sky-300 bg-sky-50/85"
@@ -49,13 +49,13 @@ function Basket({
         shake ? "animate-[shake_0.35s_ease-in-out_1]" : ""
       }`}
     >
-      <div className="text-center mb-4">
-        <div className="text-4xl mb-1">{isCylinder ? "🟧" : "🔵"}</div>
-        <h3 className={`text-lg sm:text-xl font-black ${isCylinder ? "text-orange-700" : "text-sky-700"}`}>
+      <div className="text-center mb-6 sm:mb-7">
+        <div className="text-6xl sm:text-7xl leading-none mb-2">{isCylinder ? "🟧" : "🔵"}</div>
+        <h3 className={`text-2xl sm:text-3xl font-black ${isCylinder ? "text-orange-700" : "text-sky-700"}`}>
           {isCylinder ? "Khối Trụ" : "Khối Cầu"}
         </h3>
       </div>
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[76%] h-12 rounded-[999px] bg-black/10" />
+      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 w-[82%] h-14 rounded-[999px] bg-black/10" />
     </div>
   );
 }
@@ -211,16 +211,11 @@ export default function Math2B46WarehouseGame() {
                 Chơi lại
               </button>
               <button
-                onClick={() => navigate("/student/game/math2-b46-detective")}
+                onClick={() => navigate("/student")}
                 className="rounded-2xl bg-white border border-emerald-300 text-emerald-700 font-black py-3"
               >
-                Sang map 2: Mắt Tinh Tìm Khối
+                Quay lại mục lục
               </button>
-            </div>
-
-            <div className="mt-4 text-xs text-slate-500 font-bold flex items-center justify-center gap-3">
-              <span className="inline-flex items-center gap-1"><CheckCircle2 size={14} /> Ting! = đúng</span>
-              <span className="inline-flex items-center gap-1"><XCircle size={14} /> Boing! = sai</span>
             </div>
           </div>
         )}

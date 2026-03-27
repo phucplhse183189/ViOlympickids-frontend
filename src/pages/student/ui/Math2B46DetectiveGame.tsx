@@ -187,10 +187,10 @@ export default function Math2B46DetectiveGame() {
                 Chơi lại
               </button>
               <button
-                onClick={() => navigate("/student/game/math2-quiz-3d-shapes")}
+                onClick={() => navigate("/student")}
                 className="rounded-2xl bg-white border border-emerald-300 text-emerald-700 font-black py-3"
               >
-                Về bài 46
+                Quay lại mục lục
               </button>
             </div>
           </div>
@@ -215,12 +215,14 @@ export default function Math2B46DetectiveGame() {
           </div>
         </div>
 
-        <h1 className="text-center text-2xl sm:text-3xl font-black text-orange-700 mb-1">Mắt Tinh Tìm Khối</h1>
-        <p className="text-center text-sm sm:text-base font-bold text-slate-600 mb-4">
-          Hãy tìm đúng {round.target === "sphere" ? "khối cầu" : "khối trụ"} trước khi hết giờ.
-        </p>
+        <div className="mx-auto mb-4 max-w-3xl rounded-2xl border-2 border-orange-200/90 bg-white/90 px-4 py-3 text-center shadow-[0_10px_26px_rgba(249,115,22,0.14)]">
+          <h1 className="text-2xl sm:text-3xl font-black text-orange-700 mb-1">Mắt Tinh Tìm Khối</h1>
+          <p className="text-sm sm:text-base font-bold text-slate-600">
+            Hãy tìm đúng {round.target === "sphere" ? "khối cầu" : "khối trụ"} trước khi hết giờ.
+          </p>
+        </div>
 
-        <div className="rounded-2xl border border-cyan-200 bg-white/90 px-4 py-3 text-center mb-4">
+        <div className="mb-4 rounded-2xl border-2 border-cyan-300/90 bg-gradient-to-r from-white via-cyan-50 to-white px-4 py-3 text-center shadow-[0_12px_28px_rgba(6,182,212,0.18)] ring-1 ring-cyan-100">
           <p className="text-sm sm:text-base font-extrabold text-cyan-700">{message}</p>
         </div>
 

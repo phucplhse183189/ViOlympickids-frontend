@@ -151,9 +151,9 @@ function CylinderShape({
         >
           <planeGeometry args={[2 * Math.PI * CYLINDER_RADIUS, CYLINDER_HEIGHT]} />
           <animated.meshStandardMaterial
-            color="#fed7aa"
-            roughness={0.62}
-            metalness={0.05}
+            color={color}
+            roughness={0.35}
+            metalness={0.15}
             transparent
             opacity={openProgress.to((v) => v)}
             depthWrite={false}
@@ -163,7 +163,9 @@ function CylinderShape({
 
         {/* TOP lid hinge: exact edge of net (z = +radius) */}
         <animated.group
-          position={[0, CYLINDER_HEIGHT / 2, CYLINDER_RADIUS + 0.02]}
+          position-x={0}
+          position-y={openProgress.to((v) => CYLINDER_HEIGHT / 2 + v * 0.95)}
+          position-z={CYLINDER_RADIUS + 0.02}
           rotation-x={openProgress.to((v) => -Math.PI / 2 * v)}
           renderOrder={2}
         >
@@ -175,7 +177,9 @@ function CylinderShape({
 
         {/* BOTTOM lid hinge: exact edge of net (z = +radius) */}
         <animated.group
-          position={[0, -CYLINDER_HEIGHT / 2, CYLINDER_RADIUS + 0.02]}
+          position-x={0}
+          position-y={openProgress.to((v) => -CYLINDER_HEIGHT / 2 - v * 0.95)}
+          position-z={CYLINDER_RADIUS + 0.02}
           rotation-x={openProgress.to((v) => Math.PI / 2 * v)}
           renderOrder={2}
         >
