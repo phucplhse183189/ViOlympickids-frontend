@@ -31,8 +31,8 @@ export function StreakHeatmap() {
     y: number;
   } | null>(null);
   const { dashboardData } = useActiveChild();
-  const streakDays = dashboardData.streakDays;
-  const streakCount = dashboardData.streakCount;
+  const streakDays = dashboardData.streakDaysTable;
+  const streakCount = dashboardData.stats.streakDays;
 
   useEffect(() => {
     const el = ref.current;

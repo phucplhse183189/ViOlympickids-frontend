@@ -17,7 +17,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useActiveChild } from "@/shared/lib/activeChild";
-import { addTransaction } from "@/shared/api/dashboardMockData";
+import * as transactionService from "@/shared/api/services/transactionService";
 
 // ── types ──────────────────────────────────────────
 type PaymentMethod = "vnpay" | "momo" | "bank" | "card";
@@ -116,7 +116,7 @@ function formatVnd(n: number) {
 export function PaymentPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const { activeChild, updateChildPlan } = useActiveChild();
+  const { activeChild, updateChildPlan, isLoading } = useActiveChild();
 
   // which plan was requested via ?plan=PRO|VIP, default PRO
   const requestedPlan = (params.get("plan")?.toUpperCase() ?? "PRO") as PlanKey;
@@ -131,6 +131,14 @@ export function PaymentPage() {
   const [processing, setProcessing] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  if (isLoading || !activeChild) {
+    return (
+      <div className="flex items-center justify-center py-20 text-gray-500">
+        Đang tải thông tin...
+      </div>
+    );
+  }
+
   const plan = PLANS.find((p) => p.key === selectedPlan)!;
   const basePrice = cycle === "month" ? plan.monthlyPrice : plan.yearlyPrice;
   const discount = promoApplied ? Math.round(basePrice * 0.1) : 0;
@@ -142,29 +150,36 @@ export function PaymentPage() {
     }
   }
 
-  function handlePay() {
+  async function handlePay() {
     if (!agree) return;
     setProcessing(true);
-    // Simulate payment processing
-    setTimeout(() => {
-      // Update the child's plan in state + localStorage
+    
+    try {
       const daysLeft = cycle === "month" ? 30 : 365;
-      updateChildPlan(activeChild.id, selectedPlan, daysLeft);
+      await updateChildPlan(activeChild!.id, selectedPlan, daysLeft);
 
-      // Record the transaction
       const methodLabel =
         PAYMENT_METHODS.find((m) => m.id === method)?.label ?? method;
-      addTransaction({
-        id: `TXN-${Date.now()}`,
-        date: new Date().toLocaleDateString("vi-VN"),
-        amount: total,
-        method: methodLabel,
-        status: "Thành công",
-      });
+        
+      const parentId = sessionStorage.getItem("vio_parent_id");
+      if (parentId) {
+        await transactionService.create({
+          parentId,
+          childId: activeChild!.id,
+          date: new Date().toLocaleDateString("vi-VN"),
+          amount: total,
+          method: methodLabel,
+          status: "Thành công",
+        });
+      }
 
-      setProcessing(false);
       setSuccess(true);
-    }, 2000);
+    } catch (err) {
+      console.error(err);
+      alert("Đã có lỗi xảy ra trong quá trình thanh toán");
+    } finally {
+      setProcessing(false);
+    }
   }
 
   // ── Success screen ────────────────────────────────

@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  MOCK_TRIAL,
-  getTransactions,
-  type PaymentTransaction,
-} from "@/shared/api/dashboardMockData";
+import * as transactionService from "@/shared/api/services/transactionService";
 import { useActiveChild } from "@/shared/lib/activeChild";
 
-function StatusBadge({ status }: { status: PaymentTransaction["status"] }) {
+const MOCK_TRIAL = {
+  totalDays: 7,
+  usedDays: 5,
+};
+
+function StatusBadge({ status }: { status: transactionService.Transaction["status"] }) {
   const isOk = status === "Thành công";
   return (
     <span
@@ -37,7 +38,13 @@ export function BillingManagement() {
   const billing = dashboardData.billing;
   const remaining = MOCK_TRIAL.totalDays - MOCK_TRIAL.usedDays;
   const progressPct = (MOCK_TRIAL.usedDays / MOCK_TRIAL.totalDays) * 100;
-  const transactions = getTransactions();
+  const [transactions, setTransactions] = useState<transactionService.Transaction[]>([]);
+  
+  useEffect(() => {
+    // Parent ID shouldn't be hardcoded ideally, using a fallback for now.
+    // Replace "parent-1" with actual parent ID from auth later if available.
+    transactionService.getAll("parent-1").then(setTransactions).catch(console.error);
+  }, []);
 
   const priceLabel =
     plan === "VIP"

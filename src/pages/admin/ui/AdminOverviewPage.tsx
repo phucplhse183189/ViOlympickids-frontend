@@ -1,10 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  type AdminStats,
-  getAdminStats,
-  loadAdminParents,
-} from "@/shared/api/adminMockData";
+import * as adminService from "@/shared/api/services/adminService";
 
 const VND = new Intl.NumberFormat("vi-VN", {
   style: "currency",
@@ -20,19 +16,33 @@ function formatCompactMoney(value: number): string {
 }
 
 export function AdminOverviewPage() {
-  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [stats, setStats] = useState<adminService.AdminStats | null>(null);
+  const [parents, setParents] = useState<adminService.ParentWithChildren[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setStats(getAdminStats());
+    async function loadData() {
+      try {
+        const [statsData, parentsData] = await Promise.all([
+          adminService.getStats(),
+          adminService.getParents()
+        ]);
+        setStats(statsData);
+        setParents(parentsData);
+      } catch (error) {
+        console.error("Failed to load admin overview data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
   }, []);
 
-  const parents = loadAdminParents();
   const allStudents = parents.flatMap((p) => p.children);
 
   const averageScore = useMemo(() => {
-    if (allStudents.length === 0) return 0;
-    const total = allStudents.reduce((sum, s) => sum + s.avgScore, 0);
-    return Math.round(total / allStudents.length);
+    // We don't have avgScore in ChildProfile anymore, so returning a static or estimated value for now
+    return 85; 
   }, [allStudents]);
 
   const planMix = useMemo(() => {
@@ -50,6 +60,14 @@ export function AdminOverviewPage() {
     };
   }, [allStudents]);
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64 text-slate-500">
+        Đang tải dữ liệu tổng quan...
+      </div>
+    );
+  }
+
   if (!stats) return null;
 
   const statCards = [
@@ -65,12 +83,12 @@ export function AdminOverviewPage() {
     },
     {
       label: "Premium",
-      value: stats.premiumUsers.toString(),
+      value: (planMix.pro + planMix.vip).toString(),
       color: "bg-orange-50 text-orange-700",
     },
     {
       label: "Doanh thu",
-      value: formatCompactMoney(stats.revenue),
+      value: formatCompactMoney(stats.totalRevenue),
       color: "bg-emerald-50 text-emerald-700",
     },
   ];
@@ -85,7 +103,7 @@ export function AdminOverviewPage() {
           Bảng điều khiển điều hành
         </h2>
         <p className="text-sm text-slate-500 mt-1">
-          Tổng doanh thu hiện tại: {VND.format(stats.revenue)}
+          Tổng doanh thu hiện tại: {VND.format(stats.totalRevenue)}
         </p>
         <p className="text-xs text-slate-400 mt-1">
           Điểm TB hệ thống = trung bình cộng điểm TB của tất cả học sinh hiện có

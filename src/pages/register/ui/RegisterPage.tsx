@@ -15,7 +15,7 @@ import { useAuth } from "@/shared/lib/auth";
 import {
   CHILD_PROFILES_STORAGE_KEY,
   ACTIVE_CHILD_ID_KEY,
-} from "@/shared/api/dashboardMockData";
+} from "@/shared/lib/constants";
 
 // ── Avatar options (kid-friendly) ──────────────────────────────
 const AVATAR_OPTIONS = [

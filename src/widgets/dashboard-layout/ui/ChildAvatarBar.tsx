@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Plus, Crown, Zap } from "lucide-react";
 import { useActiveChild } from "@/shared/lib/activeChild";
-import type { PlanType } from "@/shared/api/dashboardMockData";
+import type { PlanType } from "@/shared/types/dashboard";
 
 const PLAN_BADGE: Record<
   PlanType,
@@ -20,21 +20,23 @@ export function ChildAvatarBar() {
   const { profiles, activeChild, switchChild } = useActiveChild();
   const navigate = useNavigate();
 
+  if (!activeChild) return null;
+
   return (
     <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-gray-100 rounded-2xl px-4 py-2 shadow-sm">
       <span className="text-xs text-gray-400 font-semibold mr-1 hidden sm:inline whitespace-nowrap">
         Đang xem:
       </span>
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
         {profiles.map((profile) => {
           const isActive = profile.id === activeChild.id;
-          const badge = PLAN_BADGE[profile.plan];
+          const badge = PLAN_BADGE[profile.plan as PlanType];
           return (
             <button
               key={profile.id}
               onClick={() => switchChild(profile.id)}
               title={`${profile.name} — ${profile.grade} (${profile.plan})`}
-              className={`relative group flex items-center gap-2 rounded-xl px-2.5 py-1.5 transition-all duration-200 ${
+              className={`relative group flex items-center gap-2 rounded-xl px-2.5 py-1.5 transition-all duration-200 shrink-0 ${
                 isActive
                   ? "bg-blue-50 border-2 border-blue-400 shadow-sm"
                   : "border-2 border-transparent hover:bg-gray-50 hover:border-gray-200"
@@ -47,7 +49,7 @@ export function ChildAvatarBar() {
                     ? "scale-110 ring-2 ring-blue-300 ring-offset-1"
                     : "group-hover:scale-105"
                 }`}
-                style={{ backgroundColor: profile.avatarBg }}
+                style={{ backgroundColor: profile.avatarBg || "#f3f4f6" }}
               >
                 {profile.avatarEmoji}
               </div>
@@ -93,7 +95,7 @@ export function ChildAvatarBar() {
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
         </button>
 
-        <div className="w-px h-6 bg-gray-200 mx-1" />
+        <div className="w-px h-6 bg-gray-200 mx-1 shrink-0" />
 
         {/* Add child mini button */}
         <button

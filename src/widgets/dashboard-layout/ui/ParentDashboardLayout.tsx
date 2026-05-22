@@ -14,7 +14,7 @@ import {
   UserCircle,
   Users,
 } from "lucide-react";
-import { MOCK_PARENT_PROFILE } from "@/shared/api/dashboardMockData";
+import { useAuth } from "@/shared/lib/auth";
 import { ProfileSelector } from "./ProfileSelector";
 import { ChildAvatarBar } from "./ChildAvatarBar";
 
@@ -117,6 +117,16 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
 // ─── Topbar: avatar+name button (navigates to profile) ────────
 function AvatarButton() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  
+  const displayName = user?.nickname || "Phụ Huynh";
+  const initials = displayName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .substring(0, 2)
+    .toUpperCase();
+
   return (
     <button
       onClick={() => navigate("/dashboard/profile")}
@@ -126,11 +136,11 @@ function AvatarButton() {
         className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0"
         style={{ backgroundColor: "var(--brand-primary)" }}
       >
-        {MOCK_PARENT_PROFILE.avatarInitials}
+        {initials}
       </div>
       <div className="hidden sm:block text-left">
         <p className="text-xs font-bold text-gray-700 leading-tight">
-          {MOCK_PARENT_PROFILE.name}
+          {displayName}
         </p>
         <p className="text-[10px] text-gray-400 leading-tight">Phụ huynh</p>
       </div>
@@ -197,7 +207,10 @@ function SettingsMenu() {
           <div className="border-t border-gray-100" />
           <div className="py-1.5">
             <button
-              onClick={() => navigate("/login")}
+              onClick={() => {
+                sessionStorage.removeItem("vio_parent_id");
+                navigate("/login");
+              }}
               className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-red-500 hover:bg-red-50 transition-colors"
             >
               <LogOut size={15} className="shrink-0" />
@@ -227,6 +240,9 @@ export function ParentDashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const pageTitle = usePageTitle(location.pathname);
+
+  // Mocking 2 unread notifications for now
+  const unreadNotifications = 2;
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
@@ -271,10 +287,10 @@ export function ParentDashboardLayout() {
             {/* Notification bell */}
             <button className="relative p-2 rounded-xl hover:bg-gray-100 transition">
               <Bell size={19} className="text-gray-500" />
-              {MOCK_PARENT_PROFILE.unreadNotifications > 0 && (
+              {unreadNotifications > 0 && (
                 <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-red-500 animate-notification-pulse flex items-center justify-center">
                   <span className="text-[9px] text-white font-bold">
-                    {MOCK_PARENT_PROFILE.unreadNotifications}
+                    {unreadNotifications}
                   </span>
                 </span>
               )}

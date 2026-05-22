@@ -89,15 +89,24 @@ const COMPARISON_CARDS = [
 ];
 
 export function ProgressPage() {
-  const { activeChild, dashboardData } = useActiveChild();
-  const plan = activeChild.plan;
-  const isLocked = plan === "FREE";
+  const { activeChild, dashboardData, isLoading } = useActiveChild();
 
   const scoreCard = useReveal();
   const trendCard = useReveal();
   const compCard = useReveal();
   const skillCard = useReveal();
   const areaCard = useReveal();
+
+  if (isLoading || !activeChild || !dashboardData) {
+    return (
+      <div className="flex items-center justify-center py-20 text-gray-500">
+        Đang tải báo cáo tiến độ...
+      </div>
+    );
+  }
+
+  const plan = activeChild.plan;
+  const isLocked = plan === "FREE";
 
   const skills = dashboardData.skills;
   const weeklyTrend = dashboardData.weeklyTrend;

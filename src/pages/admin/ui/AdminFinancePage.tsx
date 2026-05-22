@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   ResponsiveContainer,
   CartesianGrid,
@@ -12,7 +12,7 @@ import {
   Bar,
   Cell,
 } from "recharts";
-import { loadAdminParents } from "@/shared/api/adminMockData";
+import * as adminService from "@/shared/api/services/adminService";
 
 type OwnerTimeRange = "30d" | "90d" | "12m";
 type PlanKey = "FREE" | "PRO" | "VIP";
@@ -39,8 +39,24 @@ export function AdminFinancePage() {
   const [ownerRange, setOwnerRange] = useState<OwnerTimeRange>("90d");
   const [monthlyFixedCost, setMonthlyFixedCost] = useState(15_000_000);
   const [cashReserve, setCashReserve] = useState(240_000_000);
+  
+  const [parents, setParents] = useState<adminService.ParentWithChildren[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const parents = loadAdminParents();
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const data = await adminService.getParents();
+        setParents(data);
+      } catch (err) {
+        console.error("Failed to load parents for finance page:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
   const students = parents.flatMap((p) => p.children);
 
   const planRevenueData = useMemo(() => {
@@ -51,8 +67,10 @@ export function AdminFinancePage() {
     };
 
     students.forEach((student) => {
-      seeds[student.plan].students += 1;
-      seeds[student.plan].revenue += getPlanPrice(student.plan);
+      if (seeds[student.plan]) {
+        seeds[student.plan].students += 1;
+        seeds[student.plan].revenue += getPlanPrice(student.plan);
+      }
     });
 
     return [seeds.FREE, seeds.PRO, seeds.VIP];
@@ -134,6 +152,14 @@ export function AdminFinancePage() {
     { label: "Mở rộng", value: Math.round(finance.mrr * 0.12) },
     { label: "MRR mục tiêu", value: Math.round(finance.mrr * 1.12) },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64 text-slate-500">
+        Đang tải dữ liệu tài chính...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -243,7 +269,7 @@ export function AdminFinancePage() {
               <Tooltip formatter={(v) => VND.format(Number(v ?? 0))} />
               <Bar dataKey="revenue" radius={[10, 10, 0, 0]}>
                 {planRevenueData.map((row) => (
-                  <Cell key={row.plan} fill={PLAN_COLORS[row.plan]} />
+                  <Cell key={row.plan} fill={PLAN_COLORS[row.plan as PlanKey]} />
                 ))}
               </Bar>
             </BarChart>

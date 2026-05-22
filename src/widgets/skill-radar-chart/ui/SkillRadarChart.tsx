@@ -30,8 +30,8 @@ export function SkillRadarChart() {
     return () => observer.disconnect();
   }, []);
 
-  const strongSkill = [...radarSkills].sort((a, b) => b.diem - a.diem)[0];
-  const weakSkill = [...radarSkills].sort((a, b) => a.diem - b.diem)[0];
+  const strongSkill = [...radarSkills].sort((a, b) => b.score - a.score)[0];
+  const weakSkill = [...radarSkills].sort((a, b) => a.score - b.score)[0];
 
   return (
     <div
@@ -88,7 +88,7 @@ export function SkillRadarChart() {
               </span>
             </div>
             <span className="text-green-500 font-bold text-sm pl-3.5">
-              {strongSkill.diem}/100
+              {strongSkill.score}/100
             </span>
           </div>
 
@@ -106,7 +106,7 @@ export function SkillRadarChart() {
               </span>
             </div>
             <span className="text-orange-500 font-bold text-sm pl-3.5">
-              {weakSkill.diem}/100
+              {weakSkill.score}/100
             </span>
           </div>
 
@@ -124,14 +124,14 @@ export function SkillRadarChart() {
                   className="font-semibold shrink-0"
                   style={{
                     color:
-                      s.diem >= 80
+                      s.score >= 80
                         ? "#22c55e"
-                        : s.diem >= 60
+                        : s.score >= 60
                           ? "#f97316"
                           : "#ef4444",
                   }}
                 >
-                  {s.diem}
+                  {s.score}
                 </span>
               </div>
             ))}

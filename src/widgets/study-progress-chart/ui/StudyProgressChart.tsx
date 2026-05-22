@@ -64,9 +64,9 @@ export function StudyProgressChart() {
 
   const { dashboardData } = useActiveChild();
   const data = dashboardData.studyDays;
-  const totalMinutes = data.reduce((s, d) => s + d.phut, 0);
+  const totalMinutes = data.reduce((s, d) => s + d.minutes, 0);
   const avgMinutes = Math.round(totalMinutes / data.length);
-  const goalDays = data.filter((d) => d.phut >= GOAL_MINUTES).length;
+  const goalDays = data.filter((d) => d.minutes >= GOAL_MINUTES).length;
 
   return (
     <div
@@ -139,7 +139,7 @@ export function StudyProgressChart() {
               <Cell
                 key={`cell-${index}`}
                 fill={
-                  entry.phut >= GOAL_MINUTES
+                  entry.minutes >= GOAL_MINUTES
                     ? "var(--brand-primary)"
                     : "#e0e7ff"
                 }

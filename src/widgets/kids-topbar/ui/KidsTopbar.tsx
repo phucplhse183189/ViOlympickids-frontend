@@ -4,9 +4,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import {
   CHILD_PROFILES_STORAGE_KEY,
   ACTIVE_CHILD_ID_KEY,
-  type PlanType,
-} from "@/shared/api/dashboardMockData";
-import { getActiveChildPlan, PLAN_LABELS } from "@/shared/api/math2Data";
+} from "@/shared/lib/constants";
+import { getActiveChildPlan, PLAN_LABELS, type PlanType } from "@/shared/api/math2Data";
 import { useAuth } from "@/shared/lib/auth";
 import { ParentGate } from "@/shared/ui/ParentGate";
 

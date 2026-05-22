@@ -1,12 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  type AccountStatus,
-  type AdminParent,
-  loadAdminParents,
-  updateParentStatus,
-  updateStudentStatus,
-} from "@/shared/api/adminMockData";
+import * as adminService from "@/shared/api/services/adminService";
 
+type AccountStatus = "active" | "inactive" | "suspended";
 type ViewMode = "grouped" | "all-students";
 type PlanType = "FREE" | "PRO" | "VIP";
 
@@ -37,8 +32,14 @@ const PLAN_BADGES: Record<PlanType, { color: string; bg: string }> = {
   VIP: { color: "text-orange-700", bg: "bg-orange-100" },
 };
 
+function getInitials(name: string) {
+  if (!name) return "P";
+  return name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
+}
+
 export function AdminUsersPage() {
-  const [parents, setParents] = useState<AdminParent[]>([]);
+  const [parents, setParents] = useState<adminService.ParentWithChildren[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | AccountStatus>(
     "all",
@@ -48,11 +49,20 @@ export function AdminUsersPage() {
   const [expandedParents, setExpandedParents] = useState<Set<string>>(
     new Set(),
   );
-  const [selectedParent, setSelectedParent] = useState<AdminParent | null>(
+  const [selectedParent, setSelectedParent] = useState<adminService.ParentWithChildren | null>(
     null,
   );
 
-  const reload = () => setParents(loadAdminParents());
+  const reload = async () => {
+    try {
+      const data = await adminService.getParents();
+      setParents(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     reload();
@@ -75,21 +85,29 @@ export function AdminUsersPage() {
     setExpandedParents(new Set());
   };
 
-  const handleParentStatusChange = (
+  const handleParentStatusChange = async (
     parentId: string,
     status: AccountStatus,
   ) => {
-    updateParentStatus(parentId, status);
-    reload();
+    try {
+      await adminService.updateParentStatus(parentId, status);
+      await reload();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const handleStudentStatusChange = (
+  const handleStudentStatusChange = async (
     parentId: string,
     studentId: string,
     status: AccountStatus,
   ) => {
-    updateStudentStatus(parentId, studentId, status);
-    reload();
+    try {
+      await adminService.updateStudentStatus(studentId, status);
+      await reload();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const filteredParents = useMemo(() => {
@@ -98,10 +116,9 @@ export function AdminUsersPage() {
     return parents.filter((p) => {
       const matchSearch =
         !q ||
-        p.name.toLowerCase().includes(q) ||
-        p.email.toLowerCase().includes(q) ||
-        p.phone.includes(q) ||
-        p.children.some((c) => c.name.toLowerCase().includes(q));
+        (p.nickname || "").toLowerCase().includes(q) ||
+        (p.phone || "").includes(q) ||
+        p.children.some((c) => (c.name || "").toLowerCase().includes(q));
 
       const matchStatus =
         statusFilter === "all" ||
@@ -123,11 +140,19 @@ export function AdminUsersPage() {
           if (statusFilter !== "all" && c.status !== statusFilter) return false;
           return true;
         })
-        .map((c) => ({ ...c, parentName: p.name, parentId: p.id })),
+        .map((c) => ({ ...c, parentName: p.nickname, parentId: p.id })),
     );
   }, [filteredParents, planFilter, statusFilter]);
 
   const totalStudents = parents.flatMap((p) => p.children).length;
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64 text-slate-500">
+        Đang tải dữ liệu người dùng...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -240,7 +265,7 @@ export function AdminUsersPage() {
         <div className="space-y-4">
           {filteredParents.map((parent) => {
             const isExpanded = expandedParents.has(parent.id);
-            const pStatus = STATUS_LABELS[parent.status];
+            const pStatus = STATUS_LABELS[parent.status || "active"];
 
             return (
               <div
@@ -272,13 +297,13 @@ export function AdminUsersPage() {
                   </div>
 
                   <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0">
-                    {parent.avatarInitials}
+                    {getInitials(parent.nickname)}
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="text-slate-900 font-semibold text-sm">
-                        {parent.name}
+                        {parent.nickname}
                       </h4>
                       <span
                         className={`text-xs font-semibold px-2 py-0.5 rounded-full ${pStatus.bg} ${pStatus.color}`}
@@ -287,9 +312,7 @@ export function AdminUsersPage() {
                       </span>
                     </div>
                     <div className="flex items-center gap-3 mt-0.5 text-slate-500 text-xs">
-                      <span>{parent.email}</span>
-                      <span className="hidden sm:inline">·</span>
-                      <span className="hidden sm:inline">{parent.phone}</span>
+                      <span>{parent.phone}</span>
                     </div>
                   </div>
 
@@ -383,7 +406,7 @@ export function AdminUsersPage() {
                 {isExpanded && (
                   <div className="border-t border-slate-200 bg-slate-50/70">
                     {parent.children.map((child, idx) => {
-                      const cStatus = STATUS_LABELS[child.status];
+                      const cStatus = STATUS_LABELS[child.status || "active"];
                       const plan = PLAN_BADGES[child.plan as PlanType];
 
                       return (
@@ -427,11 +450,11 @@ export function AdminUsersPage() {
                               </span>
                               <span className="hidden sm:inline">·</span>
                               <span className="hidden sm:inline">
-                                {child.totalLessons} bài
+                                {child.totalLessons || 0} bài
                               </span>
                               <span className="hidden sm:inline">·</span>
                               <span className="hidden sm:inline">
-                                TB {child.avgScore}đ
+                                TB {child.avgScore || 0}đ
                               </span>
                             </div>
                           </div>
@@ -439,7 +462,7 @@ export function AdminUsersPage() {
                           <div className="hidden md:block text-right">
                             <p className="text-slate-500 text-xs">Lần cuối</p>
                             <p className="text-slate-700 text-xs font-semibold">
-                              {child.lastActive}
+                              {child.lastActive || "Chưa truy cập"}
                             </p>
                           </div>
 
@@ -549,7 +572,7 @@ export function AdminUsersPage() {
               </thead>
               <tbody>
                 {allStudents.map((student) => {
-                  const cStatus = STATUS_LABELS[student.status];
+                  const cStatus = STATUS_LABELS[student.status || "active"];
                   const plan = PLAN_BADGES[student.plan as PlanType];
 
                   return (
@@ -584,19 +607,19 @@ export function AdminUsersPage() {
                         </span>
                       </td>
                       <td className="px-5 py-3.5 text-center text-slate-700 text-sm hidden md:table-cell">
-                        {student.totalLessons}
+                        {student.totalLessons || 0}
                       </td>
                       <td className="px-5 py-3.5 text-center hidden md:table-cell">
                         <span
                           className={`text-sm font-semibold ${
-                            student.avgScore >= 80
+                            (student.avgScore || 0) >= 80
                               ? "text-emerald-600"
-                              : student.avgScore >= 60
+                              : (student.avgScore || 0) >= 60
                                 ? "text-amber-600"
                                 : "text-rose-600"
                           }`}
                         >
-                          {student.avgScore}
+                          {student.avgScore || 0}
                         </span>
                       </td>
                       <td className="px-5 py-3.5 text-center">
@@ -607,7 +630,7 @@ export function AdminUsersPage() {
                         </span>
                       </td>
                       <td className="px-5 py-3.5 text-slate-500 text-xs hidden lg:table-cell">
-                        {student.lastActive}
+                        {student.lastActive || "Chưa truy cập"}
                       </td>
                     </tr>
                   );
@@ -654,13 +677,13 @@ export function AdminUsersPage() {
 
             <div className="flex items-center gap-4 mb-6">
               <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center text-white font-bold text-lg">
-                {selectedParent.avatarInitials}
+                {getInitials(selectedParent.nickname)}
               </div>
               <div>
                 <h3 className="text-slate-900 font-extrabold text-lg">
-                  {selectedParent.name}
+                  {selectedParent.nickname}
                 </h3>
-                <p className="text-slate-500 text-sm">{selectedParent.email}</p>
+                <p className="text-slate-500 text-sm">{selectedParent.phone}</p>
               </div>
             </div>
 
@@ -680,9 +703,9 @@ export function AdminUsersPage() {
               <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
                 <p className="text-slate-500 text-xs">Trạng thái</p>
                 <p
-                  className={`text-sm font-semibold mt-0.5 ${STATUS_LABELS[selectedParent.status].color}`}
+                  className={`text-sm font-semibold mt-0.5 ${STATUS_LABELS[selectedParent.status || "active"].color}`}
                 >
-                  {STATUS_LABELS[selectedParent.status].label}
+                  {STATUS_LABELS[selectedParent.status || "active"].label}
                 </p>
               </div>
               <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
@@ -699,7 +722,7 @@ export function AdminUsersPage() {
             <div className="space-y-2">
               {selectedParent.children.map((child) => {
                 const plan = PLAN_BADGES[child.plan as PlanType];
-                const cStatus = STATUS_LABELS[child.status];
+                const cStatus = STATUS_LABELS[child.status || "active"];
 
                 return (
                   <div
@@ -722,7 +745,7 @@ export function AdminUsersPage() {
                       </div>
                       <div className="text-slate-500 text-xs mt-0.5">
                         {child.grade} · {child.gender === "boy" ? "Nam" : "Nữ"}{" "}
-                        · TB {child.avgScore}đ · {child.totalLessons} bài
+                        · TB {child.avgScore || 0}đ · {child.totalLessons || 0} bài
                       </div>
                     </div>
                     <span

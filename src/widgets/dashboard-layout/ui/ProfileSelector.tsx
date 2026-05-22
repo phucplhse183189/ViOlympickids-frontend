@@ -21,7 +21,7 @@ function AvatarBubble({
   return (
     <div
       className={`${sizeMap[size]} rounded-full flex items-center justify-center shrink-0 select-none`}
-      style={{ backgroundColor: bg }}
+      style={{ backgroundColor: bg || "#f3f4f6" }}
     >
       {emoji}
     </div>
@@ -62,6 +62,8 @@ export function ProfileSelector() {
     return () => document.removeEventListener("mousedown", handler);
   }, [dropdownOpen]);
 
+  if (!activeProfile) return <div className="mx-4 mt-4 mb-2 text-sm text-gray-500">Đang tải...</div>;
+
   return (
     <div ref={dropdownRef} className="relative mx-4 mt-4 mb-2">
       {/* Trigger button */}
@@ -75,7 +77,7 @@ export function ProfileSelector() {
       >
         <AvatarBubble
           emoji={activeProfile.avatarEmoji}
-          bg={activeProfile.avatarBg}
+          bg={activeProfile.avatarBg || "#f3f4f6"}
           size="md"
         />
         <div className="min-w-0 flex-1 text-left">
@@ -108,12 +110,12 @@ export function ProfileSelector() {
                   setDropdownOpen(false);
                 }}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 transition-colors ${
-                  profile.id === activeChild.id ? "bg-blue-50" : ""
+                  profile.id === activeProfile.id ? "bg-blue-50" : ""
                 }`}
               >
                 <AvatarBubble
                   emoji={profile.avatarEmoji}
-                  bg={profile.avatarBg}
+                  bg={profile.avatarBg || "#f3f4f6"}
                   size="sm"
                 />
                 <div className="min-w-0 flex-1 text-left">
@@ -124,7 +126,7 @@ export function ProfileSelector() {
                     {profile.grade}
                   </p>
                 </div>
-                {profile.id === activeChild.id && (
+                {profile.id === activeProfile.id && (
                   <Check size={13} className="text-blue-500 shrink-0" />
                 )}
               </button>

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -13,10 +13,26 @@ import {
   LineChart,
   Line,
 } from "recharts";
-import { loadAdminParents } from "@/shared/api/adminMockData";
+import * as adminService from "@/shared/api/services/adminService";
 
 export function AdminPerformancePage() {
-  const parents = loadAdminParents();
+  const [parents, setParents] = useState<adminService.ParentWithChildren[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const data = await adminService.getParents();
+        setParents(data);
+      } catch (err) {
+        console.error("Failed to load parents for performance page:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
   const students = parents.flatMap((p) => p.children);
 
   const statusDistributionData = useMemo(() => {
@@ -24,9 +40,16 @@ export function AdminPerformancePage() {
     const studentStatus = { active: 0, inactive: 0, suspended: 0 };
 
     parents.forEach((parent) => {
-      parentStatus[parent.status] += 1;
+      // @ts-ignore - Assuming parent has status or fallback to active
+      const pStatus = parent.status || "active";
+      if (parentStatus[pStatus] !== undefined) {
+        parentStatus[pStatus as keyof typeof parentStatus] += 1;
+      }
+      
       parent.children.forEach((child) => {
-        studentStatus[child.status] += 1;
+        if (studentStatus[child.status] !== undefined) {
+          studentStatus[child.status] += 1;
+        }
       });
     });
 
@@ -55,9 +78,9 @@ export function AdminPerformancePage() {
       .slice(0, 8)
       .map((parent) => ({
         name:
-          parent.name.length > 12
-            ? `${parent.name.slice(0, 12)}...`
-            : parent.name,
+          parent.nickname.length > 12
+            ? `${parent.nickname.slice(0, 12)}...`
+            : parent.nickname,
         students: parent.children.length,
       }));
   }, [parents]);
@@ -65,29 +88,37 @@ export function AdminPerformancePage() {
   const scoreTrendData = useMemo(() => {
     return students.map((student, index) => ({
       idx: index + 1,
-      score: student.avgScore,
-      lessons: student.totalLessons,
+      score: student.avgScore || 0,
+      lessons: student.totalLessons || 0,
       name: student.name,
     }));
   }, [students]);
 
   const weakStudents = useMemo(() => {
     return [...students]
-      .sort((a, b) => a.avgScore - b.avgScore)
+      .sort((a, b) => (a.avgScore || 0) - (b.avgScore || 0))
       .slice(0, 5)
       .map((student) => ({
         name: student.name,
-        score: student.avgScore,
-        lessons: student.totalLessons,
+        score: student.avgScore || 0,
+        lessons: student.totalLessons || 0,
         status: student.status,
       }));
   }, [students]);
 
   const averageScore = useMemo(() => {
     if (students.length === 0) return 0;
-    const total = students.reduce((sum, s) => sum + s.avgScore, 0);
+    const total = students.reduce((sum, s) => sum + (s.avgScore || 0), 0);
     return Math.round(total / students.length);
   }, [students]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64 text-slate-500">
+        Đang tải dữ liệu hiệu suất...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

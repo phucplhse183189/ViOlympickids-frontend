@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, CheckCircle2, Clock } from "lucide-react";
-import { type ActivityStatus } from "@/shared/api/dashboardMockData";
+import { type ActivityStatus } from "@/shared/types/dashboard";
 import { useActiveChild } from "@/shared/lib/activeChild";
 
 // Show only the 5 most recent entries in the overview widget

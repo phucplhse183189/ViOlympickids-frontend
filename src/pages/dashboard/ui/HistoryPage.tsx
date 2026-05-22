@@ -7,10 +7,15 @@ import {
   Clock,
   XCircle,
 } from "lucide-react";
-import {
-  SUBJECT_FILTER_OPTIONS,
-  type ActivityStatus,
-} from "@/shared/api/dashboardMockData";
+const SUBJECT_FILTER_OPTIONS = [
+  "Tất cả",
+  "Số học",
+  "Hình học",
+  "Đo lường",
+  "Lời văn",
+  "Logic",
+];
+import type { ActivityStatus } from "@/shared/types/dashboard";
 import { useActiveChild } from "@/shared/lib/activeChild";
 
 const statusStyle: Record<ActivityStatus, string> = {
@@ -28,8 +33,9 @@ const statusIcon: Record<ActivityStatus, React.ReactNode> = {
 const PAGE_SIZE = 7;
 
 export function HistoryPage() {
-  const { dashboardData } = useActiveChild();
-  const activities = dashboardData.activities;
+  const { dashboardData, isLoading } = useActiveChild();
+  
+  const activities = dashboardData?.activities || [];
   const [search, setSearch] = useState("");
   const [subjectFilter, setSubjectFilter] = useState("Tất cả");
   const [statusFilter, setStatusFilter] = useState<"Tất cả" | ActivityStatus>(
@@ -64,6 +70,14 @@ export function HistoryPage() {
     setStatusFilter(v as "Tất cả" | ActivityStatus);
     setPage(1);
   };
+
+  if (isLoading || !dashboardData) {
+    return (
+      <div className="flex items-center justify-center py-20 text-gray-500">
+        Đang tải lịch sử học tập...
+      </div>
+    );
+  }
 
   // Stats summary
   const total = activities.length;
@@ -221,9 +235,9 @@ export function HistoryPage() {
                     </td>
                     <td className="px-6 py-3.5">
                       <span
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${statusStyle[a.status]}`}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${statusStyle[a.status as ActivityStatus]}`}
                       >
-                        {statusIcon[a.status]}
+                        {statusIcon[a.status as ActivityStatus]}
                         {a.status}
                       </span>
                     </td>

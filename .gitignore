@@ -31,3 +31,5 @@ public/**/*.fbx
 public/**/*.obj
 src/assets/**/*.fbx
 src/assets/**/*.obj
+
+.env*.local

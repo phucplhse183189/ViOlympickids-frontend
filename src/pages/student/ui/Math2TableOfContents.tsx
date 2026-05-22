@@ -12,13 +12,13 @@ import {
   Dodecahedron,
 } from "@react-three/drei";
 import {
-  MATH2_TOPICS,
   canAccessLesson,
   getMath2CompletedLessonIds,
   getMath2LessonPlayRoute,
   type Math2Lesson,
   type Math2Topic,
 } from "@/shared/api/math2Data";
+import * as lessonService from "@/shared/api/services/lessonService";
 import { useNavigate } from "react-router-dom";
 import { Play, Lock, Star, Compass } from "lucide-react";
 import * as THREE from "three";
@@ -448,6 +448,12 @@ export function Math2TableOfContents() {
     topic: Math2Topic;
   } | null>(null);
 
+  const [topics, setTopics] = useState<lessonService.TopicWithLessons[]>([]);
+
+  useEffect(() => {
+    lessonService.getTopics().then(setTopics).catch(console.error);
+  }, []);
+
   const [showAd, setShowAd] = useState(false);
   const [pendingRoute, setPendingRoute] = useState<string | null>(null);
 
@@ -479,10 +485,10 @@ export function Math2TableOfContents() {
       const completed = getMath2CompletedLessonIds(profile.id);
 
       let next: string | null = null;
-      for (const topic of MATH2_TOPICS) {
+      for (const topic of topics) {
         for (const lesson of topic.lessons) {
           if (
-            canAccessLesson(lesson, profile.plan) &&
+            canAccessLesson(lesson as Math2Lesson, profile.plan) &&
             !completed.has(lesson.id)
           ) {
             next = lesson.id;
@@ -494,11 +500,11 @@ export function Math2TableOfContents() {
 
       let robotLesson: string | null = next;
       const preferredRobotLesson = "math2-b2";
-      const canUsePreferred = MATH2_TOPICS.some((topic) =>
+      const canUsePreferred = topics.some((topic) =>
         topic.lessons.some(
           (lesson) =>
             lesson.id === preferredRobotLesson &&
-            canAccessLesson(lesson, profile.plan),
+            canAccessLesson(lesson as Math2Lesson, profile.plan),
         ),
       );
       if (canUsePreferred) {
@@ -506,9 +512,9 @@ export function Math2TableOfContents() {
       }
 
       if (!robotLesson) {
-        for (const topic of MATH2_TOPICS) {
+        for (const topic of topics) {
           for (const lesson of topic.lessons) {
-            if (canAccessLesson(lesson, profile.plan)) {
+            if (canAccessLesson(lesson as Math2Lesson, profile.plan)) {
               robotLesson = lesson.id;
             }
           }
@@ -525,7 +531,7 @@ export function Math2TableOfContents() {
     }
 
     return map;
-  }, [profiles, progressTick]);
+  }, [profiles, progressTick, topics]);
 
   const activeProgress =
     progressByChildId[activeChild.id] ??
@@ -543,15 +549,15 @@ export function Math2TableOfContents() {
 
   const robotCurrentLesson = useMemo(() => {
     if (!robotLessonId) return null;
-    for (const topic of MATH2_TOPICS) {
+    for (const topic of topics) {
       for (const lesson of topic.lessons) {
         if (lesson.id === robotLessonId) {
-          return { lesson, topic };
+          return { lesson: lesson as Math2Lesson, topic: topic as Math2Topic };
         }
       }
     }
     return null;
-  }, [robotLessonId]);
+  }, [robotLessonId, topics]);
 
   const childDisplayName = useMemo(() => {
     const n = activeChild.name?.trim();
@@ -607,7 +613,7 @@ export function Math2TableOfContents() {
   const robotNodeIndex = useMemo(() => {
     if (!robotLessonId) return null;
     let idx = 0;
-    for (const topic of MATH2_TOPICS) {
+    for (const topic of topics) {
       idx += 1; // topic portal
       for (const lesson of topic.lessons) {
         if (lesson.id === robotLessonId) return idx;
@@ -615,7 +621,7 @@ export function Math2TableOfContents() {
       }
     }
     return null;
-  }, [robotLessonId]);
+  }, [robotLessonId, topics]);
 
   // Smooth dragging
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -823,7 +829,8 @@ export function Math2TableOfContents() {
             </defs>
           </svg>
 
-          {MATH2_TOPICS.map((topic, tIdx) => {
+          {/* Dynamic Topics */}
+          {topics.map((topic, tIdx) => {
             const portalIdx = globalCount++;
 
             return (
@@ -998,7 +1005,7 @@ export function Math2TableOfContents() {
       {/* --- QUICK JUMP SIDEBAR / BOTTOM BAR --- */}
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-40 animate-in slide-in-from-bottom-10 fade-in duration-700 delay-500">
         <div className="bg-white/10 backdrop-blur-2xl border border-white/20 p-1.5 md:p-2 rounded-full shadow-[0_10px_40px_rgba(0,0,0,0.5)] flex flex-row items-center justify-center gap-1.5 md:gap-2 overflow-x-auto max-w-[90vw] hide-scrollbar">
-          {MATH2_TOPICS.map((t, index) => (
+          {topics.map((t, index) => (
             <button
               key={t.id}
               onClick={() => scrollToTopic(index)}

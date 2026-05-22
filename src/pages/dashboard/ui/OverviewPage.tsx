@@ -253,7 +253,7 @@ function QuickActionsCard() {
 /* ── Main page ──────────────────────────────────────── */
 export function OverviewPage() {
   const navigate = useNavigate();
-  const { activeChild, dashboardData } = useActiveChild();
+  const { activeChild, dashboardData, isLoading } = useActiveChild();
   const headingRef = useRef<HTMLDivElement>(null);
   const [headingVisible, setHeadingVisible] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
@@ -279,7 +279,15 @@ export function OverviewPage() {
     observe(headingRef.current, () => setHeadingVisible(true));
     observe(chartRef.current, () => setChartVisible(true));
     observe(tableRef.current, () => setTableVisible(true));
-  }, []);
+  }, [activeChild, dashboardData]);
+
+  if (isLoading || !activeChild || !dashboardData) {
+    return (
+      <div className="flex items-center justify-center py-20 text-gray-500">
+        Đang tải dữ liệu tổng quan...
+      </div>
+    );
+  }
 
   const stats = dashboardData.stats;
   const plan = activeChild.plan;

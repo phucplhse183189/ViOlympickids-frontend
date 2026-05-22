@@ -1,6 +1,5 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Camera, Check, Pencil, X } from "lucide-react";
-import { MOCK_PARENT_PROFILE } from "@/shared/api/dashboardMockData";
 import { useAuth } from "@/shared/lib/auth";
 
 // ── Local state shape for the profile form ────────────────────
@@ -10,13 +9,6 @@ interface ParentProfileForm {
   email: string;
   avatarUrl: string | null; // data-URL from upload
 }
-
-const INITIAL: ParentProfileForm = {
-  name: MOCK_PARENT_PROFILE.name,
-  phone: "0901 234 567",
-  email: "",
-  avatarUrl: null,
-};
 
 // ── Avatar display ─────────────────────────────────────────────
 function AvatarDisplay({
@@ -103,6 +95,10 @@ function EditableField({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
 
+  useEffect(() => {
+    setDraft(value);
+  }, [value]);
+
   function confirm() {
     onChange(draft.trim() || value);
     setEditing(false);
@@ -170,10 +166,10 @@ function EditableField({
 export function ProfilePage() {
   const { user, updateUser } = useAuth();
   const [form, setForm] = useState<ParentProfileForm>({
-    ...INITIAL,
-    name: user?.nickname ?? INITIAL.name,
-    phone: user?.phone ?? INITIAL.phone,
-    email: user?.email || INITIAL.email,
+    name: user?.nickname ?? "Phụ Huynh",
+    phone: user?.email ?? "0901234567",
+    email: "",
+    avatarUrl: null,
   });
   const [saved, setSaved] = useState(false);
 
@@ -188,6 +184,13 @@ export function ProfilePage() {
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   }
+
+  const initials = form.name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .substring(0, 2)
+    .toUpperCase();
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -206,7 +209,7 @@ export function ProfilePage() {
         <div className="flex items-center gap-6">
           <AvatarDisplay
             avatarUrl={form.avatarUrl}
-            initials={MOCK_PARENT_PROFILE.avatarInitials}
+            initials={initials}
             onUpload={(url) => update("avatarUrl", url)}
           />
 

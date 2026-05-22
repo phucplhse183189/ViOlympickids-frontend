@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Volume2, VolumeX, Maximize, Minimize } from "lucide-react";
-import { MATH2_B2_QUIZ, type Math2QuizQuestion } from "@/shared/api/math2Data";
+import * as lessonService from "@/shared/api/services/lessonService";
 import { useGameSound } from "@/shared/lib/useGameSound";
 import { ParentGate } from "@/shared/ui/ParentGate";
 import Scene3DBackground from "./Scene3DBackground";
@@ -441,7 +441,11 @@ function CandyProgress({ current, total, correctCount }: Readonly<{ current: num
 export function Math2QuizPage() {
   const navigate = useNavigate();
   const sound = useGameSound();
-  const questions: Math2QuizQuestion[] = MATH2_B2_QUIZ;
+  const [questions, setQuestions] = useState<lessonService.QuizQuestion[]>([]);
+
+  useEffect(() => {
+    lessonService.getQuiz("math2-b2").then(setQuestions).catch(console.error);
+  }, []);
 
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
@@ -466,7 +470,7 @@ export function Math2QuizPage() {
 
   const themeIdx = currentIdx % WORLD_THEMES.length;
   const theme = WORLD_THEMES[themeIdx];
-  const q = questions[currentIdx];
+  const q = questions[currentIdx] || null;
 
   // Stable decoration positions per theme
   const allDecoPositions = useMemo(
@@ -640,6 +644,14 @@ export function Math2QuizPage() {
   // ══════════════════════════════════════════════════════════════════════════════
   // RENDER
   // ══════════════════════════════════════════════════════════════════════════════
+
+  if (questions.length === 0 || !q) {
+    return (
+      <div className="flex justify-center items-center h-screen bg-slate-900 text-white">
+        Đang tải bài tập...
+      </div>
+    );
+  }
 
   return (
     <div

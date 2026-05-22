@@ -1,17 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/shared/lib/auth";
-import { ADMIN_ACCOUNT } from "@/shared/api/adminMockData";
+import { authService } from "@/shared/api/services/authService";
 
 const ADMIN_SESSION_KEY = "vio_admin_session";
-
-// Single parent account – all roles handled via profile picker
-const MOCK_ACCOUNT = {
-  phone: "0901234567",
-  password: "demo123",
-  nickname: "Phụ Huynh",
-  avatarId: "panda",
-};
 
 interface LoginErrors {
   phone?: string;
@@ -66,42 +58,38 @@ export function useLoginForm() {
     const normalizedPhone = normalizePhone(phone);
     setIsLoading(true);
 
-    setTimeout(() => {
-      if (
-        normalizedPhone === normalizePhone(ADMIN_ACCOUNT.username) &&
-        password === ADMIN_ACCOUNT.password
-      ) {
-        sessionStorage.setItem(
-          ADMIN_SESSION_KEY,
-          JSON.stringify({
-            username: ADMIN_ACCOUNT.username,
-            displayName: ADMIN_ACCOUNT.displayName,
-            role: ADMIN_ACCOUNT.role,
-            loggedInAt: new Date().toISOString(),
-          }),
-        );
-        navigate("/admin");
-        setIsLoading(false);
-        return;
-      }
-
-      if (
-        normalizedPhone === normalizePhone(MOCK_ACCOUNT.phone) &&
-        password === MOCK_ACCOUNT.password
-      ) {
-        login({
-          nickname: MOCK_ACCOUNT.nickname,
-          email: MOCK_ACCOUNT.phone,
-          avatarId: MOCK_ACCOUNT.avatarId,
-          tier: "free",
-        });
-        navigate("/profile-picker");
-        setIsLoading(false);
-      } else {
+    authService
+      .login(normalizedPhone, password)
+      .then((user) => {
+        if (user.role === "admin") {
+          sessionStorage.setItem(
+            ADMIN_SESSION_KEY,
+            JSON.stringify({
+              username: user.phone,
+              displayName: user.name,
+              role: user.role,
+              loggedInAt: new Date().toISOString(),
+            }),
+          );
+          navigate("/admin");
+        } else {
+          login({
+            nickname: user.name,
+            email: user.phone,
+            avatarId: user.avatarInitials || "panda",
+            tier: "free",
+          });
+          // Lưu parentId để dùng sau (trong API Client hoặc các context khác)
+          sessionStorage.setItem("vio_parent_id", user.id);
+          navigate("/profile-picker");
+        }
+      })
+      .catch((error) => {
         setErrors({ general: "Số điện thoại hoặc mật khẩu không đúng." });
+      })
+      .finally(() => {
         setIsLoading(false);
-      }
-    }, 1000);
+      });
   };
 
   return {

@@ -1,11 +1,17 @@
 // ─── Toán Lớp 2 – Kết nối tri thức (Tập 1) ─────────────────────────────────
 // Cấu trúc dữ liệu mô phỏng Mục lục Toán 2
 
-import {
-  type PlanType,
-  loadChildProfiles,
-  ACTIVE_CHILD_ID_KEY,
-} from "@/shared/api/dashboardMockData";
+import { type PlanType } from "@/shared/types/dashboard";
+import { ACTIVE_CHILD_ID_KEY, CHILD_PROFILES_STORAGE_KEY } from "@/shared/lib/constants";
+
+function loadChildProfiles(): any[] {
+  try {
+    const raw = localStorage.getItem(CHILD_PROFILES_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
 
 /**
  * gameType quyết định component game nào sẽ mở khi click vào bài học.

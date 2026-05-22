@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { MATH2_B1_QUIZ } from "@/shared/api/math2Data";
+import * as lessonService from "@/shared/api/services/lessonService";
 import { useGameSound } from "@/shared/lib/useGameSound";
 import { ArrowLeft, Star, Heart } from "lucide-react";
 import { ParentGate } from "@/shared/ui/ParentGate";
@@ -15,8 +15,13 @@ export function Math2B1QuizPage() {
   const [answeredState, setAnsweredState] = useState<"idle" | "correct" | "wrong">("idle");
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
 
-  const questions = MATH2_B1_QUIZ;
-  const currentQ = questions[currentIdx];
+  const [questions, setQuestions] = useState<lessonService.QuizQuestion[]>([]);
+
+  useEffect(() => {
+    lessonService.getQuiz("math2-b1").then(setQuestions).catch(console.error);
+  }, []);
+
+  const currentQ = questions[currentIdx] || null;
 
   // Colors for 4 options
   const optColors = [
@@ -59,6 +64,14 @@ export function Math2B1QuizPage() {
   };
 
   const progress = ((currentIdx) / questions.length) * 100;
+
+  if (questions.length === 0 || !currentQ) {
+    return (
+      <div className="flex justify-center items-center h-screen bg-slate-50 text-slate-500 font-bold">
+        Đang tải bài tập...
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">

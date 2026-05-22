@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Check, ArrowLeft } from "lucide-react";
-import { CHILD_PROFILES_STORAGE_KEY } from "@/shared/api/dashboardMockData";
+import { childrenService } from "@/shared/api/services/childrenService";
 
 // ── Avatar options ─────────────────────────────────────────────
 const AVATAR_OPTIONS = [
@@ -25,34 +25,32 @@ export function AddChildPage() {
   const chosen = AVATAR_OPTIONS[selectedAvatar];
   const canSave = name.trim().length > 0;
 
-  function handleSave() {
+  async function handleSave() {
     if (!canSave) return;
-    setSaving(true);
-
-    const newProfile = {
-      id: `child-${Date.now()}`,
-      name: name.trim(),
-      grade: "Lớp 2",
-      avatarEmoji: chosen.emoji,
-      avatarBg: chosen.bg,
-      plan: "FREE" as const,
-    };
-
-    // Persist to localStorage so ProfileSelector can read it
-    try {
-      const existing = JSON.parse(
-        localStorage.getItem(CHILD_PROFILES_STORAGE_KEY) ?? "[]",
-      );
-      localStorage.setItem(
-        CHILD_PROFILES_STORAGE_KEY,
-        JSON.stringify([...existing, newProfile]),
-      );
-    } catch {
-      // ignore
+    
+    const parentId = sessionStorage.getItem("vio_parent_id");
+    if (!parentId) {
+      alert("Lỗi: Không tìm thấy ID phụ huynh!");
+      return;
     }
-
-    setDone(true);
-    setTimeout(() => navigate("/profile-picker"), 1200);
+    
+    setSaving(true);
+    try {
+      await childrenService.addChild(parentId, {
+        name: name.trim(),
+        grade: "Lớp 2",
+        avatarEmoji: chosen.emoji,
+        avatarBg: chosen.bg,
+        plan: "FREE",
+      });
+      
+      setDone(true);
+      setTimeout(() => navigate("/profile-picker"), 1200);
+    } catch (error) {
+      console.error("Failed to add child", error);
+      alert("Đã xảy ra lỗi khi tạo hồ sơ. Vui lòng thử lại.");
+      setSaving(false);
+    }
   }
 
   return (

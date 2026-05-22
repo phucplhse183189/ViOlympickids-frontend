@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { type SmartAlert } from "@/shared/api/dashboardMockData";
+import { type SmartAlert } from "@/shared/types/dashboard";
 import { useActiveChild } from "@/shared/lib/activeChild";
 
 // ── Icons ──────────────────────────────────────────────────────

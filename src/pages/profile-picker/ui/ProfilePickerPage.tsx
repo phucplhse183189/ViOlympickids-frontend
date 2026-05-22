@@ -11,28 +11,10 @@ import {
   BarChart3,
 } from "lucide-react";
 import { useAuth } from "@/shared/lib/auth";
-import {
-  CHILD_PROFILES_STORAGE_KEY,
-  INITIAL_CHILD_PROFILES,
-  getChildDashboard,
-  type ChildProfile,
-} from "@/shared/api/dashboardMockData";
 import { ParentGate } from "@/shared/ui/ParentGate";
 import { useActiveChild } from "@/shared/lib/activeChild";
-
-function loadProfiles(): ChildProfile[] {
-  try {
-    const raw = localStorage.getItem(CHILD_PROFILES_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as ChildProfile[];
-      if (parsed.length > 0 && parsed[0].plan) return parsed;
-      localStorage.removeItem(CHILD_PROFILES_STORAGE_KEY);
-    }
-  } catch {
-    // ignore
-  }
-  return INITIAL_CHILD_PROFILES;
-}
+import { childrenService } from "@/shared/api/services/childrenService";
+import type { DashboardData, ChildProfile } from "@/shared/api/services/childrenService";
 
 function getTimeGreeting(): string {
   const h = new Date().getHours();
@@ -44,57 +26,44 @@ function getTimeGreeting(): string {
 export function ProfilePickerPage() {
   const navigate = useNavigate();
   const { user, setActiveRole, logout } = useAuth();
-  const { switchChild } = useActiveChild();
-  const [profiles, setProfiles] = useState<ChildProfile[]>(() =>
-    loadProfiles(),
-  );
+  const { profiles, isLoading, switchChild, refreshProfiles } = useActiveChild();
   const [showPinGate, setShowPinGate] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [childStats, setChildStats] = useState<Record<string, DashboardData>>({});
 
   const greeting = useMemo(() => getTimeGreeting(), []);
-
-  // Pre-load dashboard data for quick stats
-  const childStats = useMemo(() => {
-    const map: Record<
-      string,
-      {
-        streak: number;
-        weeklyMin: number;
-        score: number;
-        lastActivity: string;
-        alertCount: number;
-      }
-    > = {};
-    for (const p of profiles) {
-      const d = getChildDashboard(p.id);
-      map[p.id] = {
-        streak: d.streakCount,
-        weeklyMin: d.stats.weeklyMinutes,
-        score: d.stats.overallScore,
-        lastActivity:
-          d.activities.length > 0 ? d.activities[0].datetime : "Chưa có",
-        alertCount: d.alerts.length,
-      };
-    }
-    return map;
-  }, [profiles]);
-
-  const totalAlerts = useMemo(
-    () => Object.values(childStats).reduce((s, c) => s + c.alertCount, 0),
-    [childStats],
-  );
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 50);
     return () => clearTimeout(t);
   }, []);
 
+  // Fetch quick stats for each child
+  useEffect(() => {
+    async function fetchAllDashboards() {
+      if (!profiles || profiles.length === 0) return;
+      const statsMap: Record<string, DashboardData> = {};
+      await Promise.all(
+        profiles.map(async (p) => {
+          try {
+            const dash = await childrenService.getDashboard(p.id);
+            statsMap[p.id] = dash;
+          } catch (e) {
+            console.error(e);
+          }
+        })
+      );
+      setChildStats(statsMap);
+    }
+    fetchAllDashboards();
+  }, [profiles]);
+
   // Refresh profiles on focus (after returning from /add-child)
   useEffect(() => {
-    const onFocus = () => setProfiles(loadProfiles());
+    const onFocus = () => refreshProfiles();
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
-  }, []);
+  }, [refreshProfiles]);
 
   // If not logged in, redirect to login
   useEffect(() => {
@@ -115,6 +84,7 @@ export function ProfilePickerPage() {
 
   if (!user) return null;
 
+  const totalAlerts = Object.values(childStats).reduce((s, c) => s + (c.alerts?.length || 0), 0);
   const totalCards = profiles.length + 2;
 
   return (
@@ -150,9 +120,7 @@ export function ProfilePickerPage() {
       <div
         className="absolute bottom-[20%] left-[5%] text-3xl opacity-10 animate-pulse-slow"
         style={{ animationDelay: "1s" }}
-      >
-        ⭐
-      </div>
+      />
       {/* Spinning ring */}
       <div className="absolute -top-24 -left-24 w-64 h-64 border-2 border-dashed border-blue-200/20 rounded-full animate-spin-slow" />
       <div
@@ -218,8 +186,12 @@ export function ProfilePickerPage() {
         </p>
 
         <div className="flex flex-wrap gap-5 justify-center max-w-4xl mb-6">
-          {profiles.map((profile, i) => {
-            const stats = childStats[profile.id];
+          {isLoading ? (
+             <div className="text-gray-500">Đang tải hồ sơ...</div>
+          ) : profiles.map((profile, i) => {
+            const dash = childStats[profile.id];
+            const stats = dash?.stats;
+            const score = stats?.overallScore ?? 0;
             return (
               <button
                 key={profile.id}
@@ -237,12 +209,12 @@ export function ProfilePickerPage() {
                 <div className="relative">
                   <div
                     className="absolute inset-0 rounded-[1.2rem] opacity-0 group-hover:opacity-40 transition-opacity duration-300 blur-lg"
-                    style={{ backgroundColor: profile.avatarBg }}
+                    style={{ backgroundColor: profile.avatarBg || "#f3f4f6" }}
                   />
                   <div
                     className="relative rounded-[1.2rem] flex items-center justify-center text-5xl shadow-md group-hover:scale-110 group-hover:rotate-3 group-active:scale-95 transition-all duration-300 border-3 border-white/60"
                     style={{
-                      backgroundColor: profile.avatarBg,
+                      backgroundColor: profile.avatarBg || "#f3f4f6",
                       width: "5rem",
                       height: "5rem",
                     }}
@@ -292,18 +264,18 @@ export function ProfilePickerPage() {
                         <div
                           className="h-full rounded-full transition-all duration-700"
                           style={{
-                            width: `${stats.score}%`,
+                            width: `${Math.min(100, score)}%`,
                             background:
-                              stats.score >= 80
+                              score >= 80
                                 ? "linear-gradient(90deg, #22c55e, #4ade80)"
-                                : stats.score >= 50
+                                : score >= 50
                                   ? "linear-gradient(90deg, #f59e0b, #fbbf24)"
                                   : "linear-gradient(90deg, #ef4444, #f87171)",
                           }}
                         />
                       </div>
                       <span className="text-[10px] font-bold text-gray-500">
-                        {stats.score}đ
+                        {score}đ
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-[10px] text-gray-400 gap-1">
@@ -312,14 +284,14 @@ export function ProfilePickerPage() {
                         title="Chuỗi ngày học liên tục"
                       >
                         <Flame size={11} className="text-orange-400" />
-                        {stats.streak} ngày
+                        {stats.streakDays ?? 0} ngày
                       </span>
                       <span
                         className="flex items-center gap-0.5"
                         title="Thời gian học trong tuần"
                       >
                         <Clock size={11} className="text-blue-400" />
-                        {stats.weeklyMin} ph
+                        {stats.weeklyMinutes ?? 0} ph
                       </span>
                     </div>
                   </div>
@@ -417,6 +389,7 @@ export function ProfilePickerPage() {
         {/* Logout */}
         <button
           onClick={() => {
+            sessionStorage.removeItem("vio_parent_id");
             logout();
             navigate("/");
           }}

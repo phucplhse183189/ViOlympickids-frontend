@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ADMIN_ACCOUNT } from "@/shared/api/adminMockData";
+import * as authService from "@/shared/api/services/authService";
 
 const ADMIN_SESSION_KEY = "vio_admin_session";
 
@@ -14,31 +14,33 @@ export function AdminLoginPage() {
 
   const normalizePhone = (value: string) => value.replace(/\D/g, "");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    setTimeout(() => {
-      if (
-        normalizePhone(phone) === normalizePhone(ADMIN_ACCOUNT.username) &&
-        password === ADMIN_ACCOUNT.password
-      ) {
+    try {
+      const user = await authService.login(normalizePhone(phone), password);
+      
+      if (user.role === "admin") {
         sessionStorage.setItem(
           ADMIN_SESSION_KEY,
           JSON.stringify({
-            username: ADMIN_ACCOUNT.username,
-            displayName: ADMIN_ACCOUNT.displayName,
-            role: ADMIN_ACCOUNT.role,
+            username: user.phone,
+            displayName: user.name,
+            role: user.role,
             loggedInAt: new Date().toISOString(),
           }),
         );
         navigate("/admin");
       } else {
-        setError("Sai tài khoản hoặc mật khẩu!");
+        setError("Tài khoản này không có quyền quản trị!");
       }
+    } catch (err: any) {
+      setError(err.message || "Sai tài khoản hoặc mật khẩu!");
+    } finally {
       setLoading(false);
-    }, 800);
+    }
   };
 
   return (

@@ -11,11 +11,25 @@ import {
   Crown,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import {
-  FREE_PLAN_FEATURES,
-  PRO_PLAN_FEATURES,
-  VIP_PLAN_FEATURES,
-} from "@/shared/api/dashboardMockData";
+const FREE_PLAN_FEATURES = [
+  "Truy cập 10 bài học miễn phí",
+  "Thống kê cơ bản",
+  "1 tài khoản học sinh",
+];
+
+const PRO_PLAN_FEATURES = [
+  "Truy cập toàn bộ bài học",
+  "Báo cáo chi tiết",
+  "Tối đa 3 tài khoản học sinh",
+  "Không có quảng cáo",
+];
+
+const VIP_PLAN_FEATURES = [
+  "Mọi tính năng của Pro",
+  "Học gia sư 1 kèm 1 (4 buổi/tháng)",
+  "Lộ trình học cá nhân hóa",
+  "Hỗ trợ ưu tiên 24/7",
+];
 import { useActiveChild } from "@/shared/lib/activeChild";
 
 // ── helpers ────────────────────────────────────────
@@ -24,13 +38,23 @@ function formatCurrency(amount: number): string {
 }
 
 export function SubscriptionPage() {
-  const { activeChild, dashboardData, updateChildPlan } = useActiveChild();
+  const { activeChild, dashboardData, updateChildPlan, isLoading } = useActiveChild();
   const navigate = useNavigate();
+  
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancelDone, setCancelDone] = useState(false);
+
+  if (isLoading || !activeChild || !dashboardData) {
+    return (
+      <div className="flex items-center justify-center py-20 text-gray-500">
+        Đang tải thông tin gói cước...
+      </div>
+    );
+  }
+
   const billing = dashboardData.billing;
   const plan = activeChild.plan;
   const daysLeft = activeChild.planDaysLeft ?? 0;
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-  const [cancelDone, setCancelDone] = useState(false);
 
   function handleCancel() {
     updateChildPlan(activeChild.id, "FREE");
