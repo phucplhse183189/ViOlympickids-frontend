@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
-import { db, schema } from "../_db";
+import { db, schema } from "../_db.js";
 
 /**
  * POST /api/auth/register

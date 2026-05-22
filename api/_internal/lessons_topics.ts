@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { asc } from "drizzle-orm";
-import { db, schema } from "../_db";
+import { db, schema } from "../_db.js";
 
 /**
  * GET /api/lessons/topics

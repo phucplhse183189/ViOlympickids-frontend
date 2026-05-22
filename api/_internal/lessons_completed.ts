@@ -1,10 +1,10 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { eq } from "drizzle-orm";
-import { db, schema } from "../../_db";
+import { db, schema } from "../_db.js";
 
 /**
- * GET /api/children/:id/activities
- * Lấy lịch sử hoạt động của bé
+ * GET /api/lessons/completed?childId=xxx
+ * Lấy danh sách bài học đã hoàn thành của bé
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "GET") {
@@ -12,7 +12,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const childId = req.query.id as string;
+    const childId = req.query.childId as string;
 
     if (!childId) {
       return res.status(400).json({ error: "Thiếu childId" });
@@ -20,12 +20,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const rows = await db
       .select()
-      .from(schema.activities)
-      .where(eq(schema.activities.childId, childId));
+      .from(schema.completedLessons)
+      .where(eq(schema.completedLessons.childId, childId));
 
-    return res.status(200).json(rows);
+    // Trả về mảng lessonId để frontend dễ check
+    const lessonIds = rows.map((r) => r.lessonId);
+
+    return res.status(200).json(lessonIds);
   } catch (err) {
-    console.error("Activities error:", err);
+    console.error("Get completed lessons error:", err);
     return res.status(500).json({ error: "Lỗi server" });
   }
 }

@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { db, schema } from "../../_db";
+import { db, schema } from "../_db.js";
 
 /**
  * POST /api/lessons/:id/complete
