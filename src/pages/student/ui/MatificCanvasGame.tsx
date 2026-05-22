@@ -18,7 +18,7 @@ import {
   validateDrop,
 } from "@/shared/lib/canvasGameLogic";
 import { useActiveChild } from "@/shared/lib/activeChild";
-import { markMath2LessonCompleted } from "@/shared/api/math2Data";
+import * as lessonService from "@/shared/api/services/lessonService";
 import { ParentGate } from "@/shared/ui/ParentGate";
 import { MATIFIC_ASSET_PACK } from "@/shared/config/matificAssetPack";
 
@@ -216,7 +216,7 @@ export function MatificCanvasGame() {
       const isLast = roundIdx + 1 >= rounds.length;
       if (isLast) {
         sound.victoryVoice();
-        markMath2LessonCompleted(activeChild?.id || "", "math2-b6");
+        if (activeChild?.id) lessonService.markCompleted(activeChild.id, "math2-b6").catch(console.error);
         setHint("Xuất sắc! Bạn đã hoàn thành thử thách Matific Canvas.");
         setTimeout(() => {
           setPhase("victory");

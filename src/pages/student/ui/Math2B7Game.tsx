@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { twMerge } from "tailwind-merge";
 import { useGameSound } from "@/shared/lib/useGameSound";
-import { markMath2LessonCompleted } from "@/shared/api/math2Data";
+import * as lessonService from "@/shared/api/services/lessonService";
 import { useActiveChild } from "@/shared/lib/activeChild";
 
 /** Cùng nền cảnh với trang lý thuyết B2 (trời, mặt trời, cỏ, hoa) — Math2B2TheoryPage */
@@ -1115,7 +1115,7 @@ export function Math2B7Game() {
                 type="button"
                 onClick={() => {
                   sound.click();
-                  markMath2LessonCompleted(activeChild?.id || "", "math2-b7");
+                  if (activeChild?.id) lessonService.markCompleted(activeChild.id, "math2-b7").catch(console.error);
                   navigate("/student");
                 }}
                 className="flex-1 rounded-2xl bg-gradient-to-r from-emerald-400 to-cyan-500 px-4 py-3 font-black text-white shadow-[0_4px_0_#0e7490]"

@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { twMerge } from "tailwind-merge";
 import { useGameSound } from "@/shared/lib/useGameSound";
-import { markMath2LessonCompleted } from "@/shared/api/math2Data";
+import * as lessonService from "@/shared/api/services/lessonService";
 import { useActiveChild } from "@/shared/lib/activeChild";
 
 const PAIRS_PER_ROUND = 4;
@@ -450,7 +450,7 @@ export function PipeBalanceGame() {
                 type="button"
                 onClick={() => {
                   sound.click();
-                  markMath2LessonCompleted(activeChild?.id || "", "math2-b5");
+                  if (activeChild?.id) lessonService.markCompleted(activeChild.id, "math2-b5").catch(console.error);
                   navigate("/student");
                 }}
                 className="flex-1 rounded-2xl bg-gradient-to-r from-teal-400 to-cyan-600 py-3 font-black text-white shadow-[0_4px_0_#0e7490]"

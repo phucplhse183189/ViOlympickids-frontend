@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { RotateCcw, Home } from "lucide-react";
-import { markMath2LessonCompleted } from "@/shared/api/math2Data";
+import * as lessonService from "@/shared/api/services/lessonService";
 import { useActiveChild } from "@/shared/lib/activeChild";
 
 interface LocationState {
@@ -109,7 +109,7 @@ export function Math2ResultPage() {
   useEffect(() => {
     if (!lessonId || stars < 1) return;
     const lid = RESULT_TO_LESSON[lessonId];
-    if (lid) markMath2LessonCompleted(activeChild?.id || "", lid);
+    if (lid && activeChild?.id) lessonService.markCompleted(activeChild.id, lid).catch(console.error);
   }, [lessonId, stars, activeChild?.id || ""]);
 
   return (

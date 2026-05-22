@@ -13,11 +13,8 @@ import {
 } from "@react-three/drei";
 import {
   canAccessLesson,
-  getMath2CompletedLessonIds,
   getMath2LessonPlayRoute,
-  type Math2Lesson,
-  type Math2Topic,
-} from "@/shared/api/math2Data";
+} from "@/shared/lib/lessonHelper";
 import * as lessonService from "@/shared/api/services/lessonService";
 import { useNavigate } from "react-router-dom";
 import { Play, Lock, Star, Compass } from "lucide-react";
@@ -442,22 +439,18 @@ function Math2Background3D() {
 // --- Main Page Component ---
 export function Math2TableOfContents() {
   const navigate = useNavigate();
-  const { activeChild, profiles } = useActiveChild();
+  const { activeChild } = useActiveChild();
   const [selectedLesson, setSelectedLesson] = useState<{
-    lesson: Math2Lesson;
-    topic: Math2Topic;
+    lesson: any;
+    topic: any;
   } | null>(null);
 
   const [topics, setTopics] = useState<lessonService.TopicWithLessons[]>([]);
+  const [completedIdsSet, setCompletedIdsSet] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     lessonService.getTopics().then(setTopics).catch(console.error);
   }, []);
-
-  if (!activeChild) return null;
-
-  const [showAd, setShowAd] = useState(false);
-  const [pendingRoute, setPendingRoute] = useState<string | null>(null);
 
   const [progressTick, setProgressTick] = useState(0);
   useEffect(() => {
@@ -473,76 +466,68 @@ export function Math2TableOfContents() {
     };
   }, []);
 
-  type ChildProgressSnapshot = {
-    completedIds: Set<string>;
-    nextLessonId: string | null;
-    robotLessonId: string | null;
-    robotAllDone: boolean;
-  };
+  useEffect(() => {
+    if (activeChild) {
+      lessonService
+        .getCompleted(activeChild.id)
+        .then((ids) => setCompletedIdsSet(new Set(ids)))
+        .catch(console.error);
+    }
+  }, [activeChild, progressTick]); // Re-fetch on progress tick
 
-  const progressByChildId = useMemo(() => {
-    const map: Record<string, ChildProgressSnapshot> = {};
+  if (!activeChild) return null;
 
-    for (const profile of profiles) {
-      const completed = getMath2CompletedLessonIds(profile.id);
+  const [showAd, setShowAd] = useState(false);
+  const [pendingRoute, setPendingRoute] = useState<string | null>(null);
 
-      let next: string | null = null;
-      for (const topic of topics) {
-        for (const lesson of topic.lessons) {
-          if (
-            canAccessLesson(lesson as Math2Lesson, profile.plan) &&
-            !completed.has(lesson.id)
-          ) {
-            next = lesson.id;
-            break;
-          }
-        }
-        if (next) break;
-      }
 
-      let robotLesson: string | null = next;
-      const preferredRobotLesson = "math2-b2";
-      const canUsePreferred = topics.some((topic) =>
-        topic.lessons.some(
-          (lesson) =>
-            lesson.id === preferredRobotLesson &&
-            canAccessLesson(lesson as Math2Lesson, profile.plan),
-        ),
-      );
-      if (canUsePreferred) {
-        robotLesson = preferredRobotLesson;
-      }
 
-      if (!robotLesson) {
-        for (const topic of topics) {
-          for (const lesson of topic.lessons) {
-            if (canAccessLesson(lesson as Math2Lesson, profile.plan)) {
-              robotLesson = lesson.id;
-            }
-          }
+  const activeProgress = useMemo(() => {
+    let next: string | null = null;
+    for (const topic of topics) {
+      for (const lesson of topic.lessons) {
+        if (
+          canAccessLesson(lesson as any, activeChild.plan) &&
+          !completedIdsSet.has(lesson.id)
+        ) {
+          next = lesson.id;
+          break;
         }
       }
-
-      map[profile.id] = {
-        completedIds: completed,
-        nextLessonId: next,
-        robotLessonId: robotLesson,
-        robotAllDone:
-          next === null && robotLesson !== null && completed.has(robotLesson),
-      };
+      if (next) break;
     }
 
-    return map;
-  }, [profiles, progressTick, topics]);
+    let robotLesson: string | null = next;
+    const preferredRobotLesson = "math2-b2";
+    const canUsePreferred = topics.some((topic) =>
+      topic.lessons.some(
+        (lesson) =>
+          lesson.id === preferredRobotLesson &&
+          canAccessLesson(lesson as any, activeChild.plan),
+      ),
+    );
+    if (canUsePreferred) {
+      robotLesson = preferredRobotLesson;
+    }
 
-  const activeProgress =
-    progressByChildId[activeChild.id] ??
-    ({
-      completedIds: new Set<string>(),
-      nextLessonId: null,
-      robotLessonId: null,
-      robotAllDone: false,
-    } as ChildProgressSnapshot);
+    if (!robotLesson) {
+      for (const topic of topics) {
+        for (const lesson of topic.lessons) {
+          if (canAccessLesson(lesson as any, activeChild.plan)) {
+            robotLesson = lesson.id;
+          }
+        }
+      }
+    }
+
+    return {
+      completedIds: completedIdsSet,
+      nextLessonId: next,
+      robotLessonId: robotLesson,
+      robotAllDone:
+        next === null && robotLesson !== null && completedIdsSet.has(robotLesson),
+    };
+  }, [completedIdsSet, topics, activeChild.plan]);
 
   const completedIds = activeProgress.completedIds;
   const nextLessonId = activeProgress.nextLessonId;
@@ -554,7 +539,7 @@ export function Math2TableOfContents() {
     for (const topic of topics) {
       for (const lesson of topic.lessons) {
         if (lesson.id === robotLessonId) {
-          return { lesson: lesson as Math2Lesson, topic: topic as Math2Topic };
+          return { lesson: lesson as any, topic: topic as any };
         }
       }
     }

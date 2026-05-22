@@ -5,10 +5,28 @@ import {
   CHILD_PROFILES_STORAGE_KEY,
   ACTIVE_CHILD_ID_KEY,
 } from "@/shared/lib/constants";
-import { getActiveChildPlan, PLAN_LABELS } from "@/shared/api/math2Data";
-import type { PlanType } from "@/shared/types/dashboard";
+import { type PlanType } from "@/shared/types/dashboard";
 import { useAuth } from "@/shared/lib/auth";
 import { ParentGate } from "@/shared/ui/ParentGate";
+
+const PLAN_LABELS: Record<PlanType, { label: string; icon: string }> = {
+  FREE: { label: "Cơ Bản", icon: "🌱" },
+  PRO: { label: "Nâng Cao", icon: "🚀" },
+  VIP: { label: "VIP", icon: "👑" },
+};
+
+function getActiveChildPlan(): PlanType {
+  try {
+    const activeId = localStorage.getItem(ACTIVE_CHILD_ID_KEY);
+    const raw = localStorage.getItem(CHILD_PROFILES_STORAGE_KEY);
+    if (raw && activeId) {
+      const profiles = JSON.parse(raw);
+      const match = profiles.find((p: any) => p.id === activeId);
+      if (match && match.plan) return match.plan;
+    }
+  } catch {}
+  return "FREE";
+}
 
 /** Read total XP from localStorage */
 function getTotalXP(): number {
