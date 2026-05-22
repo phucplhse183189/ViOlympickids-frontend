@@ -216,7 +216,7 @@ export function MatificCanvasGame() {
       const isLast = roundIdx + 1 >= rounds.length;
       if (isLast) {
         sound.victoryVoice();
-        markMath2LessonCompleted(activeChild.id, "math2-b6");
+        markMath2LessonCompleted(activeChild?.id || "", "math2-b6");
         setHint("Xuất sắc! Bạn đã hoàn thành thử thách Matific Canvas.");
         setTimeout(() => {
           setPhase("victory");
@@ -229,7 +229,7 @@ export function MatificCanvasGame() {
         setRoundIdx((r) => r + 1);
       }, 450);
     },
-    [activeChild.id, currentRound.slots, roundIdx, rounds.length, sound],
+    [activeChild?.id || "", currentRound.slots, roundIdx, rounds.length, sound],
   );
 
   const handlePointerMove = useCallback((event: PointerEvent) => {

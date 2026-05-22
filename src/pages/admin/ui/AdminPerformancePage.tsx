@@ -78,9 +78,9 @@ export function AdminPerformancePage() {
       .slice(0, 8)
       .map((parent) => ({
         name:
-          parent.nickname.length > 12
-            ? `${parent.nickname.slice(0, 12)}...`
-            : parent.nickname,
+          parent.name.length > 12
+            ? `${parent.name.slice(0, 12)}...`
+            : parent.name,
         students: parent.children.length,
       }));
   }, [parents]);

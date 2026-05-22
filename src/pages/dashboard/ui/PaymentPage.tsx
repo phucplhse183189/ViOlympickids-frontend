@@ -470,7 +470,7 @@ export function PaymentPage() {
             <div className="flex items-center gap-3 mb-5 pb-5 border-b border-gray-100">
               <div
                 className="w-9 h-9 rounded-full flex items-center justify-center text-lg"
-                style={{ background: activeChild.avatarBg }}
+                style={{ background: activeChild.avatarBg || undefined }}
               >
                 {activeChild.avatarEmoji}
               </div>

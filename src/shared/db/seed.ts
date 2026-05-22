@@ -22,7 +22,7 @@ async function seed() {
   const adminHash = await bcrypt.hash("admin123", 10);
   const parentHash = await bcrypt.hash("demo123", 10);
 
-  const [admin] = await db
+  await db
     .insert(schema.users)
     .values({
       phone: "0901234567",

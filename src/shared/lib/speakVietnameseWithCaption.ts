@@ -23,8 +23,8 @@ export function speakVietnameseWithCaptionProgress(
   let maxEnd = 0;
   let boundarySeen = false;
   let finished = false;
-  let fallbackId: ReturnType<typeof setInterval> | null = null;
-  let fallbackArmTimer: ReturnType<typeof setTimeout> | null = null;
+  let fallbackId: number | null = null;
+  let fallbackArmTimer: number | null = null;
 
   const bump = (endExclusive: number) => {
     if (disposed) return;

@@ -52,12 +52,14 @@ export function SubscriptionPage() {
     );
   }
 
-  const billing = dashboardData.billing;
-  const plan = activeChild.plan;
-  const daysLeft = activeChild.planDaysLeft ?? 0;
+  const billing = dashboardData?.billing;
+  const plan = activeChild?.plan || "FREE";
+  const daysLeft = activeChild?.planDaysLeft ?? 0;
+
+  if (!billing || !activeChild) return null;
 
   function handleCancel() {
-    updateChildPlan(activeChild.id, "FREE");
+    updateChildPlan(activeChild?.id || "", "FREE");
     setShowCancelConfirm(false);
     setCancelDone(true);
     setTimeout(() => setCancelDone(false), 3000);
@@ -116,7 +118,7 @@ export function SubscriptionPage() {
           </div>
           <div className="text-left sm:text-right shrink-0">
             <p className="text-3xl font-extrabold">
-              {plan === "FREE" ? "0đ" : formatCurrency(billing.pricePerMonth)}
+              {plan === "FREE" ? "0đ" : formatCurrency((billing?.pricePerMonth || 0))}
             </p>
             {plan !== "FREE" && (
               <p className="text-sm text-white/70">/ tháng</p>
@@ -176,7 +178,7 @@ export function SubscriptionPage() {
               bg: "bg-purple-50",
               border: "border-purple-100",
               label: "Lần thanh toán tiếp",
-              val: `${formatCurrency(billing.pricePerMonth)} · ${billing.renewalDate}`,
+              val: `${formatCurrency((billing?.pricePerMonth || 0))} · ${billing.renewalDate}`,
               action: "Xem hóa đơn",
             },
           ].map((item) => (

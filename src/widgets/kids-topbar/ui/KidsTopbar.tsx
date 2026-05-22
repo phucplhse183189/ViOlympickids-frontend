@@ -5,7 +5,8 @@ import {
   CHILD_PROFILES_STORAGE_KEY,
   ACTIVE_CHILD_ID_KEY,
 } from "@/shared/lib/constants";
-import { getActiveChildPlan, PLAN_LABELS, type PlanType } from "@/shared/api/math2Data";
+import { getActiveChildPlan, PLAN_LABELS } from "@/shared/api/math2Data";
+import type { PlanType } from "@/shared/types/dashboard";
 import { useAuth } from "@/shared/lib/auth";
 import { ParentGate } from "@/shared/ui/ParentGate";
 

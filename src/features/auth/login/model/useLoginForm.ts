@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/shared/lib/auth";
-import { authService } from "@/shared/api/services/authService";
+import * as authService from "@/shared/api/services/authService";
 
 const ADMIN_SESSION_KEY = "vio_admin_session";
 
@@ -60,7 +60,7 @@ export function useLoginForm() {
 
     authService
       .login(normalizedPhone, password)
-      .then((user) => {
+      .then((user: any) => {
         if (user.role === "admin") {
           sessionStorage.setItem(
             ADMIN_SESSION_KEY,
@@ -84,7 +84,7 @@ export function useLoginForm() {
           navigate("/profile-picker");
         }
       })
-      .catch((error) => {
+      .catch((_: any) => {
         setErrors({ general: "Số điện thoại hoặc mật khẩu không đúng." });
       })
       .finally(() => {

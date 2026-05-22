@@ -98,7 +98,7 @@ export function AdminUsersPage() {
   };
 
   const handleStudentStatusChange = async (
-    parentId: string,
+    _parentId: string,
     studentId: string,
     status: AccountStatus,
   ) => {
@@ -116,7 +116,7 @@ export function AdminUsersPage() {
     return parents.filter((p) => {
       const matchSearch =
         !q ||
-        (p.nickname || "").toLowerCase().includes(q) ||
+        (p.name || "").toLowerCase().includes(q) ||
         (p.phone || "").includes(q) ||
         p.children.some((c) => (c.name || "").toLowerCase().includes(q));
 
@@ -140,7 +140,7 @@ export function AdminUsersPage() {
           if (statusFilter !== "all" && c.status !== statusFilter) return false;
           return true;
         })
-        .map((c) => ({ ...c, parentName: p.nickname, parentId: p.id })),
+        .map((c) => ({ ...c, parentName: p.name, parentId: p.id })),
     );
   }, [filteredParents, planFilter, statusFilter]);
 
@@ -297,13 +297,13 @@ export function AdminUsersPage() {
                   </div>
 
                   <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0">
-                    {getInitials(parent.nickname)}
+                    {getInitials(parent.name)}
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="text-slate-900 font-semibold text-sm">
-                        {parent.nickname}
+                        {parent.name}
                       </h4>
                       <span
                         className={`text-xs font-semibold px-2 py-0.5 rounded-full ${pStatus.bg} ${pStatus.color}`}
@@ -677,11 +677,11 @@ export function AdminUsersPage() {
 
             <div className="flex items-center gap-4 mb-6">
               <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center text-white font-bold text-lg">
-                {getInitials(selectedParent.nickname)}
+                {getInitials(selectedParent.name)}
               </div>
               <div>
                 <h3 className="text-slate-900 font-extrabold text-lg">
-                  {selectedParent.nickname}
+                  {selectedParent.name}
                 </h3>
                 <p className="text-slate-500 text-sm">{selectedParent.phone}</p>
               </div>

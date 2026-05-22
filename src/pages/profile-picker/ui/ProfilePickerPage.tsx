@@ -13,7 +13,7 @@ import {
 import { useAuth } from "@/shared/lib/auth";
 import { ParentGate } from "@/shared/ui/ParentGate";
 import { useActiveChild } from "@/shared/lib/activeChild";
-import { childrenService } from "@/shared/api/services/childrenService";
+import * as childrenService from "@/shared/api/services/childrenService";
 import type { DashboardData, ChildProfile } from "@/shared/api/services/childrenService";
 
 function getTimeGreeting(): string {

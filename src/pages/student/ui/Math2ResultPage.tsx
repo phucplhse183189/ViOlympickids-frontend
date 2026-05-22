@@ -109,8 +109,8 @@ export function Math2ResultPage() {
   useEffect(() => {
     if (!lessonId || stars < 1) return;
     const lid = RESULT_TO_LESSON[lessonId];
-    if (lid) markMath2LessonCompleted(activeChild.id, lid);
-  }, [lessonId, stars, activeChild.id]);
+    if (lid) markMath2LessonCompleted(activeChild?.id || "", lid);
+  }, [lessonId, stars, activeChild?.id || ""]);
 
   return (
     <div className="relative min-h-[calc(100vh-5rem)] flex items-center justify-center px-4 py-8 overflow-hidden">

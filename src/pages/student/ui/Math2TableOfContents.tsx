@@ -454,6 +454,8 @@ export function Math2TableOfContents() {
     lessonService.getTopics().then(setTopics).catch(console.error);
   }, []);
 
+  if (!activeChild) return null;
+
   const [showAd, setShowAd] = useState(false);
   const [pendingRoute, setPendingRoute] = useState<string | null>(null);
 
@@ -882,7 +884,7 @@ export function Math2TableOfContents() {
                   // Beautiful sweeping sine wave, wider and taller
                   const offsetY = Math.sin((idx * Math.PI) / 3) * 120;
 
-                  const isLocked = !canAccessLesson(lesson, activeChild.plan);
+                  const isLocked = !canAccessLesson(lesson as any, activeChild.plan);
                   const isCompleted = completedIds.has(lesson.id);
                   const isNextUp = lesson.id === nextLessonId;
 
@@ -940,7 +942,7 @@ export function Math2TableOfContents() {
 
                         <button
                           onClick={() => {
-                            if (!isLocked) setSelectedLesson({ lesson, topic });
+                            if (!isLocked) setSelectedLesson({ lesson: lesson as any, topic: topic as any });
                           }}
                           className={`
                               relative w-24 h-24 md:w-28 md:h-28 rounded-full flex items-center justify-center text-4xl md:text-5xl font-bold

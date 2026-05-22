@@ -63,10 +63,12 @@ export function StudyProgressChart() {
   }, []);
 
   const { dashboardData } = useActiveChild();
-  const data = dashboardData.studyDays;
-  const totalMinutes = data.reduce((s, d) => s + d.minutes, 0);
+  const data = dashboardData?.studyDays || [];
+
+  if (!dashboardData) return null;
+  const totalMinutes = data.reduce((s, d) => s + (d.minutes || 0), 0);
   const avgMinutes = Math.round(totalMinutes / data.length);
-  const goalDays = data.filter((d) => d.minutes >= GOAL_MINUTES).length;
+  const goalDays = data.filter((d) => (d.minutes || 0) >= GOAL_MINUTES).length;
 
   return (
     <div
@@ -129,7 +131,7 @@ export function StudyProgressChart() {
           />
           <Tooltip content={<CustomTooltip />} cursor={{ fill: "#f9fafb" }} />
           <Bar
-            dataKey="phut"
+            dataKey="minutes"
             radius={[8, 8, 0, 0]}
             isAnimationActive={visible}
             animationDuration={800}
@@ -139,7 +141,7 @@ export function StudyProgressChart() {
               <Cell
                 key={`cell-${index}`}
                 fill={
-                  entry.minutes >= GOAL_MINUTES
+                  entry.minutes || 0 >= GOAL_MINUTES
                     ? "var(--brand-primary)"
                     : "#e0e7ff"
                 }

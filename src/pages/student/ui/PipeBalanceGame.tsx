@@ -450,7 +450,7 @@ export function PipeBalanceGame() {
                 type="button"
                 onClick={() => {
                   sound.click();
-                  markMath2LessonCompleted(activeChild.id, "math2-b5");
+                  markMath2LessonCompleted(activeChild?.id || "", "math2-b5");
                   navigate("/student");
                 }}
                 className="flex-1 rounded-2xl bg-gradient-to-r from-teal-400 to-cyan-600 py-3 font-black text-white shadow-[0_4px_0_#0e7490]"

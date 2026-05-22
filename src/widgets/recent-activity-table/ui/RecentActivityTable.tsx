@@ -38,7 +38,7 @@ export function RecentActivityTable() {
   }, []);
 
   const { dashboardData } = useActiveChild();
-  const activities = dashboardData.activities.slice(0, PREVIEW_COUNT);
+  const activities = dashboardData?.activities?.slice(0, PREVIEW_COUNT) || [];
 
   return (
     <div

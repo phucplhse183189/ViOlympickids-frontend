@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import * as transactionService from "@/shared/api/services/transactionService";
 import { useActiveChild } from "@/shared/lib/activeChild";
@@ -34,8 +34,10 @@ export function BillingManagement() {
   const navigate = useNavigate();
   const [upgrading] = useState(false);
   const { activeChild, dashboardData } = useActiveChild();
-  const plan = activeChild.plan;
-  const billing = dashboardData.billing;
+  const plan = activeChild?.plan || "FREE";
+  const billing = dashboardData?.billing;
+
+  if (!activeChild || !dashboardData) return null;
   const remaining = MOCK_TRIAL.totalDays - MOCK_TRIAL.usedDays;
   const progressPct = (MOCK_TRIAL.usedDays / MOCK_TRIAL.totalDays) * 100;
   const [transactions, setTransactions] = useState<transactionService.Transaction[]>([]);
@@ -48,9 +50,9 @@ export function BillingManagement() {
 
   const priceLabel =
     plan === "VIP"
-      ? `${formatVnd(billing.pricePerMonth)}/tháng`
+      ? `${formatVnd(billing?.pricePerMonth || 0)}/tháng`
       : plan === "PRO"
-        ? `${formatVnd(billing.pricePerMonth)}/tháng`
+        ? `${formatVnd(billing?.pricePerMonth || 0)}/tháng`
         : "Miễn phí";
 
   function handleUpgrade() {

@@ -109,13 +109,14 @@ export function ProgressPage() {
   const isLocked = plan === "FREE";
 
   const skills = dashboardData.skills;
-  const weeklyTrend = dashboardData.weeklyTrend;
-  const stats = dashboardData.stats;
+  const weeklyTrend = dashboardData?.weeklyTrends || [];
+  const stats = dashboardData?.stats;
+  if (!stats) return null;
 
   const radialData = [
     {
       name: "Tổng thể",
-      value: stats.overallScore,
+      value: (stats?.overallScore || 0),
       fill: "var(--brand-primary)",
     },
   ];
@@ -160,7 +161,7 @@ export function ProgressPage() {
                 innerRadius="70%"
                 outerRadius="100%"
                 startAngle={90}
-                endAngle={90 - 360 * (stats.overallScore / 100)}
+                endAngle={90 - 360 * ((stats?.overallScore || 0) / 100)}
                 data={radialData}
               >
                 <RadialBar
@@ -172,7 +173,7 @@ export function ProgressPage() {
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-3xl font-extrabold text-gray-800">
-                {stats.overallScore}
+                {(stats?.overallScore || 0)}
               </span>
               <span className="text-xs text-gray-400 font-medium">/100</span>
             </div>
@@ -303,13 +304,13 @@ export function ProgressPage() {
                 <div key={s.label}>
                   <div className="flex justify-between text-sm mb-1.5">
                     <span className="font-medium text-gray-700">{s.label}</span>
-                    <span className="font-bold text-gray-500">{s.pct}%</span>
+                    <span className="font-bold text-gray-500">{s.percentage}%</span>
                   </div>
                   <div className="h-2.5 w-full bg-gray-100 rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full ${s.colorClass} transition-all duration-700`}
                       style={{
-                        width: skillCard.visible ? `${s.pct}%` : "0%",
+                        width: skillCard.visible ? `${s.percentage}%` : "0%",
                         transitionDelay: "200ms",
                       }}
                     />

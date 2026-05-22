@@ -31,8 +31,10 @@ export function StreakHeatmap() {
     y: number;
   } | null>(null);
   const { dashboardData } = useActiveChild();
-  const streakDays = dashboardData.streakDaysTable;
-  const streakCount = dashboardData.stats.streakDays;
+  const streakDays = dashboardData?.streakDays || [];
+  const streakCount = dashboardData?.stats?.streakDays || 0;
+
+  if (!dashboardData) return null;
 
   useEffect(() => {
     const el = ref.current;
@@ -89,8 +91,8 @@ export function StreakHeatmap() {
               </div>
 
               {/* Day cells */}
-              {week.map((day, di) => {
-                const { bg, label } = getDayColor(day.minutes);
+              {week.map((day: any, di: number) => {
+                const { bg, label } = getDayColor(day.minutes || 0);
                 const delay = visible ? `${(wi * 7 + di) * 30}ms` : "0ms";
                 return (
                   <div

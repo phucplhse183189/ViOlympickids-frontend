@@ -289,7 +289,8 @@ export function OverviewPage() {
     );
   }
 
-  const stats = dashboardData.stats;
+  const stats = dashboardData?.stats;
+  if (!stats) return null;
   const plan = activeChild.plan;
   const isLocked = plan === "FREE";
 
@@ -316,7 +317,7 @@ export function OverviewPage() {
         <div className="flex items-center gap-2 bg-orange-50 border border-orange-100 rounded-xl px-4 py-2.5 self-start sm:self-auto">
           <Flame size={18} className="text-orange-500" />
           <span className="text-sm font-bold text-orange-600">
-            {stats.streakDays} ngày liên tiếp
+            {(stats?.streakDays || 0)} ngày liên tiếp
           </span>
           <span className="text-xs text-orange-400">🔥</span>
         </div>
@@ -392,7 +393,7 @@ export function OverviewPage() {
           iconBg="bg-blue-50"
           title="Thời gian học tuần này"
           value={`${stats.weeklyMinutes} phút`}
-          countTarget={stats.weeklyMinutes}
+          countTarget={stats.weeklyMinutes || 0}
           countSuffix=" phút"
           badge={`↑ +${stats.weeklyMinutesPctChange}% tuần trước`}
           badgeColor="bg-green-100 text-green-700"
@@ -403,9 +404,9 @@ export function OverviewPage() {
           iconBg="bg-yellow-50"
           title="Bài hoàn thành tuần này"
           value={`${stats.completedLessons} bài`}
-          countTarget={stats.completedLessons}
+          countTarget={stats.completedLessons || 0}
           countSuffix=" bài"
-          badge={stats.completedLessonsLabel}
+          badge={stats.completedLessonsLabel || ""}
           badgeColor="bg-yellow-100 text-yellow-700"
           delay={80}
         />
@@ -413,7 +414,7 @@ export function OverviewPage() {
           icon={<Target size={22} className="text-purple-500" />}
           iconBg="bg-purple-50"
           title="Kỹ năng tốt nhất"
-          value={stats.bestSkill}
+          value={stats.bestSkill || ""}
           badge="⭐ Điểm mạnh nổi bật"
           badgeColor="bg-purple-100 text-purple-700"
           delay={160}
@@ -423,7 +424,7 @@ export function OverviewPage() {
           iconBg="bg-green-50"
           title="Điểm tổng thể"
           value={`${stats.overallScore}/100`}
-          countTarget={stats.overallScore}
+          countTarget={stats.overallScore || 0}
           countSuffix="/100"
           badge="↑ Tốt hơn tuần trước"
           badgeColor="bg-green-100 text-green-700"

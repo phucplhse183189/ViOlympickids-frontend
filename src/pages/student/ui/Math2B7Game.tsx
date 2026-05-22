@@ -1115,7 +1115,7 @@ export function Math2B7Game() {
                 type="button"
                 onClick={() => {
                   sound.click();
-                  markMath2LessonCompleted(activeChild.id, "math2-b7");
+                  markMath2LessonCompleted(activeChild?.id || "", "math2-b7");
                   navigate("/student");
                 }}
                 className="flex-1 rounded-2xl bg-gradient-to-r from-emerald-400 to-cyan-500 px-4 py-3 font-black text-white shadow-[0_4px_0_#0e7490]"

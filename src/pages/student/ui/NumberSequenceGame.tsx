@@ -2020,9 +2020,9 @@ function IntroScreen({
 
   const greetingTemplate = useMemo(() => getRandomItem(ROBOT_GREETINGS), []);
   const bubbleFullText = useMemo(() => {
-    const line = personalizeRobotGreeting(greetingTemplate, activeChild.name);
+    const line = personalizeRobotGreeting(greetingTemplate, activeChild?.name || "");
     return line.includes("⚡") ? line : `${line} ⚡`;
-  }, [greetingTemplate, activeChild.name]);
+  }, [greetingTemplate, activeChild?.name || ""]);
 
   const [bubbleDisplayed, setBubbleDisplayed] = useState("");
   const [storyDisplayed, setStoryDisplayed] = useState("");

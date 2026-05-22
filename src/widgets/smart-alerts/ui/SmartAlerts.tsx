@@ -108,7 +108,9 @@ function AlertCard({
 
 export function SmartAlerts() {
   const { dashboardData } = useActiveChild();
-  const [alerts, setAlerts] = useState(dashboardData.alerts);
+  const [alerts, setAlerts] = useState<SmartAlert[]>((dashboardData?.alerts as SmartAlert[]) || []);
+
+  if (!dashboardData) return null;
 
   function dismiss(id: string) {
     setAlerts((prev) => prev.filter((a) => a.id !== id));

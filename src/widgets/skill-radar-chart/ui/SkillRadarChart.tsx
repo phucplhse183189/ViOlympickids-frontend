@@ -12,7 +12,9 @@ export function SkillRadarChart() {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   const { dashboardData } = useActiveChild();
-  const radarSkills = dashboardData.radarSkills;
+  const radarSkills = dashboardData?.radarSkills || [];
+
+  if (!dashboardData) return null;
 
   useEffect(() => {
     const el = ref.current;
@@ -30,8 +32,8 @@ export function SkillRadarChart() {
     return () => observer.disconnect();
   }, []);
 
-  const strongSkill = [...radarSkills].sort((a, b) => b.score - a.score)[0];
-  const weakSkill = [...radarSkills].sort((a, b) => a.score - b.score)[0];
+  const strongSkill = [...radarSkills].sort((a, b) => (b.score || 0) - (a.score || 0))[0];
+  const weakSkill = [...radarSkills].sort((a, b) => (a.score || 0) - (b.score || 0))[0];
 
   return (
     <div
@@ -61,7 +63,7 @@ export function SkillRadarChart() {
               />
               <Radar
                 name="Kỹ năng"
-                dataKey="diem"
+                dataKey="score"
                 stroke="#f97316"
                 fill="#f97316"
                 fillOpacity={0.35}
@@ -88,7 +90,7 @@ export function SkillRadarChart() {
               </span>
             </div>
             <span className="text-green-500 font-bold text-sm pl-3.5">
-              {strongSkill.score}/100
+              {strongSkill?.score || 0}/100
             </span>
           </div>
 
@@ -102,11 +104,11 @@ export function SkillRadarChart() {
             <div className="flex items-center gap-1.5">
               <span className="inline-block w-2 h-2 rounded-full bg-orange-500 shrink-0" />
               <span className="font-semibold text-orange-600">
-                {weakSkill.skill}
+                {weakSkill?.skill}
               </span>
             </div>
             <span className="text-orange-500 font-bold text-sm pl-3.5">
-              {weakSkill.score}/100
+              {weakSkill?.score || 0}/100
             </span>
           </div>
 
@@ -124,14 +126,14 @@ export function SkillRadarChart() {
                   className="font-semibold shrink-0"
                   style={{
                     color:
-                      s.score >= 80
+                      (s.score || 0) >= 80
                         ? "#22c55e"
-                        : s.score >= 60
+                        : (s.score || 0) >= 60
                           ? "#f97316"
                           : "#ef4444",
                   }}
                 >
-                  {s.score}
+                  {s.score || 0}
                 </span>
               </div>
             ))}

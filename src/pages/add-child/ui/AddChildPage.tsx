@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Check, ArrowLeft } from "lucide-react";
-import { childrenService } from "@/shared/api/services/childrenService";
+import * as childrenService from "@/shared/api/services/childrenService";
 
 // ── Avatar options ─────────────────────────────────────────────
 const AVATAR_OPTIONS = [
