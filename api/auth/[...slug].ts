@@ -11,11 +11,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).end();
   }
 
-  let { slug } = req.query;
-  if (typeof slug === 'string') slug = [slug];
+  // Parse action from URL path directly (more reliable than req.query.slug)
+  const url = req.url || "";
+  const parts = url.split("?")[0].split("/").filter(Boolean);
+  // URL: /api/auth/register → parts = ["api", "auth", "register"]
+  const action = parts[parts.length - 1]; // "register" or "login"
 
-  if (slug && slug.length === 1 && slug[0] === 'login') { return handler0(req, res); }
-  if (slug && slug.length === 1 && slug[0] === 'register') { return handler1(req, res); }
+  if (action === "login") return handler0(req, res);
+  if (action === "register") return handler1(req, res);
 
-  return res.status(404).json({ error: "Route not found" });
+  return res.status(404).json({ error: "Route not found", debug: { url, parts, action } });
 }
