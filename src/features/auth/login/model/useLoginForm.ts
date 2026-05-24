@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/shared/lib/auth";
+import { useActiveChild } from "@/shared/lib/activeChild";
 import * as authService from "@/shared/api/services/authService";
 
 const ADMIN_SESSION_KEY = "vio_admin_session";
@@ -22,6 +23,7 @@ function normalizePhone(value: string): string {
 export function useLoginForm() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { refreshProfiles } = useActiveChild();
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<LoginErrors>({});
@@ -81,7 +83,12 @@ export function useLoginForm() {
           });
           // Lưu parentId để dùng sau (trong API Client hoặc các context khác)
           sessionStorage.setItem("vio_parent_id", user.id);
-          navigate("/profile-picker");
+          
+          if (refreshProfiles) {
+            refreshProfiles().then(() => navigate("/profile-picker"));
+          } else {
+            navigate("/profile-picker");
+          }
         }
       })
       .catch((_: any) => {
