@@ -12,10 +12,8 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useAuth } from "@/shared/lib/auth";
-import {
-  CHILD_PROFILES_STORAGE_KEY,
-  ACTIVE_CHILD_ID_KEY,
-} from "@/shared/lib/constants";
+import * as authService from "@/shared/api/services/authService";
+import * as childrenService from "@/shared/api/services/childrenService";
 
 // ── Avatar options (kid-friendly) ──────────────────────────────
 const AVATAR_OPTIONS = [
@@ -57,6 +55,7 @@ export function RegisterPage() {
   const [agreed, setAgreed] = useState(false);
   const [step1Errors, setStep1Errors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [registeredUser, setRegisteredUser] = useState<authService.UserInfo | null>(null);
 
   // Step 2 state
   const [childName, setChildName] = useState("");
@@ -86,18 +85,32 @@ export function RegisterPage() {
   function handleStep1Submit() {
     if (!validateStep1()) return;
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      setStep(2);
-    }, 800);
+    setStep1Errors({});
+
+    authService
+      .register({
+        phone: phone.trim(),
+        password,
+        name: "Phụ huynh",
+      })
+      .then((user) => {
+        setRegisteredUser(user);
+        sessionStorage.setItem("vio_parent_id", user.id);
+        setStep(2);
+      })
+      .catch((err: any) => {
+        const msg = err?.message || "";
+        if (msg.includes("already") || msg.includes("exists") || msg.includes("duplicate")) {
+          setStep1Errors({ phone: "Số điện thoại này đã được đăng ký." });
+        } else {
+          setStep1Errors({ phone: msg || "Đăng ký thất bại. Vui lòng thử lại." });
+        }
+      })
+      .finally(() => setIsLoading(false));
   }
 
   function handleSocialLogin(_provider: string) {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      setStep(2);
-    }, 1000);
+    alert("Đăng nhập Google chưa được kết nối. Vui lòng đăng ký bằng SĐT.");
   }
 
   // ── Step 2 ──────────────────────────────────────
@@ -108,42 +121,39 @@ export function RegisterPage() {
 
   // ── Step 3 (final) ─────────────────────────────
   function handleFinish() {
+    if (!registeredUser) return;
     const avatar = AVATAR_OPTIONS[selectedAvatar];
+    setIsLoading(true);
 
-    login({
-      nickname: childName.trim() || "Phụ huynh",
-      phone: phone,
-      email: "",
-      avatarId: "fox",
-    });
+    childrenService
+      .addChild(registeredUser.id, {
+        name: childName.trim(),
+        grade,
+        avatarEmoji: avatar.emoji,
+        avatarBg: avatar.bg,
+        plan: "FREE",
+        gender: "boy",
+      })
+      .then(() => {
+        // Đăng nhập frontend context
+        login({
+          nickname: registeredUser.name || "Phụ huynh",
+          phone: registeredUser.phone,
+          email: "",
+          avatarId: registeredUser.avatarInitials || "fox",
+        });
 
-    const childProfile = {
-      id: `child-${Date.now()}`,
-      name: childName.trim(),
-      grade,
-      avatarEmoji: avatar.emoji,
-      avatarBg: avatar.bg,
-      plan: "FREE" as const,
-    };
+        if (selectedSurvey.length > 0) {
+          localStorage.setItem("vio_parent_survey", JSON.stringify(selectedSurvey));
+        }
 
-    try {
-      const existing = JSON.parse(
-        localStorage.getItem(CHILD_PROFILES_STORAGE_KEY) ?? "[]",
-      );
-      localStorage.setItem(
-        CHILD_PROFILES_STORAGE_KEY,
-        JSON.stringify([...existing, childProfile]),
-      );
-      localStorage.setItem(ACTIVE_CHILD_ID_KEY, childProfile.id);
-    } catch {
-      /* ignore */
-    }
-
-    if (selectedSurvey.length > 0) {
-      localStorage.setItem("vio_parent_survey", JSON.stringify(selectedSurvey));
-    }
-
-    navigate("/profile-picker");
+        navigate("/profile-picker");
+      })
+      .catch((err: any) => {
+        console.error("Tạo hồ sơ bé thất bại:", err);
+        alert("Tạo hồ sơ bé thất bại. Vui lòng thử lại.");
+      })
+      .finally(() => setIsLoading(false));
   }
 
   function toggleSurvey(id: string) {
