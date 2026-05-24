@@ -241,8 +241,8 @@ export function ParentDashboardLayout() {
   const location = useLocation();
   const pageTitle = usePageTitle(location.pathname);
 
-  // Mocking 2 unread notifications for now
-  const unreadNotifications = 2;
+  const unreadNotifications = 0; // TODO: fetch from user profile
+
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">

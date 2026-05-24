@@ -41,8 +41,9 @@ export function AdminOverviewPage() {
   const allStudents = parents.flatMap((p) => p.children);
 
   const averageScore = useMemo(() => {
-    // We don't have avgScore in ChildProfile anymore, so returning a static or estimated value for now
-    return 85; 
+    if (allStudents.length === 0) return 0;
+    const totalScore = allStudents.reduce((sum, s) => sum + (s.avgScore || 0), 0);
+    return Math.round(totalScore / allStudents.length);
   }, [allStudents]);
 
   const planMix = useMemo(() => {

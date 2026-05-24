@@ -1,77 +1,16 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
-import {
-  CHILD_PROFILES_STORAGE_KEY,
-  ACTIVE_CHILD_ID_KEY,
-} from "@/shared/lib/constants";
 import { type PlanType } from "@/shared/types/dashboard";
 import { useAuth } from "@/shared/lib/auth";
 import { ParentGate } from "@/shared/ui/ParentGate";
+import { useActiveChild } from "@/shared/lib/activeChild";
 
 const PLAN_LABELS: Record<PlanType, { label: string; icon: string }> = {
   FREE: { label: "Cơ Bản", icon: "🌱" },
   PRO: { label: "Nâng Cao", icon: "🚀" },
   VIP: { label: "VIP", icon: "👑" },
 };
-
-function getActiveChildPlan(): PlanType {
-  try {
-    const activeId = localStorage.getItem(ACTIVE_CHILD_ID_KEY);
-    const raw = localStorage.getItem(CHILD_PROFILES_STORAGE_KEY);
-    if (raw && activeId) {
-      const profiles = JSON.parse(raw);
-      const match = profiles.find((p: any) => p.id === activeId);
-      if (match && match.plan) return match.plan;
-    }
-  } catch {}
-  return "FREE";
-}
-
-/** Read total XP from localStorage */
-function getTotalXP(): number {
-  try {
-    const raw = localStorage.getItem("violympic_total_xp");
-    return raw ? Number(raw) : 0;
-  } catch {
-    return 0;
-  }
-}
-
-interface ChildProfile {
-  id: string;
-  name: string;
-  grade: string;
-  avatarEmoji: string;
-  avatarBg: string;
-}
-
-interface KidsTopbarProps {
-  backTo?: string;
-}
-
-function getActiveProfile(
-  fallbackEmoji = "🦊",
-  fallbackName = "Bé Yêu",
-): { emoji: string; name: string } {
-  try {
-    const activeId = localStorage.getItem(ACTIVE_CHILD_ID_KEY);
-    const raw = localStorage.getItem(CHILD_PROFILES_STORAGE_KEY);
-    if (raw && activeId) {
-      const profiles = JSON.parse(raw) as ChildProfile[];
-      const match = profiles.find((p) => p.id === activeId) ?? profiles[0];
-      if (match) return { emoji: match.avatarEmoji, name: match.name };
-    }
-    if (raw) {
-      const profiles = JSON.parse(raw) as ChildProfile[];
-      if (profiles.length > 0)
-        return { emoji: profiles[0].avatarEmoji, name: profiles[0].name };
-    }
-  } catch {
-    // ignore
-  }
-  return { emoji: fallbackEmoji, name: fallbackName };
-}
 
 /** XP needed to reach next level */
 function getLevelInfo(xp: number) {
@@ -81,28 +20,26 @@ function getLevelInfo(xp: number) {
   return { level, xpThisLevel, xpToNext };
 }
 
+interface KidsTopbarProps {
+  backTo?: string;
+}
+
 export function KidsTopbar({ backTo = "/student" }: KidsTopbarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { setActiveRole } = useAuth();
-  const [profile, setProfile] = useState(() => getActiveProfile());
-  const [xp, setXp] = useState(() => getTotalXP());
-  const [plan, setPlan] = useState<PlanType>(() => getActiveChildPlan());
+  const { activeChild, dashboardData } = useActiveChild();
   const [showPinGate, setShowPinGate] = useState(false);
 
   // Hide the back button when already on the map page
   const isOnMap = location.pathname === "/student";
 
-  useEffect(() => {
-    const refresh = () => {
-      setProfile(getActiveProfile());
-      setXp(getTotalXP());
-      setPlan(getActiveChildPlan());
-    };
-    refresh();
-    window.addEventListener("focus", refresh);
-    return () => window.removeEventListener("focus", refresh);
-  }, []);
+  const profile = {
+    emoji: activeChild?.avatarEmoji || "🦊",
+    name: activeChild?.name || "Bé Yêu",
+  };
+  const plan = activeChild?.plan || "FREE";
+  const xp = dashboardData?.stats?.overallScore || 0;
 
   const { level, xpThisLevel, xpToNext } = getLevelInfo(xp);
   const lvlPct = Math.round((xpThisLevel / xpToNext) * 100);

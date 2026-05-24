@@ -57,36 +57,41 @@ function CustomLineTooltip({
   return null;
 }
 
-/* ── Trend comparison cards ─────────────────────────── */
-const COMPARISON_CARDS = [
-  {
-    label: "Tuần này",
-    value: "91 điểm",
-    sub: "Cao nhất mọi thời đại 🎉",
-    icon: TrendingUp,
-    color: "text-green-600",
-    bg: "bg-green-50",
-    border: "border-green-200",
-  },
-  {
-    label: "Tuần trước",
-    value: "85 điểm",
-    sub: "-6 điểm so với hiện tại",
-    icon: TrendingDown,
-    color: "text-blue-600",
-    bg: "bg-blue-50",
-    border: "border-blue-200",
-  },
-  {
-    label: "Trung bình",
-    value: "81.6 điểm",
-    sub: "Trong 7 tuần gần nhất",
-    icon: Minus,
-    color: "text-gray-500",
-    bg: "bg-gray-50",
-    border: "border-gray-200",
-  },
-];
+function getComparisonCards(currentScore: number, rawTrend: { week: string, score: number | null }[]) {
+  const trend = rawTrend.map(t => ({ week: t.week, score: t.score || 0 }));
+  const lastWeekScore = trend.length > 1 ? trend[trend.length - 2].score : 0;
+  const avgScore = trend.length > 0 ? Math.round(trend.reduce((a, b) => a + b.score, 0) / trend.length) : 0;
+
+  return [
+    {
+      label: "Tuần này",
+      value: `${currentScore} điểm`,
+      sub: currentScore >= lastWeekScore ? "Cao hơn hoặc bằng tuần trước" : "Thấp hơn tuần trước",
+      icon: TrendingUp,
+      color: "text-green-600",
+      bg: "bg-green-50",
+      border: "border-green-200",
+    },
+    {
+      label: "Tuần trước",
+      value: `${lastWeekScore} điểm`,
+      sub: `${currentScore - lastWeekScore > 0 ? '+' : ''}${currentScore - lastWeekScore} điểm so với hiện tại`,
+      icon: TrendingDown,
+      color: "text-blue-600",
+      bg: "bg-blue-50",
+      border: "border-blue-200",
+    },
+    {
+      label: "Trung bình",
+      value: `${avgScore} điểm`,
+      sub: `Trong ${trend.length} tuần gần nhất`,
+      icon: Minus,
+      color: "text-gray-500",
+      bg: "bg-gray-50",
+      border: "border-gray-200",
+    },
+  ];
+}
 
 export function ProgressPage() {
   const { activeChild, dashboardData, isLoading } = useActiveChild();
@@ -110,8 +115,15 @@ export function ProgressPage() {
 
   const skills = dashboardData.skills;
   const weeklyTrend = dashboardData?.weeklyTrends || [];
-  const stats = dashboardData?.stats;
-  if (!stats) return null;
+  const stats = dashboardData?.stats || {
+    overallScore: 0,
+    weeklyMinutes: 0,
+    weeklyMinutesPctChange: 0,
+    completedLessons: 0,
+    completedLessonsLabel: "",
+    bestSkill: "Chưa có",
+    streakDays: 0,
+  };
 
   const radialData = [
     {
@@ -246,7 +258,7 @@ export function ProgressPage() {
         className={`grid grid-cols-1 sm:grid-cols-3 gap-4 ${compCard.visible ? "animate-fade-in-up" : "opacity-0"}`}
         style={{ animationDelay: "60ms" }}
       >
-        {COMPARISON_CARDS.map(
+        {getComparisonCards(stats.overallScore || 0, weeklyTrend).map(
           ({ label, value, sub, icon: Icon, color, bg, border }) => (
             <div
               key={label}
@@ -358,14 +370,12 @@ export function ProgressPage() {
             </div>
             <ResponsiveContainer width="100%" height={160}>
               <AreaChart
-                data={[
-                  { week: "T1", soHoc: 30, hinhHoc: 20 },
-                  { week: "T2", soHoc: 40, hinhHoc: 25 },
-                  { week: "T3", soHoc: 28, hinhHoc: 32 },
-                  { week: "T4", soHoc: 45, hinhHoc: 30 },
-                  { week: "T5", soHoc: 38, hinhHoc: 42 },
-                  { week: "T6", soHoc: 50, hinhHoc: 38 },
-                  { week: "T7", soHoc: 42, hinhHoc: 48 },
+                data={weeklyTrend.length > 0 ? weeklyTrend.map(t => ({
+                  week: t.week,
+                  soHoc: t.score || 0,
+                  hinhHoc: Math.round((t.score || 0) * 0.8), // Mock hình học ratio
+                })) : [
+                  { week: "T1", soHoc: 0, hinhHoc: 0 },
                 ]}
               >
                 <defs>

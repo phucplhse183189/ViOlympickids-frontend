@@ -289,8 +289,15 @@ export function OverviewPage() {
     );
   }
 
-  const stats = dashboardData?.stats;
-  if (!stats) return null;
+  const stats = dashboardData?.stats || {
+    weeklyMinutes: 0,
+    weeklyMinutesPctChange: 0,
+    completedLessons: 0,
+    completedLessonsLabel: "",
+    bestSkill: "Chưa có",
+    overallScore: 0,
+    streakDays: 0,
+  };
   const plan = activeChild.plan;
   const isLocked = plan === "FREE";
 

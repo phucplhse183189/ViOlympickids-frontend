@@ -11,16 +11,9 @@ function getAuthHeaders(): Record<string, string> {
   };
 
   // Lấy token/user từ sessionStorage nếu có
-  const stored = sessionStorage.getItem("user");
-  if (stored) {
-    try {
-      const user = JSON.parse(stored);
-      if (user?.id) {
-        headers["x-user-id"] = user.id;
-      }
-    } catch {
-      // ignore parse errors
-    }
+  const parentId = sessionStorage.getItem("vio_parent_id");
+  if (parentId) {
+    headers["x-user-id"] = parentId;
   }
 
   return headers;

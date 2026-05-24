@@ -42,16 +42,29 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    const stored = sessionStorage.getItem("vio_auth_user");
+    return stored ? JSON.parse(stored) : null;
+  });
   const [activeRole, setActiveRole] = useState<ActiveRole>(null);
 
-  const login = (u: User) => setUser(u);
+  const login = (u: User) => {
+    setUser(u);
+    sessionStorage.setItem("vio_auth_user", JSON.stringify(u));
+  };
   const logout = () => {
     setUser(null);
     setActiveRole(null);
+    sessionStorage.removeItem("vio_auth_user");
+    sessionStorage.removeItem("vio_parent_id");
   };
   const updateUser = (patch: Partial<User>) =>
-    setUser((prev) => (prev ? { ...prev, ...patch } : prev));
+    setUser((prev) => {
+      if (!prev) return prev;
+      const updated = { ...prev, ...patch };
+      sessionStorage.setItem("vio_auth_user", JSON.stringify(updated));
+      return updated;
+    });
 
   return (
     <AuthContext.Provider
