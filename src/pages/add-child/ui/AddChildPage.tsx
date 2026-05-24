@@ -13,9 +13,12 @@ const AVATAR_OPTIONS = [
   { emoji: "🐼", bg: "#6b7280", label: "Gấu trúc" },
 ];
 
+import { useActiveChild } from "@/shared/lib/activeChild";
+
 export function AddChildPage() {
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
+  const { refreshProfiles } = useActiveChild();
 
   const [name, setName] = useState("");
   const [selectedAvatar, setSelectedAvatar] = useState(0);
@@ -43,6 +46,10 @@ export function AddChildPage() {
         avatarBg: chosen.bg,
         plan: "FREE",
       });
+      
+      if (refreshProfiles) {
+        await refreshProfiles();
+      }
       
       setDone(true);
       setTimeout(() => navigate("/profile-picker"), 1200);
