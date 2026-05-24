@@ -38,6 +38,7 @@ export async function apiGet<T>(path: string): Promise<T> {
   const response = await fetch(`${BASE_URL}${path}`, {
     method: "GET",
     headers: getAuthHeaders(),
+    cache: "no-store", // Ngăn browser cache API
   });
   return handleResponse<T>(response);
 }
