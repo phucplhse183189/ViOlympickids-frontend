@@ -32,14 +32,16 @@ export function ActiveChildProvider({ children }: { children: ReactNode }) {
   const parentId = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("vio_parent_id") : null;
 
   async function loadData() {
-    if (!parentId) {
+    const currentParentId = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("vio_parent_id") : null;
+    
+    if (!currentParentId) {
       setIsLoading(false);
       return;
     }
     
     setIsLoading(true);
     try {
-      const data = await childrenService.getProfiles(parentId);
+      const data = await childrenService.getProfiles(currentParentId);
       setProfiles(data);
       
       if (data.length > 0) {

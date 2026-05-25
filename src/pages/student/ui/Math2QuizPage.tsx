@@ -468,6 +468,7 @@ export function Math2QuizPage() {
 
   const gameContainerRef = useRef<HTMLDivElement>(null);
   const hasSpokenRef = useRef(false);
+  const wasFullscreenRef = useRef(false);
 
   const themeIdx = currentIdx % WORLD_THEMES.length;
   const theme = WORLD_THEMES[themeIdx];
@@ -511,11 +512,14 @@ export function Math2QuizPage() {
     const onFSChange = () => {
       const fs = !!document.fullscreenElement;
       setIsFullscreen(fs);
-      if (!fs && pinActionTarget === null) {
+      
+      if (!fs && wasFullscreenRef.current && pinActionTarget === null) {
         setPinActionTarget("fullscreen");
         setShowPinGate(true);
         gameContainerRef.current?.requestFullscreen().catch(console.error);
       }
+      
+      wasFullscreenRef.current = fs;
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape" && document.fullscreenElement) { e.preventDefault(); e.stopPropagation(); }
