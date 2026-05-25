@@ -238,3 +238,18 @@ export const completedLessons = pgTable("completed_lessons", {
     .notNull(),
   completedAt: timestamp("completed_at").defaultNow().notNull(),
 });
+
+// ── Bảng: quiz_attempts (Lịch sử làm quiz — dùng cho Bảng Xếp Hạng) ─────────
+export const quizAttempts = pgTable("quiz_attempts", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  childId: uuid("child_id")
+    .references(() => children.id)
+    .notNull(),
+  lessonId: uuid("lesson_id")
+    .references(() => lessons.id)
+    .notNull(),
+  score: integer("score").notNull(),
+  totalQuestions: integer("total_questions").notNull(),
+  attemptNumber: integer("attempt_number").notNull(),
+  completedAt: timestamp("completed_at").defaultNow().notNull(),
+});

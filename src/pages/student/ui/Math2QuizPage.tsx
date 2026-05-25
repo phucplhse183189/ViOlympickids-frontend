@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Volume2, VolumeX, Maximize, Minimize } from "lucide-react";
 import * as lessonService from "@/shared/api/services/lessonService";
+import * as leaderboardService from "@/shared/api/services/leaderboardService";
 import { useGameSound } from "@/shared/lib/useGameSound";
 import { ParentGate } from "@/shared/ui/ParentGate";
 import Scene3DBackground from "./Scene3DBackground";
@@ -616,6 +617,10 @@ export function Math2QuizPage() {
       // Swap question
       if (currentIdx + 1 >= questions.length) {
         if (!isMuted) sound.victoryVoice();
+        const childId = sessionStorage.getItem("vio_active_child_id") || localStorage.getItem("vio_active_child_id");
+        if (childId) {
+          leaderboardService.submitAttempt(childId, "math2-b2", correctCount, questions.length).catch(console.error);
+        }
         navigate("/student/result/math2-b2", { state: { correct: correctCount, total: questions.length } });
         return;
       }

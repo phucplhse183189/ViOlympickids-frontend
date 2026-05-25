@@ -17,7 +17,7 @@ import {
 } from "@/shared/lib/lessonHelper";
 import * as lessonService from "@/shared/api/services/lessonService";
 import { useNavigate } from "react-router-dom";
-import { Play, Lock, Star, Compass } from "lucide-react";
+import { Play, Lock, Star, Compass, Trophy } from "lucide-react";
 import * as THREE from "three";
 import { useActiveChild } from "@/shared/lib/activeChild";
 import { speakVietnameseWithCaptionProgress } from "@/shared/lib/speakVietnameseWithCaption";
@@ -753,6 +753,15 @@ export function Math2TableOfContents() {
             Click giữ chuột và kéo qua lại để khám phá
           </p>
         </div>
+        
+        {/* Leaderboard Button */}
+        <button
+          onClick={() => navigate("/student/leaderboard")}
+          className="mt-4 pointer-events-auto flex items-center gap-2 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-white px-6 py-2.5 rounded-full font-bold shadow-[0_4px_0_#b45309] hover:shadow-[0_2px_0_#b45309] hover:translate-y-[2px] active:translate-y-[4px] active:shadow-none transition-all"
+        >
+          <Trophy size={18} />
+          Bảng Xếp Hạng Quiz
+        </button>
       </div>
 
       {/* Main Drag/Scroll Container */}

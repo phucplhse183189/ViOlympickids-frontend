@@ -29,6 +29,7 @@ import {
   Math2B2GamePage,
   Math2B7Game,
   PipeBalanceGame,
+  LeaderboardPage,
 } from "@/pages/student";
 import { AddChildPage } from "@/pages/add-child";
 import { ParentDashboardLayout } from "@/widgets/dashboard-layout";
@@ -63,6 +64,7 @@ export function RouterProvider() {
       {/* Student Portal */}
       <Route path="/student" element={<StudentLayout />}>
         <Route index element={<Math2TableOfContents />} />
+        <Route path="leaderboard" element={<LeaderboardPage />} />
         <Route path="game/math2-b1" element={<Math2B1Game />} />
         <Route path="game/math2-b7" element={<Math2B7Game />} />
         <Route path="game/pipe-balance" element={<PipeBalanceGame />} />

@@ -15,3 +15,4 @@ export { Math2B7Game } from "./ui/Math2B7Game";
 export { PipeBalanceGame } from "./ui/PipeBalanceGame";
 export { MatificCanvasGame } from "./ui/MatificCanvasGame";
 export { NumberSequenceCanvasPreview } from "./ui/NumberSequenceCanvasPreview";
+export { LeaderboardPage } from "./ui/LeaderboardPage";

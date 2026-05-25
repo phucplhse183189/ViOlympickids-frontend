@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import * as lessonService from "@/shared/api/services/lessonService";
+import * as leaderboardService from "@/shared/api/services/leaderboardService";
 import { useGameSound } from "@/shared/lib/useGameSound";
 import { ArrowLeft, Star, Heart } from "lucide-react";
 import { ParentGate } from "@/shared/ui/ParentGate";
@@ -54,6 +55,10 @@ export function Math2B1QuizPage() {
     setTimeout(() => {
       if (currentIdx + 1 >= questions.length) {
         sound.victoryVoice();
+        const childId = sessionStorage.getItem("vio_active_child_id") || localStorage.getItem("vio_active_child_id");
+        if (childId) {
+          leaderboardService.submitAttempt(childId, "math2-b1", correctCount + (isCorrect ? 1 : 0), questions.length).catch(console.error);
+        }
         navigate("/student/result/math2-b1", { state: { correct: correctCount + (isCorrect ? 1 : 0), total: questions.length } });
       } else {
         setAnsweredState("idle");
