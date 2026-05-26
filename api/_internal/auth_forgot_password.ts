@@ -4,7 +4,13 @@ import crypto from "crypto";
 import { db, schema } from "../_db.js";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let _resend: Resend | null = null;
+function getResend() {
+  if (!_resend) {
+    _resend = new Resend(process.env.RESEND_API_KEY);
+  }
+  return _resend;
+}
 
 /**
  * POST /api/auth/forgot-password
@@ -63,7 +69,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const appUrl = process.env.VITE_APP_URL || "https://violympickids.vercel.app";
     const resetLink = `${appUrl}/reset-password?token=${token}`;
 
-    await resend.emails.send({
+    await getResend().emails.send({
       from: "ViOlympicKids <onboarding@resend.dev>",
       to: user.email,
       subject: "Đặt lại mật khẩu - ViOlympicKids",
