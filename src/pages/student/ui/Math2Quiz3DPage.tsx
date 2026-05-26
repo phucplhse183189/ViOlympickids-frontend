@@ -210,7 +210,7 @@ export default function Math2Quiz3DPage() {
   );
 
   const clearTimers = useCallback(() => {
-    timersRef.current.forEach((timerId) => window.clearTimeout(timerId));
+    timersRef.current.forEach((timerId) => globalThis.clearTimeout(timerId));
     timersRef.current = [];
   }, []);
 
@@ -310,7 +310,7 @@ export default function Math2Quiz3DPage() {
               return next;
             }
 
-            const toNextLevelTimer = window.setTimeout(() => {
+            const toNextLevelTimer = globalThis.setTimeout(() => {
               startLevel(levelIndex + 1);
             }, 1400);
             timersRef.current.push(toNextLevelTimer);
@@ -329,7 +329,7 @@ export default function Math2Quiz3DPage() {
 
       setHiddenObjects((prev) => prev.map((obj) => (obj.id === id ? { ...obj, state: "shake" } : obj)));
 
-      const resetShakeTimer = window.setTimeout(() => {
+      const resetShakeTimer = globalThis.setTimeout(() => {
         setHiddenObjects((prev) =>
           prev.map((obj) => (obj.id === id && obj.state === "shake" ? { ...obj, state: "idle" } : obj)),
         );
