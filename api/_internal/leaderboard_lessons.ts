@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, inArray } from "drizzle-orm";
 import { db, schema } from "../_db.js";
 
 /**
@@ -27,6 +27,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         schema.topics,
         eq(schema.topics.id, schema.lessons.topicId)
       )
+      .where(inArray(schema.lessons.lessonNumber, [2, 46]))
       .orderBy(
         schema.lessons.id,
         asc(schema.topics.topicNumber),
