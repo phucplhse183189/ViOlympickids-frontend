@@ -6,7 +6,7 @@ import { db } from "../_db.js";
  * GET /api/admin/init-db
  * Khởi tạo bảng quiz_attempts nếu chưa có.
  */
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(_req: VercelRequest, res: VercelResponse) {
   try {
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS quiz_attempts (
