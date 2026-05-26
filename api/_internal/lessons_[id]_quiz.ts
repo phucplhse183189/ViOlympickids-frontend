@@ -12,16 +12,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const lessonId = req.query.id as string;
+    const slug = req.query.id as string;
 
-    if (!lessonId) {
+    if (!slug) {
       return res.status(400).json({ error: "Thiếu lessonId" });
     }
 
+    const GAME_TYPE_MAP: Record<string, string> = {
+      "math2-b1": "number-review-game",
+      "math2-b2": "number-sequence-chart",
+      "math2-b7": "add-across-ten-game",
+      "pipe-balance": "pipe-balance-game",
+      "matific-canvas": "matific-canvas-game",
+    };
+
+    const targetGameType = GAME_TYPE_MAP[slug] || slug;
+
     const questions = await db
-      .select()
+      .select({
+        id: schema.quizQuestions.id,
+        lessonId: schema.quizQuestions.lessonId,
+        questionNumber: schema.quizQuestions.questionNumber,
+        question: schema.quizQuestions.question,
+        visual: schema.quizQuestions.visual,
+        options: schema.quizQuestions.options,
+        correctIndex: schema.quizQuestions.correctIndex,
+        explanation: schema.quizQuestions.explanation,
+      })
       .from(schema.quizQuestions)
-      .where(eq(schema.quizQuestions.lessonId, lessonId))
+      .innerJoin(schema.lessons, eq(schema.quizQuestions.lessonId, schema.lessons.id))
+      .where(eq(schema.lessons.gameType, targetGameType))
       .orderBy(asc(schema.quizQuestions.questionNumber));
 
     return res.status(200).json(questions);
