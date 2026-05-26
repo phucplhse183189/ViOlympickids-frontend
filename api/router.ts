@@ -5,6 +5,7 @@ import adminParentsIdStatus from "./_internal/admin_parents_[id]_status.js";
 import adminStats from "./_internal/admin_stats.js";
 import adminStudentsIdStatus from "./_internal/admin_students_[id]_status.js";
 import adminInitDb from "./_internal/admin_init_db.js";
+import adminSeedLessons from "./_internal/admin_seed_lessons.js";
 
 import authLogin from "./_internal/auth_login.js";
 import authRegister from "./_internal/auth_register.js";
@@ -43,6 +44,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (group === "admin") {
     if (segs.length === 1 && segs[0] === "init-db") return adminInitDb(req, res);
+    if (segs.length === 1 && segs[0] === "seed-lessons") return adminSeedLessons(req, res);
     if (segs.length === 1 && segs[0] === "parents") return adminParents(req, res);
     if (segs.length === 1 && segs[0] === "stats") return adminStats(req, res);
     if (segs.length === 3 && segs[0] === "parents" && segs[2] === "status") { req.query.id = segs[1]; return adminParentsIdStatus(req, res); }

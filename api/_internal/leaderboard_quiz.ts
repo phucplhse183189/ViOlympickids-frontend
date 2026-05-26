@@ -42,57 +42,108 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // ── Giải quyết lessonId (hỗ trợ cả UUID và slug "math2-bX") ──────
-    const lessonId = await resolveLessonId(rawLessonId);
-    if (!lessonId) {
-      return res.status(400).json({ error: `Không tìm thấy bài học: ${rawLessonId}` });
+    let lessonId: string | null = null;
+    if (rawLessonId !== "global") {
+      lessonId = await resolveLessonId(rawLessonId);
+      if (!lessonId) {
+        return res.status(400).json({ error: `Không tìm thấy bài học: ${rawLessonId}` });
+      }
     }
 
     // ── Kiểm tra cache ────────────────────────────────────────────────────
-    const cacheKey = `leaderboard:${lessonId}`;
+    const cacheKey = `leaderboard:${rawLessonId}`;
     let cached = getCached<{ ranked: RankedEntry[]; totalParticipants: number }>(cacheKey);
 
     if (!cached) {
-      // ── Truy vấn xếp hạng bằng raw SQL ───────────────────────────────
-      // Cho mỗi child, lấy lần làm TỐT NHẤT:
-      //   1. Điểm cao nhất
-      //   2. Số lần thử thấp nhất
-      //   3. Thời gian hoàn thành sớm nhất
-      const rows = await db.execute(sql`
-        WITH best_attempts AS (
-          SELECT DISTINCT ON (qa.child_id)
-            qa.child_id,
-            qa.score,
-            qa.total_questions,
-            qa.attempt_number,
-            qa.completed_at,
-            c.name,
-            c.avatar_emoji,
-            c.avatar_bg
-          FROM quiz_attempts qa
-          INNER JOIN children c ON c.id = qa.child_id
-          WHERE qa.lesson_id = ${lessonId}
-          ORDER BY qa.child_id,
-                   qa.score DESC,
-                   qa.attempt_number ASC,
-                   qa.completed_at ASC
-        )
-        SELECT
-          child_id,
-          score,
-          total_questions,
-          attempt_number,
-          completed_at,
-          name,
-          avatar_emoji,
-          avatar_bg,
-          RANK() OVER (
-            ORDER BY score DESC,
-                     attempt_number ASC,
-                     completed_at ASC
-          )::int AS rank
-        FROM best_attempts
-        ORDER BY rank ASC, completed_at ASC
-      `);
+      let rows: any;
+
+      if (rawLessonId === "global") {
+        // TỔNG KẾT TOÀN KHOÁ: Lấy điểm cao nhất của MỖI BÀI HỌC cho mỗi child, sau đó SUM lại.
+        rows = await db.execute(sql`
+          WITH best_attempts_per_lesson AS (
+            SELECT DISTINCT ON (qa.child_id, qa.lesson_id)
+              qa.child_id,
+              qa.score,
+              qa.total_questions,
+              qa.attempt_number,
+              qa.completed_at
+            FROM quiz_attempts qa
+            ORDER BY qa.child_id,
+                     qa.lesson_id,
+                     qa.score DESC,
+                     qa.attempt_number ASC,
+                     qa.completed_at ASC
+          ),
+          global_aggregation AS (
+            SELECT
+              bapl.child_id,
+              SUM(bapl.score) AS score,
+              SUM(bapl.total_questions) AS total_questions,
+              SUM(bapl.attempt_number) AS attempt_number,
+              MAX(bapl.completed_at) AS completed_at,
+              c.name,
+              c.avatar_emoji,
+              c.avatar_bg
+            FROM best_attempts_per_lesson bapl
+            INNER JOIN children c ON c.id = bapl.child_id
+            GROUP BY bapl.child_id, c.name, c.avatar_emoji, c.avatar_bg
+          )
+          SELECT
+            child_id,
+            score,
+            total_questions,
+            attempt_number,
+            completed_at,
+            name,
+            avatar_emoji,
+            avatar_bg,
+            RANK() OVER (
+              ORDER BY score DESC,
+                       attempt_number ASC,
+                       completed_at ASC
+            )::int AS rank
+          FROM global_aggregation
+          ORDER BY rank ASC, completed_at ASC
+        `);
+      } else {
+        // LEADERBOARD CHO 1 BÀI HỌC CỤ THỂ
+        rows = await db.execute(sql`
+          WITH best_attempts AS (
+            SELECT DISTINCT ON (qa.child_id)
+              qa.child_id,
+              qa.score,
+              qa.total_questions,
+              qa.attempt_number,
+              qa.completed_at,
+              c.name,
+              c.avatar_emoji,
+              c.avatar_bg
+            FROM quiz_attempts qa
+            INNER JOIN children c ON c.id = qa.child_id
+            WHERE qa.lesson_id = ${lessonId}
+            ORDER BY qa.child_id,
+                     qa.score DESC,
+                     qa.attempt_number ASC,
+                     qa.completed_at ASC
+          )
+          SELECT
+            child_id,
+            score,
+            total_questions,
+            attempt_number,
+            completed_at,
+            name,
+            avatar_emoji,
+            avatar_bg,
+            RANK() OVER (
+              ORDER BY score DESC,
+                       attempt_number ASC,
+                       completed_at ASC
+            )::int AS rank
+          FROM best_attempts
+          ORDER BY rank ASC, completed_at ASC
+        `);
+      }
 
       const ranked: RankedEntry[] = rows.rows.map((r: any) => ({
         rank: Number(r.rank),
