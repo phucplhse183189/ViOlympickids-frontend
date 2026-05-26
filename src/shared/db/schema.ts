@@ -36,7 +36,7 @@ export const users = pgTable("users", {
   name: varchar("name", { length: 100 }).notNull(),
   email: varchar("email", { length: 200 }),
   avatarInitials: varchar("avatar_initials", { length: 10 }),
-  avatarId: varchar("avatar_id", { length: 50 }),
+  avatarId: varchar("avatar_id", { length: 500 }),
   googleId: varchar("google_id", { length: 100 }).unique(),
   role: roleEnum("role").default("parent").notNull(),
   status: accountStatusEnum("status").default("active").notNull(),
