@@ -6,47 +6,21 @@ import { OrbitControls } from "@react-three/drei";
 import { animated, config, useSpring } from "@react-spring/three";
 import * as THREE from "three";
 import { Volume2, VolumeX, X, Gamepad2, RotateCcw, Sparkles } from "lucide-react";
-import { useGameSound } from "@/shared/lib/useGameSound";
 
-/* ─── RobotGuide (Tí Tách) ────────────────────────────────── */
-function RobotGuide({ message, isSpeaking }: { message: string; isSpeaking: boolean }) {
-  return (
-    <div className="flex items-start gap-3 sm:gap-4 w-full max-w-3xl mx-auto mt-4">
-      <div className="relative shrink-0">
-        <div
-          className={`w-14 h-14 sm:w-18 sm:h-18 rounded-2xl overflow-hidden shadow-xl border-4 transition-all duration-300 ${
-            isSpeaking ? "border-indigo-400 scale-105 animate-pulse" : "border-white/80"
-          }`}
-        >
-          <img
-            src="/assets/math2-b2-game/robot-guide.png"
-            alt="Tí Tách"
-            className="w-full h-full object-cover"
-          />
-        </div>
-        {isSpeaking && (
-          <div className="absolute -top-1 -right-1 bg-indigo-500 text-white p-1 rounded-full shadow-lg animate-bounce">
-            <Volume2 size={10} />
-          </div>
-        )}
-        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[8px] sm:text-[10px] font-black px-2 py-0.5 rounded-full shadow-lg whitespace-nowrap">
-          Tí Tách 🤖
-        </div>
-      </div>
-      <div className="relative flex-1 min-w-0">
-        <div
-          className={`relative p-3 sm:p-4 rounded-2xl shadow-xl border-4 transition-all duration-300 ${
-            isSpeaking ? "bg-white border-indigo-200" : "bg-white/95 border-slate-200/60"
-          }`}
-        >
-          <div className="absolute -left-3 top-5 w-3 h-3 bg-white rotate-45 border-l-4 border-b-4 border-indigo-200" />
-          <p className="text-sm sm:text-base font-bold text-slate-700 leading-relaxed">
-            {message}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
+/* ─── TTS helper ─────────────────────────────────────────────── */
+function speak(text: string, onEnd?: () => void) {
+  if (!("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "vi-VN";
+  u.rate = 0.92;
+  u.pitch = 1.15;
+  // Try to pick a Vietnamese voice
+  const voices = window.speechSynthesis.getVoices();
+  const vi = voices.find((v) => v.lang.startsWith("vi"));
+  if (vi) u.voice = vi;
+  if (onEnd) u.onend = onEnd;
+  window.speechSynthesis.speak(u);
 }
 
 /* ─── Shape types ────────────────────────────────────────────── */
@@ -381,7 +355,6 @@ export default function Math2Quiz3DShapesPage() {
   const navigate = useNavigate();
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const sound = useGameSound();
   const [activeShape, setActiveShape] = useState<"cylinder" | "sphere" | null>(null);
 
   const defaultMsg = "Nhấn vào hình 3D để khám phá! Nhấn đúp để mở hình, giữ chuột phải để giữ mở.";
@@ -399,9 +372,9 @@ export default function Math2Quiz3DShapesPage() {
     (text: string) => {
       if (!voiceEnabled) return;
       setIsSpeaking(true);
-      sound.speak(text, () => setIsSpeaking(false));
+      speak(text, () => setIsSpeaking(false));
     },
-    [voiceEnabled, sound],
+    [voiceEnabled],
   );
 
   // Auto-speak on message change
@@ -468,7 +441,7 @@ export default function Math2Quiz3DShapesPage() {
 
   function toggleVoice() {
     if (voiceEnabled) {
-      sound.stopVoice();
+      window.speechSynthesis?.cancel();
       setIsSpeaking(false);
     }
     setVoiceEnabled(!voiceEnabled);
@@ -631,14 +604,52 @@ export default function Math2Quiz3DShapesPage() {
           </Canvas>
         </div>
 
-        {/* ── Robot Guide (Tí Tách) ──────────────────────────────── */}
-        <RobotGuide message={message} isSpeaking={isSpeaking} />
+        {/* ── Message bubble with voice indicator ──────────────── */}
+        <div
+          className="mt-4 rounded-2xl px-5 py-4 text-center transition-all duration-300 relative overflow-hidden"
+          style={{
+            background: "linear-gradient(135deg, rgba(255,255,255,0.9), rgba(240,249,255,0.9))",
+            border: "2px solid rgba(56,189,248,0.2)",
+            boxShadow: "0 4px 24px rgba(14,165,233,0.1)",
+          }}
+        >
+          {/* Speaking glow animation */}
+          {isSpeaking && (
+            <div
+              className="absolute inset-0 animate-pulse pointer-events-none rounded-2xl"
+              style={{ boxShadow: "inset 0 0 30px rgba(34,197,94,0.1)" }}
+            />
+          )}
 
-        <p className="mt-2 text-center text-[11px] font-semibold text-slate-400">
-          {anyHolding
-            ? "🖱️ Đang giữ chuột phải — thả ra để gập lại"
-            : "💡 Mẹo: Nhấn 1 lần để xem thông tin, nhấn đúp để mở hình, giữ chuột phải để giữ mở"}
-        </p>
+          <div className="flex items-start gap-3 justify-center">
+            {isSpeaking && (
+              <div className="shrink-0 mt-1">
+                <div className="flex items-end gap-0.5 h-5">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div
+                      key={i}
+                      className="w-1 bg-green-400 rounded-full animate-bounce"
+                      style={{
+                        animationDelay: `${i * 0.12}s`,
+                        height: `${8 + Math.random() * 12}px`,
+                        animationDuration: "0.6s",
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            <p className="text-sm sm:text-base font-bold text-sky-700 leading-relaxed">
+              {message}
+            </p>
+          </div>
+
+          <p className="mt-2 text-[11px] font-semibold text-slate-400">
+            {anyHolding
+              ? "🖱️ Đang giữ chuột phải — thả ra để gập lại"
+              : "💡 Mẹo: Nhấn 1 lần để xem thông tin, nhấn đúp để mở hình, giữ chuột phải để giữ mở"}
+          </p>
+        </div>
 
         {/* ── Shape info cards ─────────────────────────────────── */}
         <div className="mt-4 flex flex-col sm:flex-row gap-3">

@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { eq, and, count } from "drizzle-orm";
 import { db, schema } from "../_db.js";
 import { invalidateCache } from "./_leaderboard_cache.js";
+import { resolveLessonId } from "./_resolve_lesson_id.js";
 
 /**
  * POST /api/leaderboard/submit
@@ -14,10 +15,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { childId, lessonId, score, totalQuestions } = req.body ?? {};
+    const { childId, lessonId: rawLessonId, score, totalQuestions } = req.body ?? {};
 
-    if (!childId || !lessonId || score == null || !totalQuestions) {
+    if (!childId || !rawLessonId || score == null || !totalQuestions) {
       return res.status(400).json({ error: "Thiếu thông tin bắt buộc" });
+    }
+
+    // ── Giải quyết lessonId (hỗ trợ cả UUID và slug "math2-bX") ──────
+    const lessonId = await resolveLessonId(rawLessonId);
+    if (!lessonId) {
+      return res.status(400).json({ error: `Không tìm thấy bài học: ${rawLessonId}` });
     }
 
     // ── Đếm số lần đã làm để tính attemptNumber ──────────────────────────

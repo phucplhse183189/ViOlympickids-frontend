@@ -4,6 +4,8 @@ import adminParents from "./_internal/admin_parents.js";
 import adminParentsIdStatus from "./_internal/admin_parents_[id]_status.js";
 import adminStats from "./_internal/admin_stats.js";
 import adminStudentsIdStatus from "./_internal/admin_students_[id]_status.js";
+import adminInitDb from "./_internal/admin_init_db.js";
+import adminSeedLessons from "./_internal/admin_seed_lessons.js";
 
 import authLogin from "./_internal/auth_login.js";
 import authRegister from "./_internal/auth_register.js";
@@ -26,6 +28,10 @@ import parentProfile from "./_internal/parent_profile.js";
 
 import transactionsIndex from "./_internal/transactions_index.js";
 
+import leaderboardLessons from "./_internal/leaderboard_lessons.js";
+import leaderboardSubmit from "./_internal/leaderboard_submit.js";
+import leaderboardQuiz from "./_internal/leaderboard_quiz.js";
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
@@ -40,6 +46,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const segs = parts.slice(2);
 
   if (group === "admin") {
+    if (segs.length === 1 && segs[0] === "init-db") return adminInitDb(req, res);
+    if (segs.length === 1 && segs[0] === "seed-lessons") return adminSeedLessons(req, res);
     if (segs.length === 1 && segs[0] === "parents") return adminParents(req, res);
     if (segs.length === 1 && segs[0] === "stats") return adminStats(req, res);
     if (segs.length === 3 && segs[0] === "parents" && segs[2] === "status") { req.query.id = segs[1]; return adminParentsIdStatus(req, res); }
@@ -75,6 +83,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (group === "transactions") {
     if (segs.length === 0) return transactionsIndex(req, res);
+  }
+
+  if (group === "leaderboard") {
+    if (segs.length === 1 && segs[0] === "lessons") return leaderboardLessons(req, res);
+    if (segs.length === 1 && segs[0] === "submit") return leaderboardSubmit(req, res);
+    if (segs.length === 1 && segs[0] !== "lessons" && segs[0] !== "submit") {
+      req.query.lessonId = segs[0];
+      return leaderboardQuiz(req, res);
+    }
   }
 
   return res.status(404).json({ error: "Route not found in master router" });

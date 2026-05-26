@@ -70,7 +70,7 @@ function TopPodium({ entries }: Readonly<{ entries: LeaderboardEntry[] }>) {
       <div className="lb-empty">
         <div className="lb-empty-icon">🏆</div>
         <p className="lb-empty-text">
-          Chưa có ai tham gia quiz này.
+          Chưa có bảng xếp hạng.
           <br />
           Hãy là người đầu tiên chinh phục nhé! 🚀
         </p>

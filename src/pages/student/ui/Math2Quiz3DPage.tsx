@@ -210,7 +210,7 @@ export default function Math2Quiz3DPage() {
   );
 
   const clearTimers = useCallback(() => {
-    timersRef.current.forEach((timerId) => window.clearTimeout(timerId));
+    timersRef.current.forEach((timerId) => globalThis.clearTimeout(timerId));
     timersRef.current = [];
   }, []);
 

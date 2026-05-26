@@ -9,7 +9,7 @@
     }
   ],
   "rewrites": [
-    { "source": "/api/(auth|children|admin|lessons|parent|transactions)(.*)", "destination": "/api/router" },
+    { "source": "/api/(auth|children|admin|lessons|parent|transactions|leaderboard)(.*)", "destination": "/api/router" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }

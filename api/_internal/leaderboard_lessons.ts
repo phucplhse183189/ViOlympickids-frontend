@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, inArray } from "drizzle-orm";
 import { db, schema } from "../_db.js";
 
 /**
@@ -12,8 +12,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // INNER JOIN quiz_questions → chỉ lấy bài có ít nhất 1 câu hỏi
-    // GROUP BY để loại trùng
+    // GROUP BY để loại trùng (trường hợp có nhiều câu hỏi - dù hiện tại ta lấy toàn bộ lessons)
     const rows = await db
       .selectDistinctOn([schema.lessons.id], {
         id: schema.lessons.id,
@@ -25,13 +24,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       })
       .from(schema.lessons)
       .innerJoin(
-        schema.quizQuestions,
-        eq(schema.quizQuestions.lessonId, schema.lessons.id)
-      )
-      .innerJoin(
         schema.topics,
         eq(schema.topics.id, schema.lessons.topicId)
       )
+      .where(inArray(schema.lessons.lessonNumber, [2, 46]))
       .orderBy(
         schema.lessons.id,
         asc(schema.topics.topicNumber),
@@ -46,6 +42,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Bỏ các trường phụ trợ trước khi trả về
     const result = sorted.map(({ topicNumber, lessonNumber, ...rest }) => rest);
+
+    // Thêm mục "TỔNG KẾT TOÀN KHOÁ" lên đầu danh sách
+    result.unshift({
+      id: "global",
+      title: "TỔNG KẾT TOÀN KHOÁ",
+      emoji: "🏆",
+      topicTitle: "BẢNG VÀNG",
+    });
 
     return res.status(200).json(result);
   } catch (err) {
