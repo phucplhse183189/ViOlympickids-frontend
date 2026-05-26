@@ -491,7 +491,6 @@ export function RegisterPage() {
                   shape="pill"
                   size="large"
                   width="320"
-                  locale="vi"
                 />
               </div>
 
