@@ -14,10 +14,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { phone, password, name } = req.body as {
+    const { phone, password, name, email } = req.body as {
       phone: string;
       password: string;
       name: string;
+      email?: string;
     };
 
     if (!phone || !password || !name) {
@@ -55,6 +56,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         phone: normalizedPhone,
         passwordHash,
         name: name.trim(),
+        email: email?.trim() || null,
         avatarInitials,
         role: "parent",
         status: "active",

@@ -37,6 +37,7 @@ export const users = pgTable("users", {
   email: varchar("email", { length: 200 }),
   avatarInitials: varchar("avatar_initials", { length: 10 }),
   avatarId: varchar("avatar_id", { length: 50 }),
+  googleId: varchar("google_id", { length: 100 }).unique(),
   role: roleEnum("role").default("parent").notNull(),
   status: accountStatusEnum("status").default("active").notNull(),
   unreadNotifications: integer("unread_notifications").default(0),
@@ -252,4 +253,16 @@ export const quizAttempts = pgTable("quiz_attempts", {
   totalQuestions: integer("total_questions").notNull(),
   attemptNumber: integer("attempt_number").notNull(),
   completedAt: timestamp("completed_at").defaultNow().notNull(),
+});
+
+// ── Bảng: password_reset_tokens ──────────────────────────────────────────────
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
+  token: varchar("token", { length: 100 }).unique().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  used: boolean("used").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });

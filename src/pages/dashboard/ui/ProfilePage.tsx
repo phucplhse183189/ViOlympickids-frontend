@@ -1,13 +1,15 @@
 import { useRef, useState, useEffect } from "react";
-import { Camera, Check, Pencil, X } from "lucide-react";
+import { Camera, Check, Pencil, X, Loader2 } from "lucide-react";
 import { useAuth } from "@/shared/lib/auth";
+import { apiGet, apiPut } from "@/shared/api/client";
+import type { UserInfo } from "@/shared/api/services/authService";
 
 // ── Local state shape for the profile form ────────────────────
 interface ParentProfileForm {
   name: string;
   phone: string;
   email: string;
-  avatarUrl: string | null; // data-URL from upload
+  avatarUrl: string | null; // data-URL from upload or existing URL
 }
 
 // ── Avatar display ─────────────────────────────────────────────
@@ -25,6 +27,13 @@ function AvatarDisplay({
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Ảnh quá lớn. Vui lòng chọn ảnh dưới 5MB.");
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (ev) => {
       if (typeof ev.target?.result === "string") onUpload(ev.target.result);
@@ -165,24 +174,88 @@ function EditableField({
 // ── Main page ──────────────────────────────────────────────────
 export function ProfilePage() {
   const { user, updateUser } = useAuth();
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [form, setForm] = useState<ParentProfileForm>({
     name: user?.nickname ?? "Phụ Huynh",
-    phone: user?.email ?? "0901234567",
-    email: "",
+    phone: user?.phone ?? "",
+    email: user?.email ?? "",
     avatarUrl: null,
   });
   const [saved, setSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Load profile from API on mount
+  useEffect(() => {
+    const parentId = sessionStorage.getItem("vio_parent_id");
+    if (!parentId) {
+      setIsLoadingProfile(false);
+      return;
+    }
+
+    apiGet<UserInfo>(`/parent/profile?id=${parentId}`)
+      .then((profile) => {
+        setForm({
+          name: profile.name || user?.nickname || "Phụ Huynh",
+          phone: profile.phone || user?.phone || "",
+          email: profile.email || user?.email || "",
+          avatarUrl: profile.avatarId || null,
+        });
+        setLoadError(null);
+      })
+      .catch((err) => {
+        console.error("Load profile failed:", err);
+        setLoadError("Không thể tải thông tin hồ sơ. Đang dùng dữ liệu cục bộ.");
+      })
+      .finally(() => setIsLoadingProfile(false));
+  }, []);
 
   function update(field: keyof ParentProfileForm, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
     setSaved(false);
+    setSaveError(null);
   }
 
   function handleSave() {
-    // Sync to auth context so other pages see the updated name/email
-    updateUser({ nickname: form.name, email: form.email });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    const parentId = sessionStorage.getItem("vio_parent_id");
+    if (!parentId) {
+      // Fallback: chỉ cập nhật local context
+      updateUser({ nickname: form.name, email: form.email });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveError(null);
+
+    // Prepare payload
+    const payload: Record<string, string> = { id: parentId };
+    if (form.name) payload.name = form.name.trim();
+    if (form.email !== undefined) payload.email = form.email.trim();
+    if (form.avatarUrl && form.avatarUrl.startsWith("data:")) {
+      // Gửi avatar data URL — backend sẽ lưu vào avatarId
+      payload.avatarId = form.avatarUrl;
+    }
+
+    apiPut<UserInfo>("/parent/profile", payload)
+      .then((updatedProfile) => {
+        // Sync to auth context so other pages see the updated info
+        updateUser({
+          nickname: updatedProfile.name,
+          email: updatedProfile.email || "",
+        });
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2500);
+      })
+      .catch((err) => {
+        console.error("Save profile failed:", err);
+        setSaveError(
+          err?.message || "Lưu thất bại. Vui lòng thử lại."
+        );
+      })
+      .finally(() => setIsSaving(false));
   }
 
   const initials = form.name
@@ -191,6 +264,17 @@ export function ProfilePage() {
     .join("")
     .substring(0, 2)
     .toUpperCase();
+
+  if (isLoadingProfile) {
+    return (
+      <div className="max-w-2xl mx-auto flex items-center justify-center py-20">
+        <div className="flex items-center gap-3 text-gray-400">
+          <Loader2 size={20} className="animate-spin" />
+          <span className="text-sm font-medium">Đang tải hồ sơ...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -201,6 +285,13 @@ export function ProfilePage() {
           Quản lý thông tin cá nhân và ảnh đại diện
         </p>
       </div>
+
+      {/* Load error notice */}
+      {loadError && (
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 text-sm font-medium px-4 py-3 rounded-2xl flex items-center gap-2">
+          <span>⚠️</span> {loadError}
+        </div>
+      )}
 
       {/* Avatar card */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
@@ -254,13 +345,13 @@ export function ProfilePage() {
           type="tel"
           onChange={(v) => update("phone", v)}
         />
-        {/* <EditableField
+        <EditableField
           label="Email"
           value={form.email}
           placeholder="VD: email@example.com"
           type="email"
           onChange={(v) => update("email", v)}
-        /> */}
+        />
 
         {/* Role badge – read only */}
         <div className="flex flex-col gap-1.5">
@@ -281,18 +372,31 @@ export function ProfilePage() {
         </div>
       </div>
 
+      {/* Save error */}
+      {saveError && (
+        <div className="bg-red-50 border border-red-200 text-red-600 text-sm font-medium px-4 py-3 rounded-2xl flex items-center gap-2">
+          <span>❌</span> {saveError}
+        </div>
+      )}
+
       {/* Save button */}
       <div className="flex justify-end">
         <button
           onClick={handleSave}
-          className="flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-extrabold text-white transition-all duration-200 active:scale-95"
+          disabled={isSaving}
+          className="flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-extrabold text-white transition-all duration-200 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
           style={{
             background:
               "linear-gradient(135deg, var(--brand-primary), #fb923c)",
             boxShadow: "0 4px 14px rgba(249,115,22,0.35)",
           }}
         >
-          {saved ? (
+          {isSaving ? (
+            <>
+              <Loader2 size={15} className="animate-spin" />
+              Đang lưu...
+            </>
+          ) : saved ? (
             <>
               <Check size={15} strokeWidth={3} />
               Đã lưu!

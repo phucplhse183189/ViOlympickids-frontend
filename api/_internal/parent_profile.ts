@@ -37,10 +37,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // ── PUT: Cập nhật profile ───────────────────────────────────────────────────
   if (req.method === "PUT") {
     try {
-      const { id, name, email, avatarId } = req.body as {
+      const { id, name, email, phone, avatarId } = req.body as {
         id: string;
         name?: string;
         email?: string;
+        phone?: string;
         avatarId?: string;
       };
 
@@ -51,7 +52,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Chỉ cập nhật các trường được gửi lên
       const updates: Record<string, unknown> = {};
       if (name !== undefined) updates.name = name.trim();
-      if (email !== undefined) updates.email = email.trim();
+      if (email !== undefined) updates.email = email.trim() || null;
+      if (phone !== undefined) updates.phone = phone.replace(/\D/g, "");
       if (avatarId !== undefined) updates.avatarId = avatarId;
 
       if (Object.keys(updates).length === 0) {

@@ -1,5 +1,13 @@
 {
   "framework": "vite",
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Cross-Origin-Opener-Policy", "value": "same-origin-allow-popups" }
+      ]
+    }
+  ],
   "rewrites": [
     { "source": "/api/(auth|children|admin|lessons|parent|transactions)(.*)", "destination": "/api/router" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }

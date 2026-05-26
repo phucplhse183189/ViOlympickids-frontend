@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useLoginForm } from "../model/useLoginForm";
 import { useLang } from "@/shared/lib/i18n";
 import { Eye, EyeOff } from "lucide-react";
@@ -93,12 +94,12 @@ export function LoginForm() {
 
       {/* Forgot password */}
       <div className="flex justify-end items-center text-sm px-1">
-        <a
-          href="#"
+        <Link
+          to="/forgot-password"
           className="text-blue-400 hover:text-blue-600 font-bold transition-colors"
         >
           {t.loginForm.forgotPassword}
-        </a>
+        </Link>
       </div>
 
       {/* Submit button */}

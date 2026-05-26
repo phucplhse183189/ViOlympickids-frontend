@@ -12,6 +12,9 @@ export default defineConfig({
     },
   },
   server: {
+    headers: {
+      "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
+    },
     proxy: {
       "/api": {
         target: "https://violympickids.vercel.app",

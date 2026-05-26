@@ -28,6 +28,28 @@ export async function register(data: {
   phone: string;
   password: string;
   name: string;
+  email?: string;
 }): Promise<UserInfo> {
   return apiPost<UserInfo>("/auth/register", data);
+}
+
+/**
+ * Đăng nhập/đăng ký bằng Google
+ */
+export async function googleLogin(credential: string): Promise<UserInfo> {
+  return apiPost<UserInfo>("/auth/google", { credential });
+}
+
+/**
+ * Gửi yêu cầu quên mật khẩu
+ */
+export async function forgotPassword(phoneOrEmail: string): Promise<{ message: string }> {
+  return apiPost<{ message: string }>("/auth/forgot-password", { phoneOrEmail });
+}
+
+/**
+ * Đặt lại mật khẩu bằng token
+ */
+export async function resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
+  return apiPost<{ message: string }>("/auth/reset-password", { token, newPassword });
 }

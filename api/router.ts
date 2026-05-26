@@ -7,6 +7,9 @@ import adminStudentsIdStatus from "./_internal/admin_students_[id]_status.js";
 
 import authLogin from "./_internal/auth_login.js";
 import authRegister from "./_internal/auth_register.js";
+import authGoogle from "./_internal/auth_google.js";
+import authForgotPassword from "./_internal/auth_forgot_password.js";
+import authResetPassword from "./_internal/auth_reset_password.js";
 
 import childrenAdd from "./_internal/children_add.js";
 import childrenIndex from "./_internal/children_index.js";
@@ -46,6 +49,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (group === "auth") {
     if (segs.length === 1 && segs[0] === "login") return authLogin(req, res);
     if (segs.length === 1 && segs[0] === "register") return authRegister(req, res);
+    if (segs.length === 1 && segs[0] === "google") return authGoogle(req, res);
+    if (segs.length === 1 && segs[0] === "forgot-password") return authForgotPassword(req, res);
+    if (segs.length === 1 && segs[0] === "reset-password") return authResetPassword(req, res);
   }
 
   if (group === "children") {
