@@ -57,7 +57,7 @@ export function Math2B1QuizPage() {
         sound.victoryVoice();
         const childId = sessionStorage.getItem("vio_active_child_id") || localStorage.getItem("vio_active_child_id");
         if (childId) {
-          leaderboardService.submitAttempt(childId, "math2-b1", correctCount + (isCorrect ? 1 : 0), questions.length).catch(console.error);
+          leaderboardService.submitAttempt(childId, questions[0]?.lessonId || "math2-b1", correctCount + (isCorrect ? 1 : 0), questions.length).catch(console.error);
         }
         navigate("/student/result/math2-b1", { state: { correct: correctCount + (isCorrect ? 1 : 0), total: questions.length } });
       } else {

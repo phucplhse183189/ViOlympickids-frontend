@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { sql } from "drizzle-orm";
 import { db } from "../_db.js";
 import { getCached, setCached } from "./_leaderboard_cache.js";
+import { resolveLessonId } from "./_resolve_lesson_id.js";
 
 /**
  * GET /api/leaderboard/:lessonId?childId=xxx
@@ -33,11 +34,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const lessonId = req.query.lessonId as string;
+    const rawLessonId = req.query.lessonId as string;
     const childId = req.query.childId as string | undefined;
 
-    if (!lessonId) {
+    if (!rawLessonId) {
       return res.status(400).json({ error: "Thiếu lessonId" });
+    }
+
+    // ── Giải quyết lessonId (hỗ trợ cả UUID và slug "math2-bX") ──────
+    const lessonId = await resolveLessonId(rawLessonId);
+    if (!lessonId) {
+      return res.status(400).json({ error: `Không tìm thấy bài học: ${rawLessonId}` });
     }
 
     // ── Kiểm tra cache ────────────────────────────────────────────────────

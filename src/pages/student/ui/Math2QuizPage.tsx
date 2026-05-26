@@ -619,7 +619,7 @@ export function Math2QuizPage() {
         if (!isMuted) sound.victoryVoice();
         const childId = sessionStorage.getItem("vio_active_child_id") || localStorage.getItem("vio_active_child_id");
         if (childId) {
-          leaderboardService.submitAttempt(childId, "math2-b2", correctCount, questions.length).catch(console.error);
+          leaderboardService.submitAttempt(childId, questions[0]?.lessonId || "math2-b2", correctCount, questions.length).catch(console.error);
         }
         navigate("/student/result/math2-b2", { state: { correct: correctCount, total: questions.length } });
         return;

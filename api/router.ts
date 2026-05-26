@@ -23,6 +23,10 @@ import parentProfile from "./_internal/parent_profile.js";
 
 import transactionsIndex from "./_internal/transactions_index.js";
 
+import leaderboardLessons from "./_internal/leaderboard_lessons.js";
+import leaderboardSubmit from "./_internal/leaderboard_submit.js";
+import leaderboardQuiz from "./_internal/leaderboard_quiz.js";
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
@@ -69,6 +73,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (group === "transactions") {
     if (segs.length === 0) return transactionsIndex(req, res);
+  }
+
+  if (group === "leaderboard") {
+    if (segs.length === 1 && segs[0] === "lessons") return leaderboardLessons(req, res);
+    if (segs.length === 1 && segs[0] === "submit") return leaderboardSubmit(req, res);
+    if (segs.length === 1 && segs[0] !== "lessons" && segs[0] !== "submit") {
+      req.query.lessonId = segs[0];
+      return leaderboardQuiz(req, res);
+    }
   }
 
   return res.status(404).json({ error: "Route not found in master router" });

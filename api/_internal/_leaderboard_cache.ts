@@ -10,7 +10,7 @@ interface CacheEntry {
 
 const cache = new Map<string, CacheEntry>();
 
-const TTL_MS = 60_000; // 60 giây
+const TTL_MS = 30_000; // 30 giây
 
 export function getCached<T>(key: string): T | null {
   const entry = cache.get(key);
