@@ -1,11 +1,40 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { eq, or } from "drizzle-orm";
-import { OAuth2Client } from "google-auth-library";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { db, schema } from "../_db.js";
 
-const googleClient = new OAuth2Client();
+/**
+ * Verify Google ID token via Google's tokeninfo endpoint.
+ * Lightweight alternative to google-auth-library (avoids bundle size issues on Vercel).
+ */
+async function verifyGoogleToken(idToken: string) {
+  const res = await fetch(
+    `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`
+  );
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Google token verification failed: ${err}`);
+  }
+
+  const payload = (await res.json()) as {
+    sub: string;
+    email: string;
+    name?: string;
+    picture?: string;
+    aud?: string;
+    email_verified?: string;
+  };
+
+  // Verify audience matches our client ID
+  const clientId = process.env.VITE_GOOGLE_CLIENT_ID;
+  if (clientId && payload.aud !== clientId) {
+    throw new Error("Token audience mismatch");
+  }
+
+  return payload;
+}
 
 /**
  * POST /api/auth/google
@@ -23,18 +52,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: "Thiếu credential" });
     }
 
-    // Verify Google JWT token
-    const ticket = await googleClient.verifyIdToken({
-      idToken: credential,
-      audience: process.env.VITE_GOOGLE_CLIENT_ID,
-    });
+    // Verify Google JWT token via Google API
+    const payload = await verifyGoogleToken(credential);
 
-    const payload = ticket.getPayload();
-    if (!payload) {
-      return res.status(400).json({ error: "Token không hợp lệ" });
-    }
-
-    const { sub: googleId, email, name, picture } = payload;
+    const googleId = payload.sub;
+    const email = payload.email;
+    const name = payload.name;
+    const picture = payload.picture;
 
     if (!googleId || !email) {
       return res.status(400).json({ error: "Không lấy được thông tin từ Google" });
@@ -99,6 +123,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (err.message?.includes("Token used too late") || err.message?.includes("Invalid token")) {
       return res.status(400).json({ error: "Google token hết hạn. Vui lòng thử lại." });
     }
-    return res.status(500).json({ error: "Lỗi server" });
+    return res.status(500).json({ error: err.message || "Lỗi server" });
   }
 }
