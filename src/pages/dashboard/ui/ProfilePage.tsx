@@ -198,7 +198,7 @@ export function ProfilePage() {
       .then((profile) => {
         setForm({
           name: profile.name || user?.nickname || "Phụ Huynh",
-          phone: profile.phone || user?.phone || "",
+          phone: profile.phone?.startsWith("g_") ? "" : (profile.phone || user?.phone || ""),
           email: profile.email || user?.email || "",
           avatarUrl: profile.avatarId || null,
         });
@@ -233,6 +233,7 @@ export function ProfilePage() {
     // Prepare payload
     const payload: Record<string, string> = { id: parentId };
     if (form.name) payload.name = form.name.trim();
+    if (form.phone) payload.phone = form.phone.trim();
     if (form.email !== undefined) payload.email = form.email.trim();
     if (form.avatarUrl && form.avatarUrl.startsWith("data:")) {
       // Gửi avatar data URL — backend sẽ lưu vào avatarId
