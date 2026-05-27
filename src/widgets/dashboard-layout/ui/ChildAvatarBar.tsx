@@ -20,6 +20,23 @@ export function ChildAvatarBar() {
   const { profiles, activeChild, switchChild } = useActiveChild();
   const navigate = useNavigate();
 
+  if (!profiles.length) {
+    return (
+      <div className="flex items-center gap-3 bg-white/80 backdrop-blur-sm border border-dashed border-orange-200 rounded-2xl px-4 py-2.5 shadow-sm">
+        <span className="text-xs text-gray-400 font-medium whitespace-nowrap">
+          🐣 Chưa có hồ sơ bé
+        </span>
+        <button
+          onClick={() => navigate("/add-child")}
+          className="flex items-center gap-1.5 bg-gradient-to-r from-orange-400 to-orange-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold shadow hover:shadow-md hover:-translate-y-0.5 transition-all shrink-0"
+        >
+          <Plus size={14} />
+          <span>Thêm bé</span>
+        </button>
+      </div>
+    );
+  }
+
   if (!activeChild) return null;
 
   return (

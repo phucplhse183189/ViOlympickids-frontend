@@ -11,6 +11,7 @@ import {
   ArrowRight,
   CheckCircle2,
   Circle,
+  Plus,
 } from "lucide-react";
 import { StudyProgressChart } from "@/widgets/study-progress-chart";
 import { RecentActivityTable } from "@/widgets/recent-activity-table";
@@ -253,7 +254,7 @@ function QuickActionsCard() {
 /* ── Main page ──────────────────────────────────────── */
 export function OverviewPage() {
   const navigate = useNavigate();
-  const { activeChild, dashboardData, isLoading } = useActiveChild();
+  const { activeChild, dashboardData, isLoading, profiles } = useActiveChild();
   const headingRef = useRef<HTMLDivElement>(null);
   const [headingVisible, setHeadingVisible] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
@@ -281,7 +282,36 @@ export function OverviewPage() {
     observe(tableRef.current, () => setTableVisible(true));
   }, [activeChild, dashboardData]);
 
-  if (isLoading || !activeChild || !dashboardData) {
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20 text-gray-500">
+        Đang tải dữ liệu tổng quan...
+      </div>
+    );
+  }
+
+  if (!isLoading && profiles.length === 0) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-10 max-w-md w-full text-center space-y-5">
+          <div className="text-6xl">📚</div>
+          <h3 className="text-xl font-bold text-gray-800">Chưa có hồ sơ học sinh</h3>
+          <p className="text-sm text-gray-400 leading-relaxed">
+            Hãy thêm hồ sơ cho bé để bắt đầu theo dõi tiến độ học tập
+          </p>
+          <button
+            onClick={() => navigate("/add-child")}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-sm font-bold rounded-xl hover:brightness-110 transition shadow-sm"
+          >
+            <Plus size={18} />
+            Thêm bé ngay
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!activeChild || !dashboardData) {
     return (
       <div className="flex items-center justify-center py-20 text-gray-500">
         Đang tải dữ liệu tổng quan...
@@ -317,7 +347,16 @@ export function OverviewPage() {
             đang học tốt! 🎉
           </h2>
           <p className="text-sm text-gray-400 mt-0.5">
-            Cập nhật lần cuối: hôm nay, 08:20
+            Cập nhật lần cuối:{" "}
+            {activeChild.lastActive
+              ? new Date(activeChild.lastActive).toLocaleString("vi-VN", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "Chưa có dữ liệu"}
           </p>
         </div>
         {/* Streak badge */}

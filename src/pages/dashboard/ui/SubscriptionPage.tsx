@@ -38,13 +38,38 @@ function formatCurrency(amount: number): string {
 }
 
 export function SubscriptionPage() {
-  const { activeChild, dashboardData, updateChildPlan, isLoading } = useActiveChild();
+  const { activeChild, dashboardData, updateChildPlan, isLoading, profiles } = useActiveChild();
   const navigate = useNavigate();
   
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [cancelDone, setCancelDone] = useState(false);
 
-  if (isLoading || !activeChild || !dashboardData) {
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20 text-gray-500">
+        Đang tải thông tin gói cước...
+      </div>
+    );
+  }
+
+  if (!isLoading && profiles.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <span className="text-5xl mb-4">💳</span>
+        <h3 className="text-lg font-bold text-gray-700 mb-1">Chưa có hồ sơ học sinh</h3>
+        <p className="text-sm text-gray-400 mb-6">Hãy thêm hồ sơ cho bé để sử dụng tính năng này</p>
+        <button
+          onClick={() => navigate("/add-child")}
+          className="px-6 py-3 rounded-xl text-sm font-bold text-white transition-all hover:shadow-lg"
+          style={{ background: "linear-gradient(135deg, var(--brand-primary), #f97316)" }}
+        >
+          + Thêm hồ sơ học sinh
+        </button>
+      </div>
+    );
+  }
+
+  if (!activeChild || !dashboardData) {
     return (
       <div className="flex items-center justify-center py-20 text-gray-500">
         Đang tải thông tin gói cước...

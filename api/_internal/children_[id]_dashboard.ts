@@ -18,6 +18,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: "Thiếu childId" });
     }
 
+    // Xác thực quyền: kiểm tra child thuộc về parent đang request
+    const requestUserId = req.headers["x-user-id"] as string | undefined;
+    if (requestUserId) {
+      const [child] = await db
+        .select({ parentId: schema.children.parentId })
+        .from(schema.children)
+        .where(eq(schema.children.id, childId))
+        .limit(1);
+      if (!child || child.parentId !== requestUserId) {
+        return res.status(403).json({ error: "Không có quyền truy cập dữ liệu này" });
+      }
+    }
+
     // Chạy tất cả các query cùng lúc để tăng tốc
     const [
       statsRows,

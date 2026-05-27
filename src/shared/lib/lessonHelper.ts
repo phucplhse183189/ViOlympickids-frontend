@@ -23,8 +23,6 @@ export function getMath2LessonPlayRoute(lesson: { gameType: string | null }): st
       return "/student/game/math2-b7";
     case "pipe-balance-game":
       return "/student/game/pipe-balance";
-    case "matific-canvas-game":
-      return "/student/game/matific-canvas";
     case "number-sequence-chart":
       return "/student/theory/math2-b2";
     case "math2-quiz-3d":

@@ -62,6 +62,10 @@ export function ProfileSelector() {
     return () => document.removeEventListener("mousedown", handler);
   }, [dropdownOpen]);
 
+  if (!profiles.length) {
+    return null;
+  }
+
   if (!activeProfile) return <div className="mx-4 mt-4 mb-2 text-sm text-gray-500">Đang tải...</div>;
 
   return (
