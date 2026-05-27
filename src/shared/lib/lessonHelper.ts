@@ -26,7 +26,7 @@ export function getMath2LessonPlayRoute(lesson: { gameType: string | null }): st
     case "number-sequence-chart":
       return "/student/theory/math2-b2";
     case "math2-quiz-3d":
-      return "/student/game/math2-quiz-3d";
+      return "/student/game/math2-quiz-3d-shapes";
     default:
       return `/student/game/${lesson.gameType}`;
   }

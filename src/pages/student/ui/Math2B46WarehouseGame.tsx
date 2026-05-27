@@ -11,8 +11,6 @@ import {
   Sparkles,
   Heart,
 } from "lucide-react";
-import * as leaderboardService from "@/shared/api/services/leaderboardService";
-import { ACTIVE_CHILD_ID_KEY } from "@/shared/lib/constants";
 
 /* ─── TTS helper ─────────────────────────────────────────────── */
 function speak(text: string, onEnd?: () => void) {
@@ -222,18 +220,6 @@ export default function Math2B46WarehouseGame() {
     if (wrongCount <= 2) return 2;
     return 1;
   }, [finished, wrongCount, lives]);
-
-  // Submit score to leaderboard when finished
-  useEffect(() => {
-    if (finished) {
-      const childId = localStorage.getItem(ACTIVE_CHILD_ID_KEY) || sessionStorage.getItem(ACTIVE_CHILD_ID_KEY);
-      if (childId) {
-        leaderboardService
-          .submitAttempt(childId, "math2-b46", score, total)
-          .catch(console.error);
-      }
-    }
-  }, [finished, score, total]);
 
   // Voice
   const speakMsg = useCallback(

@@ -18,7 +18,6 @@ import {
   NumberSequenceGame,
   Math2QuizPage,
   Math2ResultPage,
-  Math2Quiz3DPage,
   Math2Quiz3DShapesPage,
   Math2B46WarehouseGame,
   Math2B46DetectiveGame,
@@ -75,7 +74,6 @@ export function RouterProvider() {
         <Route path="result/math2-b1" element={<Math2ResultPage />} />
 
         {/* Lesson 46 routes */}
-        <Route path="game/math2-quiz-3d" element={<Math2Quiz3DPage />} />
         <Route
           path="game/math2-quiz-3d-shapes"
           element={<Math2Quiz3DShapesPage />}
