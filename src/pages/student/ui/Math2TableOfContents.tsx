@@ -475,14 +475,18 @@ export function Math2TableOfContents() {
     }
   }, [activeChild, progressTick]); // Re-fetch on progress tick
 
-  if (!activeChild) return null;
-
   const [showAd, setShowAd] = useState(false);
   const [pendingRoute, setPendingRoute] = useState<string | null>(null);
 
-
-
   const activeProgress = useMemo(() => {
+    if (!activeChild) {
+      return {
+        completedIds: new Set<string>(),
+        nextLessonId: null,
+        robotLessonId: null,
+        robotAllDone: false,
+      };
+    }
     let next: string | null = null;
     for (const topic of topics) {
       for (const lesson of topic.lessons) {
@@ -527,7 +531,7 @@ export function Math2TableOfContents() {
       robotAllDone:
         next === null && robotLesson !== null && completedIdsSet.has(robotLesson),
     };
-  }, [completedIdsSet, topics, activeChild.plan]);
+  }, [completedIdsSet, topics, activeChild?.plan]);
 
   const completedIds = activeProgress.completedIds;
   const nextLessonId = activeProgress.nextLessonId;
@@ -547,9 +551,9 @@ export function Math2TableOfContents() {
   }, [robotLessonId, topics]);
 
   const childDisplayName = useMemo(() => {
-    const n = activeChild.name?.trim();
+    const n = activeChild?.name?.trim();
     return n && n.length > 0 ? n : "bạn";
-  }, [activeChild.name]);
+  }, [activeChild?.name]);
 
   const robotSpeechText = useMemo(() => {
     if (robotAllDone) {
@@ -690,7 +694,7 @@ export function Math2TableOfContents() {
     }, 240);
 
     return () => window.clearTimeout(arm);
-  }, [activeChild.id, robotNodeIndex]);
+  }, [activeChild?.id, robotNodeIndex]);
 
   // Generate SVG Path String
   let pathD = "";
@@ -734,9 +738,12 @@ export function Math2TableOfContents() {
   const modalCanStart = Boolean(
     modalL?.gameType &&
     modalL &&
+    activeChild &&
     canAccessLesson(modalL, activeChild.plan) &&
     modalPlayRoute,
   );
+
+  if (!activeChild) return null;
 
   return (
     <div className="relative w-full h-[calc(100vh-5rem)] overflow-hidden bg-slate-900 font-sans selection:bg-sky-500/30">
@@ -1058,116 +1065,93 @@ export function Math2TableOfContents() {
         }
       `}</style>
 
-      {/* Modal is completely styled with premium CSS */}
+      {/* Premium Game Modal */}
       {selectedLesson && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.28),rgba(15,23,42,0.92))] backdrop-blur-md transition-opacity animate-in fade-in"
+            className="absolute inset-0 bg-slate-950/60 backdrop-blur-md transition-opacity animate-in fade-in"
             onClick={() => setSelectedLesson(null)}
           />
 
-          <div className="relative w-full max-w-[520px] overflow-hidden rounded-[2.6rem] border border-cyan-200/40 bg-slate-950/85 shadow-[0_24px_90px_rgba(8,47,73,0.6)] animate-in zoom-in-95 duration-300">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,rgba(56,189,248,0.18),transparent_38%),radial-gradient(circle_at_80%_80%,rgba(14,165,233,0.18),transparent_35%)]" />
-            <div className="pointer-events-none absolute -left-10 -top-12 h-36 w-36 rounded-full bg-cyan-300/30 blur-2xl" />
-            <div className="pointer-events-none absolute -right-12 bottom-8 h-32 w-32 rounded-full bg-sky-400/20 blur-2xl" />
-
+          <div className="relative w-full max-w-[460px] overflow-hidden rounded-[2.5rem] border-[3px] border-white/20 bg-slate-900 shadow-[0_30px_100px_rgba(0,0,0,0.6)] animate-in zoom-in-95 duration-300">
             {/* Modal Header */}
             <div
-              className={`relative flex flex-col items-center overflow-hidden px-6 pb-10 pt-9 text-center text-white ${selectedLesson.topic.color || "from-cyan-500 via-sky-500 to-blue-500"} bg-gradient-to-br`}
+              className={`relative flex flex-col items-center px-6 pb-14 pt-8 text-center text-white ${selectedLesson.topic.color || "from-sky-400 to-blue-600"} bg-gradient-to-br`}
             >
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.25),transparent_40%),radial-gradient(circle_at_85%_15%,rgba(255,255,255,0.18),transparent_35%)]" />
-
-              <div className="relative z-10 mb-4 inline-flex items-center gap-2 rounded-full border border-white/50 bg-white/20 px-3 py-1 text-[11px] font-black uppercase tracking-wide shadow-md">
-                <span className="text-xs">🤖</span>
-                Chế độ Robot
-              </div>
-
+              {/* Glass reflection overlay */}
+              <div className="absolute inset-0 bg-gradient-to-b from-white/30 to-transparent opacity-60"></div>
+              {/* Star sparkles */}
+              <div className="absolute left-10 top-10 h-1 w-1 rounded-full bg-white shadow-[0_0_10px_2px_white] animate-pulse"></div>
+              <div className="absolute right-12 top-24 h-1.5 w-1.5 rounded-full bg-white shadow-[0_0_12px_2px_white] animate-pulse delay-300"></div>
+              
               <button
-                className="absolute right-5 top-5 z-20 rounded-full bg-black/20 p-2.5 text-white/80 backdrop-blur-md transition-all hover:scale-110 hover:bg-black/30 hover:text-white active:scale-90"
+                className="absolute right-4 top-4 z-20 rounded-full bg-black/20 p-2 text-white/90 backdrop-blur-md transition-all hover:scale-110 hover:bg-black/40 active:scale-95"
                 onClick={() => setSelectedLesson(null)}
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="22"
-                  height="22"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M18 6 6 18" />
-                  <path d="m6 6 12 12" />
-                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
               </button>
 
-              <div className="relative z-10 mb-4">
-                <div className="grid h-28 w-28 place-items-center rounded-[1.8rem] border border-cyan-200/60 bg-slate-900/30 shadow-[0_12px_24px_rgba(0,0,0,0.25)] backdrop-blur-md md:h-32 md:w-32">
-                  <img
-                    src="/robot-head.png"
-                    alt="Tí Tách"
-                    className="h-20 w-20 object-contain drop-shadow-[0_8px_8px_rgba(0,0,0,0.25)] motion-safe:animate-[bounce_2.4s_ease-in-out_infinite] md:h-24 md:w-24"
-                    loading="lazy"
-                  />
-                </div>
+              <div className="relative z-10 mb-5 inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/20 px-3.5 py-1 text-[10px] font-black uppercase tracking-widest shadow-sm backdrop-blur-sm">
+                <span>🤖</span> CHẾ ĐỘ ROBOT
               </div>
 
-              <h2 className="z-10 mb-2 text-4xl font-black drop-shadow-md md:text-5xl">
+              {/* Floating Avatar Orb */}
+              <div className="relative z-10 mb-4 flex h-28 w-28 items-center justify-center rounded-full border-[4px] border-white/50 bg-gradient-to-b from-white/20 to-white/5 shadow-[0_0_40px_rgba(255,255,255,0.4)] backdrop-blur-md">
+                <div className="absolute inset-0 rounded-full bg-white/10 animate-[ping_3s_ease-in-out_infinite]"></div>
+                <img
+                  src="/robot-head.png"
+                  alt="Tí Tách"
+                  className="relative z-10 h-20 w-20 object-contain drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)] motion-safe:animate-[roadmap-robot-float_3s_ease-in-out_infinite]"
+                  loading="lazy"
+                />
+              </div>
+
+              <h2 className="z-10 mb-3 text-[2.75rem] font-black tracking-tight drop-shadow-[0_4px_4px_rgba(0,0,0,0.25)]">
                 Bài {selectedLesson.lesson.lessonNumber}
               </h2>
 
-              <div className="z-10 max-w-[90%] rounded-[1.6rem] border border-white/40 bg-slate-900/30 px-5 py-2.5 shadow-lg backdrop-blur-md">
-                <p className="text-lg font-black leading-tight text-white drop-shadow-sm md:text-xl">
+              <div className="z-10 w-full max-w-[90%] rounded-[1.25rem] border border-white/30 bg-black/20 px-5 py-3 shadow-inner backdrop-blur-md">
+                <p className="text-[17px] font-extrabold leading-snug text-white drop-shadow-md">
                   {selectedLesson.lesson.title}
                 </p>
               </div>
-
-              <p className="z-10 mt-3 text-sm font-bold text-cyan-100">
-                Kết nối cùng Tí Tách và bắt đầu nhiệm vụ.
-              </p>
             </div>
 
             {/* Modal Body */}
-            <div className="relative -mt-5 rounded-t-[2.2rem] border-t border-cyan-200/30 bg-slate-900/90 px-7 pb-8 pt-6 shadow-[0_-8px_20px_rgba(0,0,0,0.2)] md:px-9">
-              <div className="mx-auto mb-5 h-1.5 w-16 rounded-full bg-cyan-200/40" />
+            <div className="relative -mt-8 rounded-t-[2rem] bg-slate-900 px-7 pb-8 pt-8 shadow-[0_-15px_30px_rgba(0,0,0,0.25)]">
+              {/* Grab handle decoration */}
+              <div className="absolute left-1/2 top-3 h-1.5 w-12 -translate-x-1/2 rounded-full bg-slate-700/50"></div>
 
-              <div className="mb-5 flex flex-wrap items-center justify-center gap-2">
-                <span className="rounded-full bg-cyan-400/15 px-3 py-1 text-xs font-black text-cyan-200 border border-cyan-300/30">
+              <div className="mb-6 mt-2 flex flex-wrap items-center justify-center gap-2.5">
+                <span className="rounded-xl border border-sky-500/30 bg-sky-500/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-sky-400">
                   Lớp 2
                 </span>
-                <span className="rounded-full bg-sky-400/15 px-3 py-1 text-xs font-black text-sky-200 border border-sky-300/30">
+                <span className="rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-indigo-400">
                   Nhiệm vụ AI
                 </span>
-                <span className="rounded-full bg-indigo-400/15 px-3 py-1 text-xs font-black text-indigo-200 border border-indigo-300/30">
+                <span className="rounded-xl border border-purple-500/30 bg-purple-500/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-purple-400">
                   Vũ trụ Toán
                 </span>
               </div>
 
-              <p className="mx-auto mb-7 max-w-sm text-center text-lg font-semibold leading-relaxed text-slate-200">
+              <p className="mx-auto mb-8 max-w-[320px] text-center text-[15px] font-semibold leading-relaxed text-slate-300">
                 {selectedLesson.lesson.description}
               </p>
 
               <button
-                className={`w-full flex items-center justify-center gap-3 rounded-[1.4rem] py-4 text-[1.6rem] font-black text-white transition-all duration-300
+                className={`group relative w-full overflow-hidden rounded-[1.25rem] py-4 text-[22px] font-black text-white transition-all duration-300
                    ${
                      !modalCanStart
-                       ? "cursor-not-allowed border-2 border-slate-500 bg-slate-600 text-slate-300 shadow-[0_8px_0_#334155]"
-                       : "border border-cyan-300/70 bg-gradient-to-b from-cyan-300 via-sky-400 to-blue-600 shadow-[0_10px_0_#1e40af,0_16px_28px_rgba(14,116,144,0.45)] hover:-translate-y-0.5 hover:shadow-[0_11px_0_#1e40af,0_20px_36px_rgba(14,116,144,0.55)] active:translate-y-[6px] active:shadow-[0_4px_0_#1e40af]"
+                       ? "cursor-not-allowed bg-slate-700 text-slate-400 shadow-[0_6px_0_#334155]"
+                       : "bg-gradient-to-b from-sky-400 to-blue-600 shadow-[0_8px_0_#1e3a8a,0_15px_25px_rgba(37,99,235,0.4)] hover:-translate-y-1 hover:shadow-[0_10px_0_#1e3a8a,0_20px_35px_rgba(37,99,235,0.5)] active:translate-y-[6px] active:shadow-[0_2px_0_#1e3a8a,0_0px_0px_rgba(37,99,235,0.4)]"
                    }
                    `}
                 disabled={!modalCanStart}
                 onClick={() => {
                   const L = selectedLesson.lesson;
                   const route = modalPlayRoute;
-                  if (
-                    !L.gameType ||
-                    !canAccessLesson(L, activeChild.plan) ||
-                    !route
-                  )
-                    return;
-                  const isPremium =
-                    activeChild.plan === "PRO" || activeChild.plan === "VIP";
+                  if (!L.gameType || !canAccessLesson(L, activeChild.plan) || !route) return;
+                  const isPremium = activeChild.plan === "PRO" || activeChild.plan === "VIP";
                   if (L.gameType === "number-sequence-chart" && !isPremium) {
                     setPendingRoute(route);
                     setShowAd(true);
@@ -1176,32 +1160,25 @@ export function Math2TableOfContents() {
                   }
                 }}
               >
-                {!canAccessLesson(selectedLesson.lesson, activeChild.plan) ? (
-                  <>
-                    <Lock fill="currentColor" size={26} /> Mở khóa PRO
-                  </>
-                ) : !selectedLesson.lesson.gameType ? (
-                  <>Sắp ra mắt</>
-                ) : (
-                  <>
-                    <Play fill="currentColor" size={26} /> Vào học ngay
-                  </>
+                {/* Button Glossy Effect */}
+                {modalCanStart && (
+                  <div className="absolute inset-0 h-1/2 w-full bg-gradient-to-b from-white/30 to-transparent opacity-50"></div>
                 )}
+                
+                <div className="relative z-10 flex items-center justify-center gap-2.5 drop-shadow-md">
+                  {!canAccessLesson(selectedLesson.lesson, activeChild.plan) ? (
+                    <>
+                      <Lock fill="currentColor" size={26} /> MỞ KHÓA PRO
+                    </>
+                  ) : !selectedLesson.lesson.gameType ? (
+                    <>SẮP RA MẮT</>
+                  ) : (
+                    <>
+                      <Play fill="currentColor" size={26} /> VÀO HỌC NGAY
+                    </>
+                  )}
+                </div>
               </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  navigate("/student/game/number-sequence-canvas-preview")
-                }
-                className="mt-3 w-full flex items-center justify-center gap-2 rounded-2xl border border-cyan-300/50 bg-slate-800/60 px-4 py-3 text-sm font-extrabold text-cyan-100 transition-all hover:-translate-y-0.5 hover:bg-slate-700/70 active:translate-y-0"
-              >
-                <Compass size={18} /> Test Canvas Preview
-              </button>
-
-              <p className="mt-3 text-center text-xs font-semibold text-cyan-100/70">
-                Chạm nút để khởi động robot và vào bài học.
-              </p>
             </div>
           </div>
         </div>

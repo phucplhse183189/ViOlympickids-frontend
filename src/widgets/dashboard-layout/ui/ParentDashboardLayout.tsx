@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { apiGet } from "@/shared/api/client";
 import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -118,6 +119,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
 function AvatarButton() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   
   const displayName = user?.nickname || "Phụ Huynh";
   const initials = displayName
@@ -127,17 +129,39 @@ function AvatarButton() {
     .substring(0, 2)
     .toUpperCase();
 
+  // Load real avatar from API
+  useEffect(() => {
+    const parentId = sessionStorage.getItem("vio_parent_id");
+    if (!parentId) return;
+
+    apiGet<{ avatarId?: string | null }>(`/parent/profile?id=${parentId}`)
+      .then((profile) => {
+        if (profile.avatarId) {
+          setAvatarUrl(profile.avatarId);
+        }
+      })
+      .catch(() => {/* silent — fallback to initials */});
+  }, []);
+
   return (
     <button
       onClick={() => navigate("/dashboard/profile")}
       className="flex items-center gap-2.5 px-2 py-1.5 rounded-xl hover:bg-gray-50 transition"
     >
-      <div
-        className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0"
-        style={{ backgroundColor: "var(--brand-primary)" }}
-      >
-        {initials}
-      </div>
+      {avatarUrl ? (
+        <img
+          src={avatarUrl}
+          alt={displayName}
+          className="w-8 h-8 rounded-full object-cover shrink-0 border-2 border-white shadow-sm"
+        />
+      ) : (
+        <div
+          className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0"
+          style={{ backgroundColor: "var(--brand-primary)" }}
+        >
+          {initials}
+        </div>
+      )}
       <div className="hidden sm:block text-left">
         <p className="text-xs font-bold text-gray-700 leading-tight">
           {displayName}
