@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Phone,
@@ -9,9 +9,8 @@ import {
   ArrowLeft,
   Check,
   Sparkles,
-  ChevronDown,
   User,
-  Mail,
+  ShieldCheck,
 } from "lucide-react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "@/shared/lib/auth";
@@ -34,7 +33,7 @@ const AVATAR_OPTIONS = [
   { emoji: "🐧", bg: "#0ea5e9", label: "Chim cánh cụt" },
 ];
 
-const GRADE_OPTIONS = ["Lớp 1", "Lớp 2", "Lớp 3", "Lớp 4", "Lớp 5"];
+
 
 const SURVEY_OPTIONS = [
   { id: "focus", label: "Bé hay mất tập trung khi học", emoji: "😵‍💫" },
@@ -51,7 +50,6 @@ export function RegisterPage() {
 
   // Step 1 state
   const [parentName, setParentName] = useState("");
-  const [parentEmail, setParentEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -64,19 +62,31 @@ export function RegisterPage() {
 
   // Step 2 state
   const [childName, setChildName] = useState("");
-  const [grade, setGrade] = useState("Lớp 2");
-  const [showGradeDropdown, setShowGradeDropdown] = useState(false);
   const [selectedAvatar, setSelectedAvatar] = useState(0);
+  const grade = "Lớp 2";
 
   // Step 3 state
   const [selectedSurvey, setSelectedSurvey] = useState<string[]>([]);
+
+  // ── Password strength ────────────────────────────
+  const passwordStrength = useMemo(() => {
+    if (!password) return { level: 0, label: "", color: "" };
+    let score = 0;
+    if (password.length >= 6) score++;
+    if (password.length >= 8) score++;
+    if (/[A-Z]/.test(password)) score++;
+    if (/[0-9]/.test(password)) score++;
+    if (/[^A-Za-z0-9]/.test(password)) score++;
+    if (score <= 1) return { level: 1, label: "Yếu", color: "#ef4444" };
+    if (score <= 2) return { level: 2, label: "Trung bình", color: "#f97316" };
+    if (score <= 3) return { level: 3, label: "Khá", color: "#eab308" };
+    return { level: 4, label: "Mạnh", color: "#22c55e" };
+  }, [password]);
 
   // ── Step 1 validation ───────────────────────────
   function validateStep1(): boolean {
     const errs: Record<string, string> = {};
     if (!parentName.trim()) errs.parentName = "Vui lòng nhập họ và tên";
-    if (parentEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parentEmail.trim()))
-      errs.parentEmail = "Email không đúng định dạng";
     if (!phone.trim()) errs.phone = "Vui lòng nhập số điện thoại";
     else if (!/^(0[3|5|7|8|9])[0-9]{8}$/.test(phone.trim()))
       errs.phone = "Số điện thoại không đúng định dạng";
@@ -100,7 +110,6 @@ export function RegisterPage() {
         phone: phone.trim(),
         password,
         name: parentName.trim(),
-        email: parentEmail.trim() || undefined,
       })
       .then((user) => {
         setRegisteredUser(user);
@@ -164,7 +173,7 @@ export function RegisterPage() {
         login({
           nickname: registeredUser.name || parentName.trim(),
           phone: registeredUser.phone,
-          email: registeredUser.email || parentEmail.trim(),
+          email: registeredUser.email || "",
           avatarId: registeredUser.avatarInitials || "fox",
         });
 
@@ -242,9 +251,34 @@ export function RegisterPage() {
         {step === 1 && (
           <div className="bg-white/90 backdrop-blur-md rounded-[2rem] shadow-2xl border-2 border-white/80 overflow-hidden max-w-lg mx-auto">
             <div className="p-8 md:p-10">
-              <h2 className="text-2xl font-extrabold text-gray-800 mb-6 text-center">
+              {/* Step progress indicator */}
+              <div className="flex items-center justify-center gap-2 mb-6">
+                {[1, 2, 3].map((s) => (
+                  <div key={s} className="flex items-center gap-2">
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
+                        s === 1
+                          ? "bg-gradient-to-br from-orange-400 to-orange-500 text-white shadow-md shadow-orange-200"
+                          : "bg-gray-100 text-gray-400"
+                      }`}
+                    >
+                      {s}
+                    </div>
+                    {s < 3 && (
+                      <div className={`w-8 h-0.5 rounded-full transition-all duration-300 ${
+                        s < 1 ? "bg-orange-300" : "bg-gray-200"
+                      }`} />
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <h2 className="text-2xl font-extrabold text-gray-800 mb-1 text-center">
                 Tạo tài khoản phụ huynh
               </h2>
+              <p className="text-sm text-gray-400 text-center mb-6">
+                Chỉ mất 30 giây để bắt đầu hành trình cùng con ✨
+              </p>
 
               {/* Input fields */}
               <div className="space-y-3">
@@ -277,34 +311,6 @@ export function RegisterPage() {
                   )}
                 </div>
 
-                {/* Parent Email */}
-                <div>
-                  <div className="relative">
-                    <Mail
-                      size={16}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                    />
-                    <input
-                      type="email"
-                      value={parentEmail}
-                      onChange={(e) => {
-                        setParentEmail(e.target.value);
-                        setStep1Errors((p) => ({ ...p, parentEmail: "" }));
-                      }}
-                      placeholder="Email phụ huynh (không bắt buộc)"
-                      className={`w-full pl-11 pr-4 py-3.5 rounded-2xl border-2 text-sm font-medium outline-none transition-all ${
-                        step1Errors.parentEmail
-                          ? "border-red-300 bg-red-50 focus:border-red-400"
-                          : "border-gray-200 bg-gray-50 focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
-                      }`}
-                    />
-                  </div>
-                  {step1Errors.parentEmail && (
-                    <p className="mt-1.5 ml-1 text-xs text-red-500 font-medium">
-                      ⚠️ {step1Errors.parentEmail}
-                    </p>
-                  )}
-                </div>
 
                 {/* Phone */}
                 <div>
@@ -369,6 +375,34 @@ export function RegisterPage() {
                     <p className="mt-1.5 ml-1 text-xs text-red-500 font-medium">
                       ⚠️ {step1Errors.password}
                     </p>
+                  )}
+                  {/* Password strength bar */}
+                  {password && (
+                    <div className="mt-2 px-1">
+                      <div className="flex gap-1.5 mb-1">
+                        {[1, 2, 3, 4].map((i) => (
+                          <div
+                            key={i}
+                            className="h-1 flex-1 rounded-full transition-all duration-300"
+                            style={{
+                              backgroundColor:
+                                i <= passwordStrength.level
+                                  ? passwordStrength.color
+                                  : "#e5e7eb",
+                            }}
+                          />
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <ShieldCheck size={12} style={{ color: passwordStrength.color }} />
+                        <span
+                          className="text-[11px] font-semibold transition-colors"
+                          style={{ color: passwordStrength.color }}
+                        >
+                          {passwordStrength.label}
+                        </span>
+                      </div>
+                    </div>
                   )}
                 </div>
 
@@ -520,6 +554,30 @@ export function RegisterPage() {
               <ArrowLeft size={16} /> Quay lại
             </button>
 
+            {/* Step progress indicator */}
+            <div className="flex items-center justify-center gap-2 mb-6">
+              {[1, 2, 3].map((s) => (
+                <div key={s} className="flex items-center gap-2">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
+                      s < 2
+                        ? "bg-green-500 text-white shadow-md shadow-green-200"
+                        : s === 2
+                        ? "bg-gradient-to-br from-orange-400 to-orange-500 text-white shadow-md shadow-orange-200"
+                        : "bg-gray-100 text-gray-400"
+                    }`}
+                  >
+                    {s < 2 ? <Check size={14} strokeWidth={3} /> : s}
+                  </div>
+                  {s < 3 && (
+                    <div className={`w-8 h-0.5 rounded-full transition-all duration-300 ${
+                      s < 2 ? "bg-green-300" : "bg-gray-200"
+                    }`} />
+                  )}
+                </div>
+              ))}
+            </div>
+
             <div className="text-center mb-8">
               <div className="w-16 h-16 rounded-2xl bg-orange-100 flex items-center justify-center text-3xl mx-auto mb-4">
                 🎉
@@ -571,51 +629,6 @@ export function RegisterPage() {
               />
             </div>
 
-            {/* Grade selector */}
-            <div className="mb-5">
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                Khối lớp 📚
-              </label>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShowGradeDropdown(!showGradeDropdown)}
-                  className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl border-2 border-gray-200 bg-gray-50 text-sm font-semibold text-gray-800 hover:border-orange-300 transition"
-                >
-                  <span>{grade}</span>
-                  <ChevronDown
-                    size={16}
-                    className={`text-gray-400 transition-transform ${showGradeDropdown ? "rotate-180" : ""}`}
-                  />
-                </button>
-                {showGradeDropdown && (
-                  <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
-                    {GRADE_OPTIONS.map((g) => (
-                      <button
-                        key={g}
-                        type="button"
-                        onClick={() => {
-                          setGrade(g);
-                          setShowGradeDropdown(false);
-                        }}
-                        className={`w-full text-left px-4 py-3 text-sm font-medium hover:bg-orange-50 transition ${
-                          g === grade
-                            ? "bg-orange-50 text-orange-600 font-bold"
-                            : "text-gray-700"
-                        }`}
-                      >
-                        {g}
-                        {g === "Lớp 2" && (
-                          <span className="ml-2 text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full font-bold">
-                            Đề xuất
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
 
             {/* Avatar picker */}
             <div className="mb-7">
@@ -688,6 +701,26 @@ export function RegisterPage() {
             >
               <ArrowLeft size={16} /> Quay lại
             </button>
+
+            {/* Step progress indicator */}
+            <div className="flex items-center justify-center gap-2 mb-6">
+              {[1, 2, 3].map((s) => (
+                <div key={s} className="flex items-center gap-2">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
+                      s < 3
+                        ? "bg-green-500 text-white shadow-md shadow-green-200"
+                        : "bg-gradient-to-br from-orange-400 to-orange-500 text-white shadow-md shadow-orange-200"
+                    }`}
+                  >
+                    {s < 3 ? <Check size={14} strokeWidth={3} /> : s}
+                  </div>
+                  {s < 3 && (
+                    <div className="w-8 h-0.5 rounded-full bg-green-300 transition-all duration-300" />
+                  )}
+                </div>
+              ))}
+            </div>
 
             <div className="text-center mb-8">
               <div className="w-16 h-16 rounded-2xl bg-blue-100 flex items-center justify-center text-3xl mx-auto mb-4">
