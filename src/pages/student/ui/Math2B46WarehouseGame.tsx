@@ -11,7 +11,21 @@ import {
   Sparkles,
   Heart,
 } from "lucide-react";
-import { useGameSound } from "@/shared/lib/useGameSound";
+
+/* ─── TTS helper ─────────────────────────────────────────────── */
+function speak(text: string, onEnd?: () => void) {
+  if (!("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "vi-VN";
+  u.rate = 0.95;
+  u.pitch = 1.12;
+  const voices = window.speechSynthesis.getVoices();
+  const vi = voices.find((v) => v.lang.startsWith("vi"));
+  if (vi) u.voice = vi;
+  if (onEnd) u.onend = onEnd;
+  window.speechSynthesis.speak(u);
+}
 
 /* ─── Types & data ───────────────────────────────────────────── */
 type ShapeType = "sphere" | "cylinder";
@@ -25,55 +39,13 @@ type Item = {
 };
 
 const GAME_ITEMS: Item[] = [
-  {
-    id: "football",
-    name: "Quả bóng đá",
-    emoji: "⚽",
-    shape: "sphere",
-    hint: "Tròn vo, lăn được mọi hướng",
-  },
-  {
-    id: "marble",
-    name: "Viên bi",
-    emoji: "🔵",
-    shape: "sphere",
-    hint: "Nhỏ xinh, tròn trịa hoàn hảo",
-  },
-  {
-    id: "globe",
-    name: "Quả địa cầu",
-    emoji: "🌍",
-    shape: "sphere",
-    hint: "Mô hình Trái Đất hình cầu",
-  },
-  {
-    id: "soda",
-    name: "Lon nước ngọt",
-    emoji: "🥫",
-    shape: "cylinder",
-    hint: "Dạng ống tròn, có nắp 2 đầu",
-  },
-  {
-    id: "toilet-roll",
-    name: "Cuộn giấy",
-    emoji: "🧻",
-    shape: "cylinder",
-    hint: "Hình trụ rỗng ở giữa",
-  },
-  {
-    id: "drum",
-    name: "Cái trống",
-    emoji: "🥁",
-    shape: "cylinder",
-    hint: "Mặt tròn 2 đầu, thân bao quanh",
-  },
-  {
-    id: "battery",
-    name: "Cục pin",
-    emoji: "🔋",
-    shape: "cylinder",
-    hint: "Hình trụ nhỏ, chứa năng lượng",
-  },
+  { id: "football", name: "Quả bóng đá", emoji: "⚽", shape: "sphere", hint: "Tròn vo, lăn được mọi hướng" },
+  { id: "marble", name: "Viên bi", emoji: "🔵", shape: "sphere", hint: "Nhỏ xinh, tròn trịa hoàn hảo" },
+  { id: "globe", name: "Quả địa cầu", emoji: "🌍", shape: "sphere", hint: "Mô hình Trái Đất hình cầu" },
+  { id: "soda", name: "Lon nước ngọt", emoji: "🥫", shape: "cylinder", hint: "Dạng ống tròn, có nắp 2 đầu" },
+  { id: "toilet-roll", name: "Cuộn giấy", emoji: "🧻", shape: "cylinder", hint: "Hình trụ rỗng ở giữa" },
+  { id: "drum", name: "Cái trống", emoji: "🥁", shape: "cylinder", hint: "Mặt tròn 2 đầu, thân bao quanh" },
+  { id: "battery", name: "Cục pin", emoji: "🔋", shape: "cylinder", hint: "Hình trụ nhỏ, chứa năng lượng" },
 ];
 
 /* ─── Progress dots ──────────────────────────────────────────── */
@@ -146,13 +118,11 @@ function Basket({
       style={{
         borderWidth: "3px",
         borderStyle: "solid",
-        borderColor: isActive
-          ? isCylinder
-            ? "#f97316"
-            : "#0ea5e9"
-          : borderColor,
+        borderColor: isActive ? (isCylinder ? "#f97316" : "#0ea5e9") : borderColor,
         background: `linear-gradient(145deg, ${gradFrom}, ${gradTo})`,
-        boxShadow: isActive ? activeGlow : "0 4px 16px rgba(0,0,0,0.04)",
+        boxShadow: isActive
+          ? activeGlow
+          : "0 4px 16px rgba(0,0,0,0.04)",
         transform: isActive ? "scale(1.02)" : "scale(1)",
       }}
     >
@@ -196,9 +166,7 @@ function Basket({
                 className="flex flex-col items-center gap-0.5 p-2 rounded-xl bg-white/70 shadow-sm animate-[popIn_0.3s_ease-out]"
               >
                 <span className="text-2xl">{item.emoji}</span>
-                <span className="text-[9px] font-bold text-slate-500">
-                  {item.name}
-                </span>
+                <span className="text-[9px] font-bold text-slate-500">{item.name}</span>
               </div>
             ))}
           </div>
@@ -220,7 +188,6 @@ function Basket({
    ═══════════════════════════════════════════════════════════════ */
 export default function Math2B46WarehouseGame() {
   const navigate = useNavigate();
-  const sound = useGameSound();
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
 
@@ -259,9 +226,9 @@ export default function Math2B46WarehouseGame() {
     (text: string) => {
       if (!voiceEnabled) return;
       setIsSpeaking(true);
-      sound.speak(text, () => setIsSpeaking(false));
+      speak(text, () => setIsSpeaking(false));
     },
-    [voiceEnabled, sound],
+    [voiceEnabled],
   );
 
   const prevMsgRef = useRef(message);
@@ -273,6 +240,7 @@ export default function Math2B46WarehouseGame() {
   }, [message, speakMsg]);
 
   useEffect(() => {
+    window.speechSynthesis?.getVoices();
     const timer = setTimeout(
       () => speakMsg("Nhà Kho Của Tí Tách. Kéo đồ vật vào đúng rổ nhé!"),
       500,
@@ -280,6 +248,23 @@ export default function Math2B46WarehouseGame() {
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const playTone = (ok: boolean) => {
+    try {
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = ok ? "triangle" : "square";
+      osc.frequency.value = ok ? 880 : 260;
+      gain.gain.value = 0.08;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + (ok ? 0.12 : 0.18));
+    } catch {
+      /* ignore */
+    }
+  };
 
   const handleDropItem = (target: ShapeType) => {
     if (!currentItem) return;
@@ -297,15 +282,14 @@ export default function Math2B46WarehouseGame() {
       });
 
       // Add to basket
-      if (target === "cylinder")
-        setCylinderItems((prev) => [...prev, currentItem]);
+      if (target === "cylinder") setCylinderItems((prev) => [...prev, currentItem]);
       else setSphereItems((prev) => [...prev, currentItem]);
 
       const comboText = newCombo >= 3 ? ` Combo ${newCombo}! 🔥` : "";
       setMessage(
         `✅ Đúng rồi! ${currentItem.name} thuộc ${target === "sphere" ? "khối cầu" : "khối trụ"}.${comboText}`,
       );
-      sound.correct();
+      playTone(true);
       window.setTimeout(() => {
         setFlashCorrect(false);
         setCurrentIdx((i) => i + 1);
@@ -319,10 +303,8 @@ export default function Math2B46WarehouseGame() {
         next[currentIdx] = "wrong";
         return next;
       });
-      setMessage(
-        `❌ Sai rồi! ${currentItem.name} ${currentItem.hint.toLowerCase()}. Thử lại nhé!`,
-      );
-      sound.wrong();
+      setMessage(`❌ Sai rồi! ${currentItem.name} ${currentItem.hint.toLowerCase()}. Thử lại nhé!`);
+      playTone(false);
 
       if (target === "sphere") {
         setShakeSphere(true);
@@ -352,7 +334,7 @@ export default function Math2B46WarehouseGame() {
 
   const toggleVoice = () => {
     if (voiceEnabled) {
-      sound.stopVoice();
+      window.speechSynthesis?.cancel();
       setIsSpeaking(false);
     }
     setVoiceEnabled(!voiceEnabled);
@@ -367,27 +349,10 @@ export default function Math2B46WarehouseGame() {
       }}
     >
       {/* Decorative */}
-      <div className="absolute top-[5%] left-[3%] text-3xl opacity-15 animate-float-slow select-none pointer-events-none">
-        📦
-      </div>
-      <div
-        className="absolute top-[15%] right-[5%] text-2xl opacity-15 animate-float-slow select-none pointer-events-none"
-        style={{ animationDelay: "1s" }}
-      >
-        🏭
-      </div>
-      <div
-        className="absolute bottom-[10%] left-[8%] text-2xl opacity-10 animate-float-slow select-none pointer-events-none"
-        style={{ animationDelay: "2s" }}
-      >
-        ⭐
-      </div>
-      <div
-        className="absolute bottom-[20%] right-[3%] text-3xl opacity-10 animate-float-slow select-none pointer-events-none"
-        style={{ animationDelay: "0.5s" }}
-      >
-        🎮
-      </div>
+      <div className="absolute top-[5%] left-[3%] text-3xl opacity-15 animate-float-slow select-none pointer-events-none">📦</div>
+      <div className="absolute top-[15%] right-[5%] text-2xl opacity-15 animate-float-slow select-none pointer-events-none" style={{ animationDelay: "1s" }}>🏭</div>
+      <div className="absolute bottom-[10%] left-[8%] text-2xl opacity-10 animate-float-slow select-none pointer-events-none" style={{ animationDelay: "2s" }}>⭐</div>
+      <div className="absolute bottom-[20%] right-[3%] text-3xl opacity-10 animate-float-slow select-none pointer-events-none" style={{ animationDelay: "0.5s" }}>🎮</div>
 
       <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 py-4 sm:py-5">
         {/* ── Top bar ──────────────────────────────────────────── */}
@@ -466,8 +431,7 @@ export default function Math2B46WarehouseGame() {
         <div
           className="rounded-2xl px-4 py-3 text-center mb-4 transition-all duration-300 relative overflow-hidden"
           style={{
-            background:
-              "linear-gradient(135deg, rgba(255,255,255,0.92), rgba(254,243,199,0.85))",
+            background: "linear-gradient(135deg, rgba(255,255,255,0.92), rgba(254,243,199,0.85))",
             border: "2px solid rgba(251,146,60,0.2)",
             boxShadow: "0 4px 20px rgba(251,146,60,0.08)",
           }}
@@ -487,9 +451,7 @@ export default function Math2B46WarehouseGame() {
               ))}
             </div>
           )}
-          <p className="text-sm sm:text-base font-bold text-amber-800">
-            {message}
-          </p>
+          <p className="text-sm sm:text-base font-bold text-amber-800">{message}</p>
         </div>
 
         {/* ── Game area ────────────────────────────────────────── */}
@@ -559,10 +521,9 @@ export default function Math2B46WarehouseGame() {
                   ? "linear-gradient(145deg, #fff1f2, #ffe4e6)"
                   : "linear-gradient(145deg, #ecfdf5, #d1fae5)",
               border: `3px solid ${lives <= 0 ? "#fecdd3" : "#6ee7b7"}`,
-              boxShadow:
-                lives <= 0
-                  ? "0 8px 30px rgba(239,68,68,0.12)"
-                  : "0 8px 30px rgba(52,211,153,0.15)",
+              boxShadow: lives <= 0
+                ? "0 8px 30px rgba(239,68,68,0.12)"
+                : "0 8px 30px rgba(52,211,153,0.15)",
             }}
           >
             {/* Confetti-like particles for win */}
@@ -602,8 +563,7 @@ export default function Math2B46WarehouseGame() {
 
               <p className="text-base sm:text-lg font-bold text-slate-600 mb-4">
                 Bạn phân loại đúng{" "}
-                <span className="text-emerald-600 font-black">{score}</span>/
-                {total} đồ vật
+                <span className="text-emerald-600 font-black">{score}</span>/{total} đồ vật
                 {wrongCount > 0 && (
                   <span className="text-red-500"> • {wrongCount} lần sai</span>
                 )}
@@ -616,9 +576,7 @@ export default function Math2B46WarehouseGame() {
                     <div
                       key={i}
                       className={`transition-all duration-500 ${
-                        i <= stars
-                          ? "scale-110"
-                          : "scale-90 opacity-30 grayscale"
+                        i <= stars ? "scale-110" : "scale-90 opacity-30 grayscale"
                       }`}
                       style={{
                         animationDelay: `${i * 0.2}s`,
@@ -653,9 +611,7 @@ export default function Math2B46WarehouseGame() {
                 </button>
                 {lives > 0 && (
                   <button
-                    onClick={() =>
-                      navigate("/student/game/math2-b46-detective")
-                    }
+                    onClick={() => navigate("/student/game/math2-b46-detective")}
                     className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl font-extrabold text-sm transition-all active:scale-95 shadow-lg hover:shadow-xl"
                     style={{
                       background: "linear-gradient(135deg, #8b5cf6, #7c3aed)",
