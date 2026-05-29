@@ -266,3 +266,28 @@ export const passwordResetTokens = pgTable("password_reset_tokens", {
   used: boolean("used").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+// ── Bảng: payment_orders (PayOS) ─────────────────────────────────────────
+export const paymentStatusEnum = pgEnum("payment_status", [
+  "PENDING",
+  "PAID",
+  "CANCELLED",
+]);
+
+export const paymentOrders = pgTable("payment_orders", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  orderCode: integer("order_code").unique().notNull(),
+  parentId: uuid("parent_id")
+    .references(() => users.id)
+    .notNull(),
+  childId: uuid("child_id")
+    .references(() => children.id)
+    .notNull(),
+  plan: planEnum("plan").notNull(),
+  cycle: varchar("cycle", { length: 20 }).notNull(),
+  amount: integer("amount").notNull(),
+  status: paymentStatusEnum("status").default("PENDING").notNull(),
+  payosTransactionId: varchar("payos_transaction_id", { length: 100 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  paidAt: timestamp("paid_at"),
+});

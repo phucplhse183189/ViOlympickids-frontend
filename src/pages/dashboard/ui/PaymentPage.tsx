@@ -20,7 +20,7 @@ import { useActiveChild } from "@/shared/lib/activeChild";
 import * as transactionService from "@/shared/api/services/transactionService";
 
 // ── types ──────────────────────────────────────────
-type PaymentMethod = "vnpay" | "momo" | "bank" | "card";
+type PaymentMethod = "payos" | "momo" | "bank" | "card";
 type PlanKey = "PRO" | "VIP";
 
 interface PlanOption {
@@ -74,9 +74,9 @@ const PAYMENT_METHODS: {
   bg: string;
 }[] = [
   {
-    id: "vnpay",
-    label: "VNPay",
-    desc: "Thanh toán qua VNPay QR / Ví VNPay",
+    id: "payos",
+    label: "PayOS",
+    desc: "Thanh toán QR / Chuyển khoản / Thẻ qua PayOS",
     icon: <QrCode size={20} />,
     color: "text-blue-600",
     bg: "bg-blue-50",
@@ -124,8 +124,9 @@ export function PaymentPage() {
     requestedPlan === "VIP" ? "VIP" : "PRO",
   );
   const [cycle, setCycle] = useState<"month" | "year">("month");
-  const [method, setMethod] = useState<PaymentMethod>("vnpay");
+  const [method, setMethod] = useState<PaymentMethod>("payos");
   const [promo, setPromo] = useState("");
+  const [paymentError, setPaymentError] = useState("");
   const [promoApplied, setPromoApplied] = useState(false);
   const [agree, setAgree] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -178,31 +179,30 @@ export function PaymentPage() {
   async function handlePay() {
     if (!agree) return;
     setProcessing(true);
+    setPaymentError("");
     
     try {
-      const daysLeft = cycle === "month" ? 30 : 365;
-      await updateChildPlan(activeChild!.id, selectedPlan, daysLeft);
-
-      const methodLabel =
-        PAYMENT_METHODS.find((m) => m.id === method)?.label ?? method;
-        
       const parentId = sessionStorage.getItem("vio_parent_id");
-      if (parentId) {
-        await transactionService.create({
-          parentId,
-          childId: activeChild!.id,
-          date: new Date().toLocaleDateString("vi-VN"),
-          amount: total,
-          method: methodLabel,
-          status: "Thành công",
-        });
+      if (!parentId) {
+        setPaymentError("Phiên đăng nhập đã hết. Vui lòng đăng nhập lại.");
+        setProcessing(false);
+        return;
       }
 
-      setSuccess(true);
+      // Gọi API tạo payment link PayOS
+      const result = await transactionService.createPayment({
+        childId: activeChild!.id,
+        parentId,
+        plan: selectedPlan,
+        cycle,
+        amount: total,
+      });
+
+      // Redirect user đến trang thanh toán PayOS
+      window.location.href = result.checkoutUrl;
     } catch (err) {
       console.error(err);
-      alert("Đã có lỗi xảy ra trong quá trình thanh toán");
-    } finally {
+      setPaymentError("Không thể tạo đơn thanh toán. Vui lòng thử lại.");
       setProcessing(false);
     }
   }
@@ -580,7 +580,7 @@ export function PaymentPage() {
               {processing ? (
                 <>
                   <Loader2 size={18} className="animate-spin" />
-                  Đang xử lý...
+                  Đang tạo đơn thanh toán...
                 </>
               ) : (
                 <>
@@ -589,6 +589,14 @@ export function PaymentPage() {
                 </>
               )}
             </button>
+
+            {/* Error message */}
+            {paymentError && (
+              <div className="mt-3 flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                <AlertCircle size={15} className="text-red-500 shrink-0" />
+                <p className="text-xs text-red-600 font-medium">{paymentError}</p>
+              </div>
+            )}
 
             {/* Security badges */}
             <div className="flex items-center justify-center gap-4 mt-4 pt-4 border-t border-gray-100">

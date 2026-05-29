@@ -9,7 +9,8 @@
     }
   ],
   "rewrites": [
-    { "source": "/api/(auth|children|admin|lessons|parent|transactions|leaderboard)(.*)", "destination": "/api/router" },
+    { "source": "/api/payos-webhook", "destination": "/api/payos-webhook" },
+    { "source": "/api/(auth|children|admin|lessons|parent|transactions|leaderboard|payos)(.*)", "destination": "/api/router" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }

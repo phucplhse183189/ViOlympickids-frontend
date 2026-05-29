@@ -21,6 +21,24 @@ export interface CreateTransactionData {
   status?: "Thành công" | "Thất bại";
 }
 
+/** Kết quả tạo payment PayOS */
+export interface CreatePaymentResult {
+  checkoutUrl: string;
+  orderCode: number;
+}
+
+/** Kết quả check order PayOS */
+export interface CheckOrderResult {
+  status: "PENDING" | "PAID" | "CANCELLED";
+  plan: string;
+  cycle: string;
+  amount: number;
+  childName: string;
+  childEmoji: string;
+  createdAt: string;
+  paidAt: string | null;
+}
+
 /**
  * Lấy lịch sử giao dịch của phụ huynh
  */
@@ -34,3 +52,24 @@ export async function getAll(parentId: string): Promise<Transaction[]> {
 export async function create(tx: CreateTransactionData): Promise<Transaction> {
   return apiPost<Transaction>("/transactions", tx);
 }
+
+/**
+ * Tạo link thanh toán PayOS
+ */
+export async function createPayment(data: {
+  childId: string;
+  parentId: string;
+  plan: "PRO" | "VIP";
+  cycle: "month" | "year";
+  amount: number;
+}): Promise<CreatePaymentResult> {
+  return apiPost<CreatePaymentResult>("/payos/create-payment", data);
+}
+
+/**
+ * Kiểm tra trạng thái đơn hàng PayOS
+ */
+export async function checkOrder(orderCode: number): Promise<CheckOrderResult> {
+  return apiGet<CheckOrderResult>(`/payos/check-order?orderCode=${orderCode}`);
+}
+

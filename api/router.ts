@@ -32,6 +32,9 @@ import leaderboardLessons from "./_internal/leaderboard_lessons.js";
 import leaderboardSubmit from "./_internal/leaderboard_submit.js";
 import leaderboardQuiz from "./_internal/leaderboard_quiz.js";
 
+import payosCreatePayment from "./_internal/payos_create_payment.js";
+import payosCheckOrder from "./_internal/payos_check_order.js";
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
@@ -92,6 +95,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       req.query.lessonId = segs[0];
       return leaderboardQuiz(req, res);
     }
+  }
+
+  if (group === "payos") {
+    if (segs.length === 1 && segs[0] === "create-payment") return payosCreatePayment(req, res);
+    if (segs.length === 1 && segs[0] === "check-order") return payosCheckOrder(req, res);
   }
 
   return res.status(404).json({ error: "Route not found in master router" });
