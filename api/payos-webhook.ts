@@ -32,7 +32,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 1. Xác minh webhook data bằng PayOS SDK (kiểm tra checksum/signature)
     let webhookData;
     try {
-      webhookData = payos.verifyPaymentWebhookData(req.body);
+      webhookData = await payos.webhooks.verify(req.body);
     } catch (verifyErr) {
       console.error("PayOS webhook verification failed:", verifyErr);
       return res.status(400).json({ error: "Invalid webhook signature" });

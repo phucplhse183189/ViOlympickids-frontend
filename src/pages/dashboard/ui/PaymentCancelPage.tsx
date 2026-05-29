@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { AlertTriangle, ArrowLeft, RefreshCw } from "lucide-react";
 

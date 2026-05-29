@@ -9,19 +9,20 @@ export function PaymentResultPage() {
   const orderCodeStr = searchParams.get("orderCode");
   const orderCode = orderCodeStr ? parseInt(orderCodeStr, 10) : null;
 
-  const [loading, setLoading] = useState(true);
-  const [status, setStatus] = useState<"PENDING" | "PAID" | "CANCELLED" | "ERROR">("PENDING");
+  const [loading, setLoading] = useState(!!orderCode);
+  const [status, setStatus] = useState<"PENDING" | "PAID" | "CANCELLED" | "ERROR">(
+    orderCode ? "PENDING" : "ERROR"
+  );
   const [orderInfo, setOrderInfo] = useState<transactionService.CheckOrderResult | null>(null);
-  const [errorMsg, setErrorMsg] = useState("");
-  
+  const [errorMsg, setErrorMsg] = useState(
+    orderCode ? "" : "Không tìm thấy thông tin mã thanh toán."
+  );
+
   const pollCount = useRef(0);
   const maxPolls = 15; // Poll for 30 seconds max (15 * 2s)
 
   useEffect(() => {
     if (!orderCode) {
-      setLoading(false);
-      setStatus("ERROR");
-      setErrorMsg("Không tìm thấy thông tin mã thanh toán.");
       return;
     }
 
@@ -29,7 +30,7 @@ export function PaymentResultPage() {
       try {
         const res = await transactionService.checkOrder(orderCode);
         setOrderInfo(res);
-        
+
         if (res.status === "PAID") {
           setStatus("PAID");
           setLoading(false);
@@ -88,13 +89,13 @@ export function PaymentResultPage() {
 
   if (status === "PAID" && orderInfo) {
     const isVip = orderInfo.plan === "VIP";
-    
+
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 py-8 animate-fade-in">
         <div className="bg-white border border-green-100 rounded-3xl p-8 md:p-10 max-w-lg w-full shadow-2xl relative overflow-hidden">
           {/* Confetti decoration */}
           <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-green-400 via-emerald-500 to-teal-400" />
-          
+
           <div className="flex flex-col items-center text-center">
             <div className="w-20 h-20 rounded-full bg-green-50 flex items-center justify-center mb-6 border-4 border-green-100/50 shadow-inner">
               <CheckCircle2 className="w-10 h-10 text-emerald-600" />
@@ -108,7 +109,7 @@ export function PaymentResultPage() {
             <h2 className="text-3xl font-extrabold text-neutral-800 mb-3 leading-snug">
               Thanh Toán Thành Công!
             </h2>
-            
+
             <p className="text-neutral-600 text-sm mb-6 leading-relaxed max-w-sm">
               Chúc mừng bé <strong className="text-neutral-800 font-bold">{orderInfo.childName}</strong> đã được nâng cấp lên tài khoản <strong className="text-emerald-600">{isVip ? "VIP" : "PRO"}</strong> thành công!
             </p>
@@ -117,7 +118,7 @@ export function PaymentResultPage() {
             <div className="w-full bg-neutral-50 rounded-2xl p-5 border border-neutral-100 text-left space-y-3 mb-8">
               <div className="flex justify-between items-center text-xs">
                 <span className="text-neutral-400 font-medium">Mã đơn hàng</span>
-                <span className="font-bold text-neutral-700">#{orderInfo.orderCode}</span>
+                <span className="font-bold text-neutral-700">#{orderCode}</span>
               </div>
               <div className="flex justify-between items-center text-xs">
                 <span className="text-neutral-400 font-medium">Gói đăng ký</span>
@@ -170,7 +171,7 @@ export function PaymentResultPage() {
           <div className="w-16 h-16 rounded-full bg-amber-50 flex items-center justify-center mx-auto mb-6 border border-amber-100">
             <Loader2 className="w-8 h-8 text-amber-600 animate-spin" />
           </div>
-          
+
           <h2 className="text-2xl font-bold text-neutral-800 mb-3">Đơn Hàng Đang Chờ Xử Lý</h2>
           <p className="text-sm text-neutral-500 mb-6 leading-relaxed">
             Hệ thống ngân hàng chưa phản hồi hoặc giao dịch đang được xử lý. Bạn có thể kiểm tra lại trong phần Lịch sử giao dịch sau vài phút.
@@ -202,7 +203,7 @@ export function PaymentResultPage() {
         <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-6 border border-red-100">
           <AlertCircle className="w-8 h-8 text-red-600" />
         </div>
-        
+
         <h2 className="text-2xl font-bold text-neutral-800 mb-3">
           {status === "CANCELLED" ? "Giao Dịch Đã Hủy" : "Thanh Toán Thất Bại"}
         </h2>

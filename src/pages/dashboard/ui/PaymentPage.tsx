@@ -116,7 +116,7 @@ function formatVnd(n: number) {
 export function PaymentPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const { activeChild, updateChildPlan, isLoading, profiles } = useActiveChild();
+  const { activeChild, isLoading, profiles } = useActiveChild();
 
   // which plan was requested via ?plan=PRO|VIP, default PRO
   const requestedPlan = (params.get("plan")?.toUpperCase() ?? "PRO") as PlanKey;
@@ -130,7 +130,6 @@ export function PaymentPage() {
   const [promoApplied, setPromoApplied] = useState(false);
   const [agree, setAgree] = useState(false);
   const [processing, setProcessing] = useState(false);
-  const [success, setSuccess] = useState(false);
 
   if (isLoading) {
     return (
@@ -207,43 +206,6 @@ export function PaymentPage() {
     }
   }
 
-  // ── Success screen ────────────────────────────────
-  if (success) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
-        <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-6 animate-bounce">
-          <CheckCircle2 size={40} className="text-green-500" />
-        </div>
-        <h2 className="text-2xl font-extrabold text-gray-800 mb-2">
-          Thanh toán thành công!
-        </h2>
-        <p className="text-gray-500 mb-1">
-          Gói <strong>{plan.name}</strong> đã được kích hoạt cho{" "}
-          <span className="font-semibold">
-            {activeChild.avatarEmoji} {activeChild.name}
-          </span>
-        </p>
-        <p className="text-sm text-gray-400 mb-8">
-          Mã giao dịch: #VIO{Date.now().toString().slice(-8)}
-        </p>
-        <div className="flex gap-3">
-          <button
-            onClick={() => navigate("/dashboard/subscription")}
-            className="px-6 py-3 rounded-xl bg-white border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition"
-          >
-            Quản lý gói cước
-          </button>
-          <button
-            onClick={() => navigate("/dashboard")}
-            className="px-6 py-3 rounded-xl text-sm font-bold text-white transition"
-            style={{ background: plan.gradient }}
-          >
-            Về trang tổng quan
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6 max-w-5xl">

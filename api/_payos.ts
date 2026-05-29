@@ -1,4 +1,4 @@
-import PayOS from "@payos/node";
+import { PayOS } from "@payos/node";
 
 /**
  * PayOS SDK singleton — sử dụng env vars từ Vercel Dashboard

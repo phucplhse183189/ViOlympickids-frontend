@@ -45,13 +45,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     );
 
     const cycleLabel = cycle === "month" ? "1 thang" : "12 thang";
-    const description = `VIO ${plan} ${cycleLabel} - ${child.name}`;
+    
+    // PayOS giới hạn 25 ký tự và không nên chứa tiếng Việt có dấu
+    // "VIO PRO 12 thang" = 16 ký tự. Rất an toàn.
+    const description = `VIO ${plan} ${cycleLabel}`;
 
     // Gọi PayOS tạo payment link
-    const paymentLink = await payos.createPaymentLink({
+    const paymentLink = await payos.paymentRequests.create({
       orderCode,
       amount,
-      description: description.slice(0, 25), // PayOS giới hạn 25 ký tự description
+      description,
       returnUrl: `https://violympickids.vercel.app/dashboard/payment-result?orderCode=${orderCode}`,
       cancelUrl: `https://violympickids.vercel.app/dashboard/payment-cancel?orderCode=${orderCode}`,
       items: [
