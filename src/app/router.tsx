@@ -12,6 +12,8 @@ import {
   SubscriptionPage,
   PaymentPage,
   ProfilePage,
+  PaymentResultPage,
+  PaymentCancelPage,
 } from "@/pages/dashboard";
 import {
   Math2TableOfContents,
@@ -60,6 +62,8 @@ export function RouterProvider() {
         <Route path="subscription" element={<SubscriptionPage />} />
         <Route path="payment" element={<PaymentPage />} />
         <Route path="profile" element={<ProfilePage />} />
+        <Route path="payment-result" element={<PaymentResultPage />} />
+        <Route path="payment-cancel" element={<PaymentCancelPage />} />
       </Route>
 
       {/* Student Portal */}
