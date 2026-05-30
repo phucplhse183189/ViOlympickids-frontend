@@ -19,7 +19,30 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
         completed_at timestamp NOT NULL DEFAULT now()
       );
     `);
-    return res.status(200).json({ success: true, message: "Đã tạo bảng quiz_attempts thành công!" });
+
+    // Khởi tạo bảng payment_orders của PayOS nếu chưa có
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS payment_orders (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        order_code bigint UNIQUE NOT NULL,
+        parent_id uuid NOT NULL REFERENCES users(id),
+        child_id uuid NOT NULL REFERENCES children(id),
+        plan varchar(20) NOT NULL,
+        cycle varchar(20) NOT NULL,
+        amount integer NOT NULL,
+        status varchar(20) DEFAULT 'PENDING' NOT NULL,
+        payos_transaction_id varchar(100),
+        created_at timestamp NOT NULL DEFAULT now(),
+        paid_at timestamp
+      );
+    `);
+
+    // Đảm bảo kiểu dữ liệu cột order_code là bigint để không bị tràn số (integer out of range)
+    await db.execute(sql`
+      ALTER TABLE payment_orders ALTER COLUMN order_code TYPE bigint;
+    `);
+
+    return res.status(200).json({ success: true, message: "Đã khởi tạo database và cập nhật bigint cho order_code thành công!" });
   } catch (err: any) {
     console.error("Init DB error:", err);
     return res.status(500).json({ error: err.message || "Lỗi tạo bảng" });

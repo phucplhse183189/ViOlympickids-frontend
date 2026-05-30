@@ -4,6 +4,7 @@ import {
   varchar,
   text,
   integer,
+  bigint,
   boolean,
   timestamp,
   date,
@@ -276,7 +277,7 @@ export const paymentStatusEnum = pgEnum("payment_status", [
 
 export const paymentOrders = pgTable("payment_orders", {
   id: uuid("id").defaultRandom().primaryKey(),
-  orderCode: integer("order_code").unique().notNull(),
+  orderCode: bigint("order_code", { mode: "number" }).unique().notNull(),
   parentId: uuid("parent_id")
     .references(() => users.id)
     .notNull(),
