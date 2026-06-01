@@ -124,17 +124,48 @@ function StatCard({
   );
 }
 
-/* ── Daily goal progress ────────────────────────────── */
-const DAILY_GOALS = [
-  { label: "Hoàn thành 1 bài học", done: true },
-  { label: "Học ít nhất 20 phút", done: true },
-  { label: "Đạt điểm ≥ 80", done: false },
-];
+/* ── Daily goal progress (tính từ dữ liệu thật) ──── */
+function computeDailyGoals(dashboardData: any) {
+  const today = new Date().toLocaleDateString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+  const activities = dashboardData?.activities || [];
+  const stats = dashboardData?.stats;
+  const studyDays = dashboardData?.studyDays || [];
 
-function DailyGoalCard() {
+  // 1) Hoàn thành 1 bài hoc hôm nay
+  const completedToday = activities.some(
+    (a: any) => a.status === "Hoàn thành" && a.datetime?.includes(today),
+  );
+
+  // 2) Học ít nhất 20 phút hôm nay
+  const dayNames = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+  const todayDay = dayNames[new Date().getDay()];
+  const todayStudy = studyDays.find((d: any) => d.day === todayDay);
+  const studiedEnough = (todayStudy?.minutes || 0) >= 20;
+
+  // 3) Đạt điểm ≥ 80 hôm nay
+  const highScoreToday = activities.some(
+    (a: any) =>
+      a.datetime?.includes(today) &&
+      a.score &&
+      parseInt(a.score) >= 80,
+  );
+
+  return [
+    { label: "Hoàn thành 1 bài học", done: completedToday },
+    { label: "Học ít nhất 20 phút", done: studiedEnough },
+    { label: "Đạt điểm ≥ 80", done: highScoreToday },
+  ];
+}
+
+function DailyGoalCard({ dashboardData }: { dashboardData: any }) {
   const { ref, visible } = useReveal();
-  const completed = DAILY_GOALS.filter((g) => g.done).length;
-  const pct = Math.round((completed / DAILY_GOALS.length) * 100);
+  const goals = computeDailyGoals(dashboardData);
+  const completed = goals.filter((g) => g.done).length;
+  const pct = Math.round((completed / goals.length) * 100);
 
   return (
     <div
@@ -148,7 +179,7 @@ function DailyGoalCard() {
             Mục tiêu hôm nay
           </p>
           <p className="text-lg font-extrabold text-gray-800 mt-0.5">
-            {completed}/{DAILY_GOALS.length} hoàn thành
+            {completed}/{goals.length} hoàn thành
           </p>
         </div>
         <div className="relative w-14 h-14">
@@ -179,7 +210,7 @@ function DailyGoalCard() {
         </div>
       </div>
       <ul className="space-y-2.5">
-        {DAILY_GOALS.map((g) => (
+        {goals.map((g) => (
           <li key={g.label} className="flex items-center gap-2.5">
             {g.done ? (
               <CheckCircle2 size={16} className="text-green-500 shrink-0" />
@@ -480,7 +511,7 @@ export function OverviewPage() {
 
       {/* Daily goal + Quick actions row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <DailyGoalCard />
+        <DailyGoalCard dashboardData={dashboardData} />
         <QuickActionsCard />
       </div>
 

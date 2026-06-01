@@ -27,6 +27,7 @@ import {
   Math2B1QuizPage,
   MatificCoinGame,
   Math2B2TheoryPage,
+  Math2B1TheoryPage,
   Math2B2GamePage,
   Math2B7Game,
   PipeBalanceGame,
@@ -75,6 +76,7 @@ export function RouterProvider() {
         <Route path="game/pipe-balance" element={<PipeBalanceGame />} />
         <Route path="game/matific-coin" element={<MatificCoinGame />} />
         <Route path="quiz/math2-b1" element={<Math2B1QuizPage />} />
+        <Route path="theory/math2-b1" element={<Math2B1TheoryPage />} />
         <Route path="result/math2-b1" element={<Math2ResultPage />} />
 
         {/* Lesson 46 routes */}

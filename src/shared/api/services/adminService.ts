@@ -49,3 +49,43 @@ export async function updateStudentStatus(
 ): Promise<ChildProfile> {
   return apiPut<ChildProfile>(`/admin/students/${studentId}/status`, { status });
 }
+
+/** Thống kê tài chính thực tế */
+export interface FinanceStats {
+  totalRevenue: number;
+  totalTransactions: number;
+  successTransactions: number;
+  failedTransactions: number;
+  mrr: number;
+  activeSubscriptions: number;
+  monthlyRevenue: Array<{
+    month: string;
+    revenue: number;
+    transactions: number;
+  }>;
+  planBreakdown: Array<{
+    plan: string;
+    revenue: number;
+    count: number;
+  }>;
+  recentTransactions: Array<{
+    id: string;
+    date: string;
+    amount: number;
+    method: string;
+    status: string;
+  }>;
+  paymentOrdersStats: Array<{
+    status: string;
+    count: number;
+    total: number;
+  }>;
+}
+
+/**
+ * Lấy thống kê tài chính thực tế
+ */
+export async function getFinanceStats(): Promise<FinanceStats> {
+  return apiGet<FinanceStats>("/admin/finance-stats");
+}
+

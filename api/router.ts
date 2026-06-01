@@ -6,6 +6,7 @@ import adminStats from "./_internal/admin_stats.js";
 import adminStudentsIdStatus from "./_internal/admin_students_[id]_status.js";
 import adminInitDb from "./_internal/admin_init_db.js";
 import adminSeedLessons from "./_internal/admin_seed_lessons.js";
+import adminFinanceStats from "./_internal/admin_finance_stats.js";
 
 import authLogin from "./_internal/auth_login.js";
 import authRegister from "./_internal/auth_register.js";
@@ -34,6 +35,7 @@ import leaderboardQuiz from "./_internal/leaderboard_quiz.js";
 
 import payosCreatePayment from "./_internal/payos_create_payment.js";
 import payosCheckOrder from "./_internal/payos_check_order.js";
+import chatB1 from "./chat-b1.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -53,6 +55,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (segs.length === 1 && segs[0] === "seed-lessons") return adminSeedLessons(req, res);
     if (segs.length === 1 && segs[0] === "parents") return adminParents(req, res);
     if (segs.length === 1 && segs[0] === "stats") return adminStats(req, res);
+    if (segs.length === 1 && segs[0] === "finance-stats") return adminFinanceStats(req, res);
     if (segs.length === 3 && segs[0] === "parents" && segs[2] === "status") { req.query.id = segs[1]; return adminParentsIdStatus(req, res); }
     if (segs.length === 3 && segs[0] === "students" && segs[2] === "status") { req.query.id = segs[1]; return adminStudentsIdStatus(req, res); }
   }
@@ -100,6 +103,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (group === "payos") {
     if (segs.length === 1 && segs[0] === "create-payment") return payosCreatePayment(req, res);
     if (segs.length === 1 && segs[0] === "check-order") return payosCheckOrder(req, res);
+  }
+
+  if (group === "chat-b1") {
+    return chatB1(req, res);
   }
 
   return res.status(404).json({ error: "Route not found in master router" });

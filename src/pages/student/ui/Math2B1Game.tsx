@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { createPortal } from "react-dom";
 import { 
   ArrowLeft, 
   Star, 
@@ -28,6 +29,318 @@ import * as THREE from "three";
 import { useGameSound } from "@/shared/lib/useGameSound";
 import { ParentGate } from "@/shared/ui/ParentGate";
 import { getRandomItem } from "@/shared/lib/robotGameLogic";
+import {
+  waitForVoices,
+  findBestVietnameseVoice,
+  playGoogleTTSFallback,
+} from "@/shared/lib/useVoiceManager";
+
+// ─── AI Chatbot Voice Constants ─────────────────────────────────────────────
+const ROBOT_VOICE_STORAGE_KEY = "robotVoiceName";
+const FPT_VOICE_OPTIONS = [
+  { id: "banmai", label: "Ban Mai (nữ)" },
+  { id: "lannhi", label: "Lan Nhi (nữ)" },
+  { id: "leminh", label: "Lê Minh (nam)" },
+  { id: "myan", label: "Mỹ An (nữ)" },
+  { id: "thuminh", label: "Thu Minh (nữ)" },
+  { id: "giahuy", label: "Gia Huy (nam)" },
+];
+let currentRobotTtsAudio: HTMLAudioElement | null = null;
+
+function readStoredRobotVoiceName(): string {
+  if (typeof window === "undefined") return "";
+  try {
+    return window.localStorage.getItem(ROBOT_VOICE_STORAGE_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+function pickUnifiedRobotVoice(
+  voices: SpeechSynthesisVoice[],
+  preferredName?: string,
+): SpeechSynthesisVoice | null {
+  if (!voices.length) return null;
+  const preferred = preferredName ? voices.find((v) => v.name === preferredName) : undefined;
+  if (preferred) return preferred;
+  const mapVoice =
+    voices.find((v) => /microsoft an/i.test(v.name)) ||
+    voices.find((v) => /^vi\b/i.test(v.lang) && /(female|woman|girl|nữ|nu)/i.test(v.name)) ||
+    voices.find((v) => /^vi\b/i.test(v.lang)) ||
+    findBestVietnameseVoice();
+  if (mapVoice) return mapVoice;
+  return (
+    voices.find((v) => /microsoft an/i.test(v.name)) ||
+    voices.find((v) => /^vi\b/i.test(v.lang) && /(female|woman|girl|nữ|nu)/i.test(v.name)) ||
+    voices.find((v) => /^vi\b/i.test(v.lang)) ||
+    findBestVietnameseVoice() ||
+    voices[0] ||
+    null
+  );
+}
+
+async function speakWithUnifiedRobotVoice(text: string, voiceName?: string): Promise<void> {
+  if (typeof window === "undefined" || !text) return;
+  const storedVoice = readStoredRobotVoiceName();
+  const pickedVoice = voiceName || storedVoice || "banmai";
+  const fptVoice = FPT_VOICE_OPTIONS.some((v) => v.id === pickedVoice) ? pickedVoice : "banmai";
+
+  try {
+    const ttsRes = await fetch("/api/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, voice: fptVoice, format: "mp3" }),
+    });
+    if (ttsRes.ok) {
+      const ttsData = (await ttsRes.json()) as { audioUrl?: string };
+      if (ttsData?.audioUrl) {
+        window.speechSynthesis.cancel();
+        if (currentRobotTtsAudio) { currentRobotTtsAudio.pause(); currentRobotTtsAudio.currentTime = 0; }
+        const audio = new Audio(ttsData.audioUrl);
+        currentRobotTtsAudio = audio;
+        audio.onended = () => { if (currentRobotTtsAudio === audio) currentRobotTtsAudio = null; };
+        audio.onerror = () => { if (currentRobotTtsAudio === audio) currentRobotTtsAudio = null; };
+        await audio.play();
+        return;
+      }
+    }
+  } catch { /* fallback */ }
+
+  await waitForVoices(3000);
+  if (!("speechSynthesis" in window)) { playGoogleTTSFallback(text); return; }
+  const voices = window.speechSynthesis.getVoices();
+  const finalVoice = pickUnifiedRobotVoice(voices, voiceName || readStoredRobotVoiceName());
+  if (!finalVoice) { playGoogleTTSFallback(text); return; }
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.voice = finalVoice;
+  utterance.lang = finalVoice.lang || "vi-VN";
+  utterance.rate = 1.15;
+  utterance.pitch = 1.6;
+  utterance.volume = 1;
+  try { window.localStorage.setItem(ROBOT_VOICE_STORAGE_KEY, finalVoice.name); } catch { /* ignore */ }
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(utterance);
+}
+
+// ─── AI Chatbot Input Bar ───────────────────────────────────────────────────
+function B1RobotAskBar({
+  value, onChange, onSend, loading, onClose,
+}: Readonly<{
+  value: string;
+  onChange: (value: string) => void;
+  onSend: () => void;
+  loading: boolean;
+  onClose?: () => void;
+}>) {
+  const [listening, setListening] = useState(false);
+  const [selectedVoice, setSelectedVoice] = useState<string>("");
+  const recognitionRef = useRef<any>(null);
+
+  const supportsVoice = typeof window !== "undefined" && ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
+  const resolvedVoiceName = selectedVoice || (typeof window !== "undefined" && (() => { try { return localStorage.getItem(ROBOT_VOICE_STORAGE_KEY) || ""; } catch { return ""; } })()) || "banmai";
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const stored = localStorage.getItem(ROBOT_VOICE_STORAGE_KEY) || "";
+      const validStored = FPT_VOICE_OPTIONS.some((v) => v.id === stored) ? stored : "banmai";
+      setSelectedVoice(validStored);
+      localStorage.setItem(ROBOT_VOICE_STORAGE_KEY, validStored);
+    } catch { setSelectedVoice("banmai"); }
+  }, []);
+
+  useEffect(() => {
+    return () => { recognitionRef.current?.stop(); recognitionRef.current = null; };
+  }, []);
+
+  const handleToggleVoice = () => {
+    if (!supportsVoice || loading) return;
+    if (listening) { recognitionRef.current?.stop(); setListening(false); return; }
+    const SpeechRecognitionCtor = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognitionCtor) return;
+    const recognition = new SpeechRecognitionCtor();
+    recognitionRef.current = recognition;
+    recognition.lang = "vi-VN";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onresult = (event: any) => {
+      const transcript = event?.results?.[0]?.[0]?.transcript?.trim();
+      if (!transcript) return;
+      onChange(transcript);
+      onSend();
+    };
+    recognition.onerror = () => setListening(false);
+    recognition.onend = () => setListening(false);
+    recognition.start();
+    setListening(true);
+  };
+
+  return (
+    <div className="bg-[#F7F3E8]/95 backdrop-blur rounded-3xl shadow-lg border-2 border-amber-200 px-3 py-2.5 sm:px-4 sm:py-3 flex flex-col gap-2.5 overflow-hidden">
+      <div className="min-w-0 space-y-2">
+        <div className="w-full min-w-0 rounded-2xl bg-white/70 border border-amber-100 px-3 py-2">
+          <textarea
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); onSend(); } }}
+            placeholder="Hãy nhập câu hỏi của bạn để Tí Tách trả lời nhé"
+            rows={3}
+            className="w-full resize-none bg-transparent text-sm sm:text-base font-bold text-slate-600 outline-none placeholder:text-slate-400 leading-relaxed"
+          />
+        </div>
+        <div className="flex items-center justify-end gap-2">
+          <button type="button" onClick={handleToggleVoice}
+            className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center shadow transition active:scale-95 ${listening ? "bg-rose-400 text-white" : "bg-white text-amber-500 border border-amber-200"} ${!supportsVoice || loading ? "opacity-45 cursor-not-allowed" : ""}`}
+            aria-label={listening ? "Đang nghe" : "Nói câu hỏi"} disabled={!supportsVoice || loading}
+          >
+            {listening ? <MicOff size={16} /> : <Mic size={16} />}
+          </button>
+          <button type="button" onClick={onSend}
+            className="shrink-0 px-4 sm:px-5 py-2 rounded-full bg-amber-400 text-white text-sm sm:text-base font-extrabold shadow active:scale-95 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={loading}
+          >Gửi</button>
+          {onClose && (
+            <button type="button" onClick={onClose}
+              className="shrink-0 w-9 h-9 rounded-full bg-white text-gray-500 border border-gray-200 hover:bg-gray-50 transition active:scale-95"
+              aria-label="Đóng khung chat"
+            >✕</button>
+          )}
+        </div>
+      </div>
+      <div className="flex items-center gap-2 min-w-0">
+        <label className="text-xs sm:text-sm font-bold text-slate-500 whitespace-nowrap">Giọng đọc:</label>
+        <div className="relative flex-1 min-w-0">
+          <select value={resolvedVoiceName}
+            onChange={(e) => { const next = e.target.value; setSelectedVoice(next); try { localStorage.setItem(ROBOT_VOICE_STORAGE_KEY, next); } catch { /* ignore */ } }}
+            className="w-full min-w-0 appearance-none bg-white/85 text-xs sm:text-sm font-bold text-slate-600 border border-amber-200 rounded-full pl-3 pr-8 py-1.5 outline-none focus:ring-2 focus:ring-amber-200 truncate"
+          >
+            {FPT_VOICE_OPTIONS.map((voice) => (<option key={voice.id} value={voice.id}>{voice.label}</option>))}
+          </select>
+          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs">▾</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Floating AI Chatbot Component ──────────────────────────────────────────
+type ChatMessage = { role: "user" | "robot"; text: string };
+
+function B1FloatingTitechAssistant({
+  messages, robotChatOpen, onToggle, value, onChange, onSend, loading, onClose,
+}: Readonly<{
+  messages: ChatMessage[];
+  robotChatOpen: boolean;
+  onToggle: () => void;
+  value: string;
+  onChange: (value: string) => void;
+  onSend: () => void;
+  loading: boolean;
+  onClose: () => void;
+}>) {
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+  return (
+    <>
+      <div className="fixed left-3 bottom-3 sm:left-4 sm:bottom-4 z-[60]">
+        <button type="button" onClick={onToggle}
+          className="relative w-[16vw] min-w-[84px] max-w-[132px] focus:outline-none"
+          aria-label="Mở khung chat AI của robot"
+        >
+          <img src="/robot%20(1).png" alt="Robot" className="w-full object-contain drop-shadow animate-pulse" />
+          <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 rounded-full bg-white/92 text-emerald-700 text-[10px] sm:text-[11px] font-black px-2.5 py-0.5 border border-emerald-200 shadow-sm whitespace-nowrap">
+            Hỏi Tí Tách
+          </span>
+        </button>
+      </div>
+
+      {robotChatOpen && typeof document !== "undefined"
+        ? createPortal(
+            <>
+              {/* Mobile overlay */}
+              <div className="fixed inset-0 z-[9998] bg-black/30 backdrop-blur-sm lg:hidden" onClick={onClose} />
+              {/* Desktop sidebar */}
+              <div className="fixed z-[9999] right-0 top-0 h-full w-[340px] max-w-[calc(100vw-1.5rem)] border-l-2 border-cyan-200/70 bg-white/95 backdrop-blur-md shadow-[0_14px_36px_rgba(8,47,73,0.3)] p-3 flex-col gap-3 hidden lg:flex">
+                <div className="flex items-center justify-between px-1">
+                  <div className="flex items-center gap-2">
+                    <img src="/robot%20(1).png" alt="Tí Tách" className="w-9 h-9 object-contain" />
+                    <div>
+                      <p className="text-sm font-black text-cyan-700 leading-tight">Tí Tách AI</p>
+                      <p className="text-[11px] font-bold text-slate-500 leading-tight">Bài 1 - Ôn tập số đến 100</p>
+                    </div>
+                  </div>
+                  <button type="button" onClick={onClose}
+                    className="rounded-full border border-cyan-200 bg-white px-2.5 py-1 text-xs font-black text-cyan-700 hover:bg-cyan-50"
+                  >Đóng</button>
+                </div>
+                <div className="flex-1 overflow-y-auto rounded-2xl border border-cyan-100 bg-cyan-50/40 p-3 space-y-3">
+                  {messages.map((msg, i) => (
+                    <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                      <div className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm font-bold leading-relaxed ${
+                        msg.role === "user"
+                          ? "bg-sky-100 text-sky-800 rounded-br-md"
+                          : "bg-white text-slate-700 border border-cyan-100 rounded-bl-md shadow-sm"
+                      }`}>
+                        <p className="whitespace-pre-line">{msg.text}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {loading && (
+                    <div className="flex justify-start">
+                      <div className="bg-white text-slate-500 border border-cyan-100 rounded-2xl rounded-bl-md px-3.5 py-2.5 text-sm font-bold shadow-sm">
+                        Tí Tách đang suy nghĩ...
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+                <B1RobotAskBar value={value} onChange={onChange} onSend={onSend} loading={loading} onClose={onClose} />
+              </div>
+              {/* Mobile panel */}
+              <div className="fixed z-[9999] inset-x-0 bottom-0 max-h-[85vh] bg-white/95 backdrop-blur-md shadow-[0_-8px_30px_rgba(8,47,73,0.2)] rounded-t-3xl border-t-2 border-cyan-200/70 p-3 flex flex-col gap-3 lg:hidden">
+                <div className="flex items-center justify-between px-1">
+                  <div className="flex items-center gap-2">
+                    <img src="/robot%20(1).png" alt="Tí Tách" className="w-9 h-9 object-contain" />
+                    <div>
+                      <p className="text-sm font-black text-cyan-700 leading-tight">Tí Tách AI</p>
+                      <p className="text-[11px] font-bold text-slate-500 leading-tight">Bài 1 - Ôn tập số đến 100</p>
+                    </div>
+                  </div>
+                  <button type="button" onClick={onClose}
+                    className="rounded-full border border-cyan-200 bg-white px-2.5 py-1 text-xs font-black text-cyan-700 hover:bg-cyan-50"
+                  >Đóng</button>
+                </div>
+                <div className="flex-1 overflow-y-auto rounded-2xl border border-cyan-100 bg-cyan-50/40 p-3 space-y-3 max-h-[40vh]">
+                  {messages.map((msg, i) => (
+                    <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                      <div className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm font-bold leading-relaxed ${
+                        msg.role === "user"
+                          ? "bg-sky-100 text-sky-800 rounded-br-md"
+                          : "bg-white text-slate-700 border border-cyan-100 rounded-bl-md shadow-sm"
+                      }`}>
+                        <p className="whitespace-pre-line">{msg.text}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {loading && (
+                    <div className="flex justify-start">
+                      <div className="bg-white text-slate-500 border border-cyan-100 rounded-2xl rounded-bl-md px-3.5 py-2.5 text-sm font-bold shadow-sm">
+                        Tí Tách đang suy nghĩ...
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+                <B1RobotAskBar value={value} onChange={onChange} onSend={onSend} loading={loading} onClose={onClose} />
+              </div>
+            </>,
+            document.body,
+          )
+        : null}
+    </>
+  );
+}
 
 // Utility to generate random numbers
 function randInt(min: number, max: number) {
@@ -408,6 +721,44 @@ export function Math2B1Game() {
   
   // R2 state
   const [r2Selected, setR2Selected] = useState<number[]>([]);
+
+  // ─── AI Chatbot State ─────────────────────────────────────────────────
+  const [robotChatOpen, setRobotChatOpen] = useState(false);
+  const [robotInput, setRobotInput] = useState("");
+  const [robotLoading, setRobotLoading] = useState(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    { role: "robot", text: "Xin chào! Tí Tách ở đây để giúp bạn ôn tập các số đến 100. Bạn cần giúp gì nào?" },
+  ]);
+
+  const speakRobotAnswer = useCallback((text: string, voiceName?: string) => {
+    speakWithUnifiedRobotVoice(text, voiceName);
+  }, []);
+
+  const sendRobotQuestion = useCallback(async () => {
+    const trimmed = robotInput.trim();
+    if (!trimmed || robotLoading) return;
+    setChatMessages((prev) => [...prev, { role: "user", text: trimmed }]);
+    setRobotInput("");
+    setRobotLoading(true);
+    try {
+      const res = await fetch("/api/chat-b1", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: trimmed }),
+      });
+      if (!res.ok) { const errText = await res.text(); throw new Error(errText || "AI error"); }
+      const resData = await res.json();
+      const answer = resData?.answer || "Robot chưa nghe rõ. Bạn hỏi lại được không?";
+      setChatMessages((prev) => [...prev, { role: "robot", text: answer }]);
+      speakRobotAnswer(answer);
+    } catch {
+      const fallback = "Robot đang bận một chút, bạn thử lại nhé!";
+      setChatMessages((prev) => [...prev, { role: "robot", text: fallback }]);
+      speakRobotAnswer(fallback);
+    } finally {
+      setRobotLoading(false);
+    }
+  }, [robotInput, robotLoading, speakRobotAnswer]);
   const [lastStatus, setLastStatus] = useState<"correct" | "wrong" | null>(null);
 
   // Function to toggle fullscreen
@@ -772,6 +1123,18 @@ export function Math2B1Game() {
           onClose={() => setShowExitGate(false)}
         />
       )}
+
+      {/* ─── Floating AI Chatbot ──────────────────────────────────── */}
+      <B1FloatingTitechAssistant
+        messages={chatMessages}
+        robotChatOpen={robotChatOpen}
+        onToggle={() => setRobotChatOpen((o) => !o)}
+        value={robotInput}
+        onChange={setRobotInput}
+        onSend={() => void sendRobotQuestion()}
+        loading={robotLoading}
+        onClose={() => setRobotChatOpen(false)}
+      />
     </div>
   );
 }

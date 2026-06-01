@@ -382,16 +382,12 @@ export function ProgressPage() {
           >
             <div className="flex items-center justify-between mb-4">
               <p className="text-sm font-bold text-gray-700">
-                Phân bổ thời gian học theo kỹ năng
+                Xu hướng điểm số theo tuần
               </p>
               <div className="flex items-center gap-3 text-xs text-gray-400">
                 <span className="flex items-center gap-1">
                   <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block" />
-                  Số học
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-2.5 h-2.5 rounded-full bg-orange-400 inline-block" />
-                  Hình học
+                  Điểm TB
                 </span>
               </div>
             </div>
@@ -400,19 +396,14 @@ export function ProgressPage() {
                 data={weeklyTrend.length > 0 ? weeklyTrend.map(t => ({
                   week: t.week,
                   soHoc: t.score || 0,
-                  hinhHoc: Math.round((t.score || 0) * 0.8), // Mock hình học ratio
                 })) : [
-                  { week: "T1", soHoc: 0, hinhHoc: 0 },
+                  { week: "T1", soHoc: 0 },
                 ]}
               >
                 <defs>
                   <linearGradient id="gradBlue" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15} />
                     <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="gradOrange" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f97316" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid
@@ -430,7 +421,7 @@ export function ProgressPage() {
                   axisLine={false}
                   tickLine={false}
                   tick={{ fontSize: 12, fill: "#9ca3af" }}
-                  unit=" ph"
+                  domain={[0, 100]}
                 />
                 <Tooltip
                   contentStyle={{
@@ -439,26 +430,17 @@ export function ProgressPage() {
                     boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
                   }}
                   labelStyle={{ fontWeight: "600", color: "#374151" }}
+                  formatter={(value: number) => [`${value} điểm`, "Điểm TB"]}
                 />
                 <Area
                   type="monotone"
                   dataKey="soHoc"
-                  name="Số học"
+                  name="Điểm TB"
                   stroke="#3b82f6"
                   strokeWidth={2}
                   fill="url(#gradBlue)"
                   isAnimationActive={areaCard.visible}
                   animationDuration={900}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="hinhHoc"
-                  name="Hình học"
-                  stroke="#f97316"
-                  strokeWidth={2}
-                  fill="url(#gradOrange)"
-                  isAnimationActive={areaCard.visible}
-                  animationDuration={1100}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -467,17 +449,29 @@ export function ProgressPage() {
         {/* close blur wrapper */}
       </div>{" "}
       {/* close relative wrapper */}
-      {/* Achievements row */}
+      {/* Achievements row (tính từ dữ liệu thật) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { emoji: "🏆", label: "Top 10% học sinh", sub: "Tuần này" },
+          {
+            emoji: "🏆",
+            label: (stats.overallScore || 0) >= 90 ? "Top 10% học sinh" : (stats.overallScore || 0) >= 70 ? "Học sinh giỏi" : "Đang cố gắng",
+            sub: `Điểm TB: ${stats.overallScore || 0}/100`,
+          },
           {
             emoji: "🔥",
-            label: `${stats.streakDays} ngày liên tiếp`,
-            sub: "Kỷ lục cá nhân",
+            label: `${stats.streakDays || 0} ngày liên tiếp`,
+            sub: (stats.streakDays || 0) >= 7 ? "Kỷ lục tuyệt vời!" : "Tiếp tục cố gắng!",
           },
-          { emoji: "⭐", label: "Hoàn hảo 100/100", sub: "26/02/2026" },
-          { emoji: "🎯", label: "Đạt mục tiêu tuần", sub: "3 tuần liên tiếp" },
+          {
+            emoji: "⭐",
+            label: `${stats.completedLessons || 0} bài hoàn thành`,
+            sub: stats.completedLessonsLabel || "Tuần này",
+          },
+          {
+            emoji: "🎯",
+            label: stats.bestSkill || "Đang khám phá",
+            sub: "Kỹ năng nổi bật",
+          },
         ].map(({ emoji, label, sub }) => (
           <div
             key={label}

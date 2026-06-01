@@ -1,21 +1,22 @@
 import { useEffect, useMemo, useState } from "react";
+import * as adminService from "@/shared/api/services/adminService";
 import {
-  ResponsiveContainer,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Legend,
   AreaChart,
   Area,
-  LineChart,
-  Line,
   BarChart,
   Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
   Cell,
+  Legend,
 } from "recharts";
-import { financeWorkbookData } from "@/shared/data/finance/financeWorkbookData";
-import { useInView } from "@/shared/lib/useInView";
+
+/* ── Helpers ────────────────────────────────────────────────────────────── */
 
 const VND = new Intl.NumberFormat("vi-VN", {
   style: "currency",
@@ -23,533 +24,477 @@ const VND = new Intl.NumberFormat("vi-VN", {
   maximumFractionDigits: 0,
 });
 
-const VND_COMPACT = new Intl.NumberFormat("vi-VN", {
-  notation: "compact",
-  maximumFractionDigits: 1,
-});
-
-const INTEGER = new Intl.NumberFormat("vi-VN", {
-  maximumFractionDigits: 0,
-});
-
-function compactCurrency(value: number): string {
-  if (value === 0) return "0 đ";
-  return `${VND_COMPACT.format(value)} đ`;
+function formatCompact(value: number): string {
+  if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)}B`;
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(0)}K`;
+  return `${value}`;
 }
 
-function formatMetricValue(metricName: string, value: number): string {
-  if (metricName.includes("%")) return `${value.toFixed(1)}%`;
-  const normalized = metricName.toLowerCase();
-  if (normalized.includes("customer") || normalized.includes("users")) {
-    return INTEGER.format(value);
-  }
-  return VND.format(value);
-}
+const PLAN_COLORS: Record<string, string> = {
+  PRO: "#6366f1",
+  VIP: "#f59e0b",
+  FREE: "#94a3b8",
+};
 
-function formatDeltaPercent(current: number, previous: number | null): string {
-  if (!previous || previous === 0) return "N/A";
-  const delta = ((current - previous) / Math.abs(previous)) * 100;
-  const sign = delta > 0 ? "+" : "";
-  return `${sign}${delta.toFixed(1)}%`;
-}
+const STATUS_COLORS: Record<string, string> = {
+  PENDING: "#f59e0b",
+  PAID: "#22c55e",
+  CANCELLED: "#ef4444",
+};
 
-function RevealSection({
-  children,
-  className,
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  const { ref, inView } = useInView<HTMLDivElement>(0.12);
-  return (
-    <div
-      ref={ref}
-      className={`${className || ""} transition-all duration-700 ease-out ${
-        inView ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
-      }`}
-    >
-      {children}
-    </div>
-  );
-}
+/* ── Main Component ─────────────────────────────────────────────────────── */
 
 export function AdminFinancePage() {
-  const monthOptions = financeWorkbookData.monthlySeries.map((row) => row.month);
-  const [selectedMonth, setSelectedMonth] = useState<string>(financeWorkbookData.latestMonth);
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [data, setData] = useState<adminService.FinanceStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem("admin-finance-dark-mode");
-    if (saved) {
-      setIsDarkMode(saved === "1");
-    }
+    adminService
+      .getFinanceStats()
+      .then(setData)
+      .catch((err) => {
+        console.error("Failed to load finance stats:", err);
+        setError("Không thể tải dữ liệu tài chính. Vui lòng thử lại sau.");
+      })
+      .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem("admin-finance-dark-mode", isDarkMode ? "1" : "0");
-  }, [isDarkMode]);
-
-  const selected = useMemo(() => {
-    return (
-      financeWorkbookData.monthlySeries.find((row) => row.month === selectedMonth) ||
-      financeWorkbookData.monthlySeries[financeWorkbookData.monthlySeries.length - 1]
+  /* derived */
+  const successRate = useMemo(() => {
+    if (!data || data.totalTransactions === 0) return 0;
+    return Math.round(
+      (data.successTransactions / data.totalTransactions) * 100,
     );
-  }, [selectedMonth]);
+  }, [data]);
 
-  const selectedIndex = useMemo(() => {
-    return financeWorkbookData.monthlySeries.findIndex((row) => row.month === selected.month);
-  }, [selected.month]);
+  const arr = useMemo(() => (data ? data.mrr * 12 : 0), [data]);
 
-  const previous = selectedIndex > 0 ? financeWorkbookData.monthlySeries[selectedIndex - 1] : null;
+  /* ── Loading / Error ────────────────────────────────────────────────── */
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64 text-slate-400 font-semibold">
+        <svg
+          className="animate-spin h-6 w-6 mr-3 text-indigo-500"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+            fill="none"
+          />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+          />
+        </svg>
+        Đang tải dữ liệu tài chính...
+      </div>
+    );
+  }
 
-  const trend12 = useMemo(() => {
-    return financeWorkbookData.monthlySeries.slice(-12);
-  }, []);
+  if (error || !data) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 gap-3">
+        <p className="text-rose-500 font-semibold">{error || "Lỗi không xác định"}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-bold"
+        >
+          Thử lại
+        </button>
+      </div>
+    );
+  }
 
-  const bridgeData = [
-    { label: "Revenue", value: selected.revenue },
-    { label: "COGS", value: -selected.cogs },
-    { label: "OpEx", value: -selected.opex },
-    { label: "EBITDA", value: selected.ebitda },
+  /* ── Stat cards ──────────────────────────────────────────────────────── */
+  const statCards = [
+    {
+      label: "Tổng doanh thu",
+      value: VND.format(data.totalRevenue),
+      sub: `${data.successTransactions} giao dịch thành công`,
+      color: "bg-emerald-50 text-emerald-700 border-emerald-200",
+      icon: "💰",
+    },
+    {
+      label: "MRR",
+      value: VND.format(data.mrr),
+      sub: `ARR: ${formatCompact(arr)}`,
+      color: "bg-indigo-50 text-indigo-700 border-indigo-200",
+      icon: "📈",
+    },
+    {
+      label: "Học sinh trả phí",
+      value: data.activeSubscriptions.toString(),
+      sub: "PRO + VIP đang hoạt động",
+      color: "bg-amber-50 text-amber-700 border-amber-200",
+      icon: "👑",
+    },
+    {
+      label: "Tỉ lệ thành công",
+      value: `${successRate}%`,
+      sub: `${data.failedTransactions} thất bại / ${data.totalTransactions} tổng`,
+      color: "bg-sky-50 text-sky-700 border-sky-200",
+      icon: "✅",
+    },
   ];
 
-  const cogsBreakdown =
-    financeWorkbookData.cogsBreakdownByMonth.find((row) => row.month === selected.month)?.items || [];
+  /* ── Pie data ────────────────────────────────────────────────────────── */
+  const pieData =
+    data.planBreakdown.length > 0
+      ? data.planBreakdown.map((p) => ({
+          name: `Gói ${p.plan}`,
+          value: p.revenue,
+          plan: p.plan,
+          count: p.count,
+        }))
+      : [{ name: "Chưa có dữ liệu", value: 1, plan: "FREE", count: 0 }];
 
-  const opexBreakdown =
-    financeWorkbookData.opexBreakdownByMonth.find((row) => row.month === selected.month)?.items || [];
-
-  const valuationRows = financeWorkbookData.valuation.metrics;
-
-  const kpiMonthIndex = useMemo(() => {
-    const index = financeWorkbookData.kpiMetricTable.headers.findIndex((month) => month === selected.month);
-    return index >= 0 ? index : financeWorkbookData.kpiMetricTable.headers.length - 1;
-  }, [selected.month]);
-
-  const pnlMonthIndex = useMemo(() => {
-    const index = financeWorkbookData.pnlMetricTable.headers.findIndex((month) => month === selected.month);
-    return index >= 0 ? index : financeWorkbookData.pnlMetricTable.headers.length - 1;
-  }, [selected.month]);
-
-  const kpiSnapshotRows = financeWorkbookData.kpiMetricTable.rows
-    .map((row) => ({
-      metric: row.metric,
-      value: row.values[kpiMonthIndex] ?? 0,
-    }))
-    .filter((row) => Number.isFinite(row.value));
-
-  const pnlSnapshotRows = financeWorkbookData.pnlMetricTable.rows
-    .map((row) => ({
-      lineItem: row.lineItem,
-      value: row.values[pnlMonthIndex] ?? 0,
-    }))
-    .filter((row) => Number.isFinite(row.value));
-
-  const cogsTotal = cogsBreakdown.reduce((sum, row) => sum + row.value, 0);
-  const opexTotal = opexBreakdown.reduce((sum, row) => sum + row.value, 0);
-
-  const exportSelectedMonthPdf = async () => {
-    if (isExportingPdf) return;
-    setIsExportingPdf(true);
-    try {
-      const { exportFinanceMonthPdf } = await import("./lib/exportFinancePdf");
-      await exportFinanceMonthPdf({
-        selected,
-        cogsBreakdown,
-        opexBreakdown,
-      });
-    } finally {
-      setIsExportingPdf(false);
-    }
-  };
-
-  const panelClass = isDarkMode
-    ? "border-slate-700 bg-slate-900/80 text-slate-100 shadow-[0_10px_35px_-18px_rgba(15,23,42,0.9)]"
-    : "border-slate-200 bg-white text-slate-900 shadow-sm";
-  const softTextClass = isDarkMode ? "text-slate-300" : "text-slate-600";
-  const tableHeaderClass = isDarkMode
-    ? "border-slate-700 text-slate-400 bg-slate-900/95"
-    : "border-slate-200 text-slate-500 bg-white/95";
+  /* ── PayOS status data for bar chart ──────────────────────────────── */
+  const payosData = data.paymentOrdersStats.map((s) => ({
+    name:
+      s.status === "PAID"
+        ? "Đã thanh toán"
+        : s.status === "PENDING"
+          ? "Chờ xử lý"
+          : "Đã hủy",
+    count: s.count,
+    total: s.total,
+    status: s.status,
+  }));
 
   return (
-    <div
-      className={`relative space-y-6 overflow-hidden rounded-3xl border p-4 font-['Poppins','Nunito_Sans',sans-serif] md:p-6 ${
-        isDarkMode
-          ? "border-slate-800/70 bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-950/40 text-slate-100"
-          : "border-slate-200/70 bg-gradient-to-br from-slate-50 via-cyan-50/40 to-emerald-50/40 text-slate-900"
-      }`}
-    >
-      <div className="pointer-events-none absolute -top-24 -right-20 h-72 w-72 rounded-full bg-cyan-300/30 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-28 -left-20 h-72 w-72 rounded-full bg-emerald-300/30 blur-3xl" />
+    <div className="space-y-6">
+      {/* ── Header ────────────────────────────────────────────────────── */}
+      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-6 text-white shadow-lg">
+        <p className="text-xs font-semibold uppercase tracking-wide text-indigo-200">
+          Tài chính thực tế
+        </p>
+        <h2 className="text-2xl font-extrabold mt-1">
+          Báo cáo doanh thu & giao dịch
+        </h2>
+        <p className="text-sm text-indigo-100 mt-1">
+          Dữ liệu được lấy trực tiếp từ cơ sở dữ liệu hệ thống
+        </p>
+      </div>
 
-      <RevealSection>
-      <section className={`relative overflow-hidden rounded-3xl border p-6 backdrop-blur ${isDarkMode ? "border-slate-700 bg-slate-900/70 shadow-[0_10px_35px_-16px_rgba(2,132,199,0.2)]" : "border-white/70 bg-white/80 shadow-[0_10px_35px_-16px_rgba(2,132,199,0.45)]"}`}>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(14,165,233,0.18),transparent_45%)]" />
-        <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-500">Owner Finance Intelligence</p>
-            <h2 className={`mt-2 text-3xl font-black md:text-4xl ${isDarkMode ? "text-slate-100" : "text-slate-900"}`}>Tài chính & Owner Mode</h2>
-            <p className={`mt-2 max-w-3xl text-sm ${softTextClass}`}>
-              Dashboard đã tối ưu theo style điều hành: trực quan, nhanh đọc và bám 100% dữ liệu từ
-              file Bang-Finace-new.xlsx.
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <span className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-[11px] font-semibold text-cyan-700">
-                {financeWorkbookData.sheetCount} sheets synced
-              </span>
-              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
-                Latest month: {selected.month}
-              </span>
+      {/* ── Stat Cards ────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        {statCards.map((card) => (
+          <div
+            key={card.label}
+            className={`bg-white border rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow ${card.color.split(" ").slice(2).join(" ") || "border-slate-200"}`}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                {card.label}
+              </p>
+              <span className="text-2xl">{card.icon}</span>
             </div>
-          </div>
-
-          <div className={`w-full rounded-2xl border p-4 lg:w-[300px] ${isDarkMode ? "border-slate-700 bg-slate-800/80" : "border-slate-200 bg-white/90"}`}>
-            <div className="mb-2 flex items-center justify-between">
-              <p className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${isDarkMode ? "text-slate-400" : "text-slate-500"}`}>Kỳ đang xem</p>
-              <button
-                type="button"
-                onClick={() => setIsDarkMode((prev) => !prev)}
-                className={`rounded-lg px-2 py-1 text-[11px] font-semibold transition ${
-                  isDarkMode
-                    ? "bg-slate-700 text-slate-100 hover:bg-slate-600"
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                }`}
-              >
-                {isDarkMode ? "Light" : "Dark"}
-              </button>
-            </div>
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              className={`mt-2 w-full rounded-xl border px-3 py-2 text-sm font-semibold outline-none ring-cyan-300 transition focus:ring ${
-                isDarkMode
-                  ? "border-slate-600 bg-slate-900 text-slate-100"
-                  : "border-slate-200 bg-white text-slate-700"
-              }`}
-            >
-              {monthOptions.map((month) => (
-                <option key={month} value={month}>
-                  {month}
-                </option>
-              ))}
-            </select>
-            <p className={`mt-2 text-xs ${softTextClass}`}>
-              Revenue MoM: {formatDeltaPercent(selected.revenue, previous?.revenue ?? null)}
+            <p className="text-2xl font-extrabold text-slate-900">
+              {card.value}
             </p>
-            <button
-              type="button"
-              onClick={exportSelectedMonthPdf}
-              disabled={isExportingPdf}
-              className="mt-3 w-full rounded-xl bg-cyan-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isExportingPdf ? "Đang tạo PDF..." : `Export PDF tháng ${selected.month}`}
-            </button>
+            <p className="text-xs text-slate-500 mt-1">{card.sub}</p>
           </div>
-        </div>
-
-        <div className="relative z-10 mt-4 flex flex-wrap gap-2">
-          {financeWorkbookData.sheets.map((sheet) => (
-            <span key={sheet} className={`rounded-full border px-3 py-1 text-[11px] font-medium ${isDarkMode ? "border-slate-700 bg-slate-800 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-700"}`}>
-              {sheet}
-            </span>
-          ))}
-        </div>
-      </section>
-      </RevealSection>
-
-      <RevealSection>
-      <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-        {[
-          {
-            title: "Revenue",
-            value: VND.format(selected.revenue),
-            note: `MoM: ${formatDeltaPercent(selected.revenue, previous?.revenue ?? null)}`,
-            tone: "border-emerald-200 bg-emerald-50/90 text-emerald-900",
-          },
-          {
-            title: "MRR / ARR",
-            value: compactCurrency(selected.mrr),
-            note: `ARR: ${compactCurrency(selected.arrRunRate)}`,
-            tone: "border-sky-200 bg-sky-50/90 text-sky-900",
-          },
-          {
-            title: "Gross Margin",
-            value: `${selected.grossMarginPct.toFixed(1)}%`,
-            note: `COGS: ${compactCurrency(selected.cogs)}`,
-            tone: "border-amber-200 bg-amber-50/90 text-amber-900",
-          },
-          {
-            title: "EBITDA / Burn",
-            value: VND.format(selected.ebitda),
-            note: `Burn: ${compactCurrency(selected.burnProxy)}`,
-            tone: "border-rose-200 bg-rose-50/90 text-rose-900",
-          },
-        ].map((card) => (
-          <article key={card.title} className={`rounded-2xl border p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${card.tone}`}>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] opacity-80">{card.title}</p>
-            <p className="mt-1 text-2xl font-black">{card.value}</p>
-            <p className="mt-1 text-xs opacity-80">{card.note}</p>
-          </article>
         ))}
-      </section>
-      </RevealSection>
+      </div>
 
-      <RevealSection>
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <div className={`rounded-2xl border p-4 ${panelClass}`}>
-          <h3 className="text-sm font-bold text-slate-900">Revenue vs MRR (12 tháng gần nhất)</h3>
-          <p className={`mt-1 text-xs ${softTextClass}`}>Xu hướng tăng trưởng subscription và doanh thu</p>
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={trend12}>
-              <defs>
-                <linearGradient id="revenueFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#0284c7" stopOpacity={0.45} />
-                  <stop offset="95%" stopColor="#0284c7" stopOpacity={0.04} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-              <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
-              <YAxis axisLine={false} tickLine={false} tickFormatter={(v) => `${Math.round(Number(v) / 1_000_000)}M`} />
-              <Tooltip formatter={(v) => VND.format(Number(v ?? 0))} />
-              <Legend />
-              <Area type="monotone" dataKey="revenue" name="Revenue" stroke="#0284c7" fill="url(#revenueFill)" strokeWidth={2.5} />
-              <Line type="monotone" dataKey="mrr" name="MRR" stroke="#14b8a6" dot={false} strokeWidth={2.5} />
-            </AreaChart>
-          </ResponsiveContainer>
+      {/* ── Charts Row ──────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        {/* Revenue Trend (Area Chart) */}
+        <div className="xl:col-span-2 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+          <h3 className="text-sm font-bold text-slate-900 mb-4">
+            📊 Doanh thu theo tháng
+          </h3>
+          {data.monthlyRevenue.length > 0 ? (
+            <ResponsiveContainer width="100%" height={280}>
+              <AreaChart data={data.monthlyRevenue}>
+                <defs>
+                  <linearGradient
+                    id="revenueGradient"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
+                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fontSize: 11, fill: "#64748b" }}
+                />
+                <YAxis
+                  tick={{ fontSize: 11, fill: "#64748b" }}
+                  tickFormatter={(v) => formatCompact(v)}
+                />
+                <Tooltip
+                  formatter={(value: number) => [VND.format(value), "Doanh thu"]}
+                  labelStyle={{ fontWeight: 700 }}
+                  contentStyle={{
+                    borderRadius: 12,
+                    border: "1px solid #e2e8f0",
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="#6366f1"
+                  strokeWidth={2.5}
+                  fill="url(#revenueGradient)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-[280px] text-slate-400 text-sm">
+              Chưa có dữ liệu doanh thu
+            </div>
+          )}
         </div>
 
-        <div className={`rounded-2xl border p-4 ${panelClass}`}>
-          <h3 className="text-sm font-bold text-slate-900">P&L Bridge ({selected.month})</h3>
-          <p className={`mt-1 text-xs ${softTextClass}`}>Revenue - COGS - OpEx = EBITDA</p>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={bridgeData}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-              <XAxis dataKey="label" axisLine={false} tickLine={false} />
-              <YAxis axisLine={false} tickLine={false} tickFormatter={(v) => `${Math.round(Number(v) / 1_000_000)}M`} />
-              <Tooltip formatter={(v) => VND.format(Number(v ?? 0))} />
-              <Bar dataKey="value" radius={[10, 10, 0, 0]}>
-                {bridgeData.map((row) => (
-                  <Cell key={row.label} fill={row.value >= 0 ? "#10b981" : "#ef4444"} />
+        {/* Plan Breakdown (Pie Chart) */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+          <h3 className="text-sm font-bold text-slate-900 mb-4">
+            🎯 Doanh thu theo gói
+          </h3>
+          <ResponsiveContainer width="100%" height={280}>
+            <PieChart>
+              <Pie
+                data={pieData}
+                cx="50%"
+                cy="50%"
+                innerRadius={50}
+                outerRadius={90}
+                paddingAngle={3}
+                dataKey="value"
+              >
+                {pieData.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={PLAN_COLORS[entry.plan] || "#94a3b8"}
+                  />
                 ))}
-              </Bar>
-            </BarChart>
+              </Pie>
+              <Tooltip
+                formatter={(value: number) => VND.format(value)}
+                contentStyle={{
+                  borderRadius: 12,
+                  border: "1px solid #e2e8f0",
+                }}
+              />
+              <Legend
+                wrapperStyle={{ fontSize: 12 }}
+                formatter={(value) => (
+                  <span className="text-slate-600 font-medium">{value}</span>
+                )}
+              />
+            </PieChart>
           </ResponsiveContainer>
-        </div>
-      </section>
-      </RevealSection>
-
-      <RevealSection>
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <div className={`rounded-2xl border p-4 xl:col-span-2 ${panelClass}`}>
-          <h3 className="text-sm font-bold text-slate-900">EBITDA, Net Income, Active Customers</h3>
-          <p className={`mt-1 text-xs ${softTextClass}`}>Tracking hiệu quả vận hành và quy mô người dùng</p>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={trend12}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-              <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
-              <YAxis yAxisId="money" axisLine={false} tickLine={false} tickFormatter={(v) => `${Math.round(Number(v) / 1_000_000)}M`} />
-              <YAxis yAxisId="users" orientation="right" axisLine={false} tickLine={false} tickFormatter={(v) => `${Math.round(Number(v) / 1000)}k`} />
-              <Tooltip formatter={(v) => VND.format(Number(v ?? 0))} />
-              <Legend />
-              <Line yAxisId="money" type="monotone" dataKey="ebitda" name="EBITDA" stroke="#16a34a" strokeWidth={2.5} dot={false} />
-              <Line yAxisId="money" type="monotone" dataKey="netIncome" name="Net income" stroke="#0f766e" strokeWidth={2.2} dot={false} />
-              <Line yAxisId="users" type="monotone" dataKey="activeCustomers" name="Active customers" stroke="#0ea5e9" strokeWidth={2.2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className={`rounded-2xl border p-4 ${panelClass}`}>
-          <h3 className="text-sm font-bold text-slate-900">Assumptions</h3>
-          <div className="mt-3 space-y-2 text-sm text-slate-700">
-            <p className="flex items-center justify-between rounded-lg bg-slate-50 px-2 py-1.5"><span>Start month</span><span className="font-semibold">{financeWorkbookData.generalAssumptions.startDateMonth}</span></p>
-            <p className="flex items-center justify-between rounded-lg bg-slate-50 px-2 py-1.5"><span>Forecast</span><span className="font-semibold">{financeWorkbookData.generalAssumptions.forecastMonths} tháng</span></p>
-            <p className="flex items-center justify-between rounded-lg bg-slate-50 px-2 py-1.5"><span>Model</span><span className="font-semibold">{financeWorkbookData.generalAssumptions.revenueModel}</span></p>
-            <p className="flex items-center justify-between rounded-lg bg-slate-50 px-2 py-1.5"><span>Scenario</span><span className="font-semibold">{financeWorkbookData.generalAssumptions.scenario}</span></p>
-            <p className="flex items-center justify-between rounded-lg bg-slate-50 px-2 py-1.5"><span>Tax</span><span className="font-semibold">{financeWorkbookData.generalAssumptions.taxRate}</span></p>
-            <p className="flex items-center justify-between rounded-lg bg-slate-50 px-2 py-1.5"><span>Benefits</span><span className="font-semibold">{financeWorkbookData.generalAssumptions.benefitsRate}</span></p>
-            <p className="flex items-center justify-between rounded-lg bg-slate-50 px-2 py-1.5"><span>Employer taxes</span><span className="font-semibold">{financeWorkbookData.generalAssumptions.employerTaxesRate}</span></p>
-          </div>
-        </div>
-      </section>
-      </RevealSection>
-
-      <RevealSection>
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <div className={`rounded-2xl border p-4 ${panelClass}`}>
-          <h3 className="text-sm font-bold text-slate-900">COGS Breakdown ({selected.month})</h3>
-          <div className="mt-3 space-y-2">
-            {cogsBreakdown.map((row) => {
-              const ratio = cogsTotal > 0 ? (row.value / cogsTotal) * 100 : 0;
-              return (
-                <div key={row.item} className="rounded-lg border border-slate-100 bg-slate-50 p-2.5">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-700">{row.item}</span>
-                    <span className="font-bold text-slate-900">{VND.format(row.value)}</span>
-                  </div>
-                  <div className="mt-1 h-1.5 rounded-full bg-slate-200">
-                    <div className="h-full rounded-full bg-cyan-500" style={{ width: `${Math.max(ratio, 4)}%` }} />
-                  </div>
+          {/* Plan stats below chart */}
+          <div className="space-y-2 mt-2">
+            {data.planBreakdown.map((p) => (
+              <div
+                key={p.plan}
+                className="flex items-center justify-between text-xs"
+              >
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{
+                      backgroundColor: PLAN_COLORS[p.plan] || "#94a3b8",
+                    }}
+                  />
+                  <span className="font-bold text-slate-700">{p.plan}</span>
                 </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className={`rounded-2xl border p-4 ${panelClass}`}>
-          <h3 className="text-sm font-bold text-slate-900">OpEx Breakdown ({selected.month})</h3>
-          <div className="mt-3 space-y-2">
-            {opexBreakdown.map((row) => {
-              const ratio = opexTotal > 0 ? (row.value / opexTotal) * 100 : 0;
-              return (
-                <div key={row.item} className="rounded-lg border border-slate-100 bg-slate-50 p-2.5">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-700">{row.item}</span>
-                    <span className="font-bold text-slate-900">{VND.format(row.value)}</span>
-                  </div>
-                  <div className="mt-1 h-1.5 rounded-full bg-slate-200">
-                    <div className="h-full rounded-full bg-emerald-500" style={{ width: `${Math.max(ratio, 4)}%` }} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-      </RevealSection>
-
-      <RevealSection>
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <div className={`rounded-2xl border p-4 ${panelClass}`}>
-          <h3 className="text-sm font-bold text-slate-900">Pricing (Assumptions)</h3>
-          <div className="mt-3 space-y-2">
-            {financeWorkbookData.pricing.map((row) => (
-              <div key={row.plan} className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{row.plan}</p>
-                <p className="mt-1 text-sm font-bold text-slate-900">Tháng: {VND.format(row.monthly)}</p>
-                <p className="text-xs text-slate-600">3 tháng: {VND.format(row.quarterly)}</p>
-                <p className="text-xs text-slate-600">Năm: {VND.format(row.yearly)}</p>
+                <span className="text-slate-500">
+                  {p.count} lượt · {VND.format(p.revenue)}
+                </span>
               </div>
             ))}
           </div>
         </div>
+      </div>
 
-        <div className={`rounded-2xl border p-4 xl:col-span-2 ${panelClass}`}>
-          <h3 className="text-sm font-bold text-slate-900">Valuation (2026-2028)</h3>
-          <div className="mt-3 overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="sticky top-0 backdrop-blur">
-                <tr className={`border-b text-left text-xs uppercase tracking-wide ${tableHeaderClass}`}>
-                  <th className="pb-2 pr-3">Metric</th>
-                  {financeWorkbookData.valuation.years.map((year) => (
-                    <th key={year} className="pb-2 pr-3">{year}</th>
+      {/* ── PayOS Orders ──────────────────────────────────────────────── */}
+      {payosData.length > 0 && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+          <h3 className="text-sm font-bold text-slate-900 mb-4">
+            💳 Thống kê đơn hàng PayOS
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={payosData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 11, fill: "#64748b" }}
+                />
+                <YAxis tick={{ fontSize: 11, fill: "#64748b" }} />
+                <Tooltip
+                  contentStyle={{
+                    borderRadius: 12,
+                    border: "1px solid #e2e8f0",
+                  }}
+                />
+                <Bar dataKey="count" name="Số đơn" radius={[6, 6, 0, 0]}>
+                  {payosData.map((entry, index) => (
+                    <Cell
+                      key={`bar-${index}`}
+                      fill={STATUS_COLORS[entry.status] || "#94a3b8"}
+                    />
                   ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+            <div className="space-y-3 flex flex-col justify-center">
+              {payosData.map((s) => (
+                <div
+                  key={s.status}
+                  className="flex items-center justify-between bg-slate-50 p-3 rounded-xl"
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-4 h-4 rounded-full"
+                      style={{
+                        backgroundColor:
+                          STATUS_COLORS[s.status] || "#94a3b8",
+                      }}
+                    />
+                    <span className="text-sm font-bold text-slate-700">
+                      {s.name}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-extrabold text-slate-900">
+                      {s.count} đơn
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {VND.format(s.total)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Recent Transactions ───────────────────────────────────────── */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+        <h3 className="text-sm font-bold text-slate-900 mb-4">
+          🕐 Giao dịch gần đây
+        </h3>
+        {data.recentTransactions.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-100">
+                  <th className="text-left py-3 px-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                    Ngày
+                  </th>
+                  <th className="text-right py-3 px-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                    Số tiền
+                  </th>
+                  <th className="text-left py-3 px-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                    Phương thức
+                  </th>
+                  <th className="text-center py-3 px-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                    Trạng thái
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {valuationRows.map((row) => (
-                  <tr key={row.metric} className={`border-b ${isDarkMode ? "border-slate-800" : "border-slate-100"}`}>
-                    <td className={`py-2 pr-3 font-semibold ${isDarkMode ? "text-slate-200" : "text-slate-700"}`}>{row.metric}</td>
-                    {row.values.map((value, i) => (
-                      <td key={`${row.metric}-${i}`} className={`py-2 pr-3 ${isDarkMode ? "text-slate-200" : "text-slate-800"}`}>
-                        {typeof value === "number" && Number.isFinite(value)
-                          ? formatMetricValue(row.metric, value)
-                          : "-"}
-                      </td>
-                    ))}
+                {data.recentTransactions.map((tx) => (
+                  <tr
+                    key={tx.id}
+                    className="border-b border-slate-50 hover:bg-slate-50 transition-colors"
+                  >
+                    <td className="py-3 px-3 text-slate-700 font-medium">
+                      {tx.date}
+                    </td>
+                    <td className="py-3 px-3 text-right font-bold text-slate-900">
+                      {VND.format(tx.amount)}
+                    </td>
+                    <td className="py-3 px-3 text-slate-600">{tx.method}</td>
+                    <td className="py-3 px-3 text-center">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
+                          tx.status === "Thành công"
+                            ? "bg-emerald-50 text-emerald-700"
+                            : "bg-rose-50 text-rose-700"
+                        }`}
+                      >
+                        {tx.status}
+                      </span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </div>
-      </section>
-      </RevealSection>
-
-      <RevealSection>
-      <section className={`rounded-2xl border p-4 ${panelClass}`}>
-        <h3 className="text-sm font-bold text-slate-900">Fundraising & Ownership</h3>
-        <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
-          {financeWorkbookData.fundraising.map((item) => (
-            <div key={item.item} className="rounded-lg border border-slate-200 bg-gradient-to-br from-slate-50 to-white px-3 py-2">
-              <p className="text-xs text-slate-500">{item.item}</p>
-              <p className="mt-0.5 text-sm font-bold text-slate-900">{item.value}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-      </RevealSection>
-
-      <RevealSection>
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <div className={`rounded-2xl border p-4 ${panelClass}`}>
-          <h3 className="text-sm font-bold text-slate-900">KPI Snapshot ({selected.month})</h3>
-          <div className="mt-3 max-h-[420px] space-y-2 overflow-auto pr-1">
-            {kpiSnapshotRows.map((row) => (
-              <div key={row.metric} className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-sm">
-                <span className="text-slate-700">{row.metric}</span>
-                <span className="font-semibold text-slate-900">{formatMetricValue(row.metric, row.value)}</span>
-              </div>
-            ))}
+        ) : (
+          <div className="flex items-center justify-center h-32 text-slate-400 text-sm">
+            Chưa có giao dịch nào
           </div>
-        </div>
+        )}
+      </div>
 
-        <div className={`rounded-2xl border p-4 ${panelClass}`}>
-          <h3 className="text-sm font-bold text-slate-900">P&L Snapshot ({selected.month})</h3>
-          <div className="mt-3 max-h-[420px] space-y-2 overflow-auto pr-1">
-            {pnlSnapshotRows.map((row) => (
-              <div key={row.lineItem} className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-sm">
-                <span className="text-slate-700">{row.lineItem}</span>
-                <span className="font-semibold text-slate-900">{formatMetricValue(row.lineItem, row.value)}</span>
-              </div>
-            ))}
-          </div>
+      {/* ── Transaction Metrics Summary ──────────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm text-center">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
+            Giao dịch trung bình
+          </p>
+          <p className="text-2xl font-extrabold text-slate-900 mt-2">
+            {data.successTransactions > 0
+              ? VND.format(
+                  Math.round(data.totalRevenue / data.successTransactions),
+                )
+              : "—"}
+          </p>
+          <p className="text-xs text-slate-500 mt-1">
+            Giá trị TB / giao dịch thành công
+          </p>
         </div>
-      </section>
-      </RevealSection>
-
-      <RevealSection>
-      <section className={`rounded-2xl border p-4 ${panelClass}`}>
-        <h3 className="text-sm font-bold text-slate-900">Bảng chỉ số tài chính 36 tháng</h3>
-        <p className={`mt-1 text-xs ${softTextClass}`}>Tổng hợp theo tháng từ KPIs + PnL trong file Excel.</p>
-        <div className="mt-3 overflow-x-auto">
-          <table className="min-w-[1100px] text-sm">
-            <thead className="sticky top-0 backdrop-blur">
-              <tr className={`border-b text-left text-xs uppercase tracking-wide ${tableHeaderClass}`}>
-                <th className="pb-2 pr-3">Month</th>
-                <th className="pb-2 pr-3">Revenue</th>
-                <th className="pb-2 pr-3">MRR</th>
-                <th className="pb-2 pr-3">ARR</th>
-                <th className="pb-2 pr-3">COGS</th>
-                <th className="pb-2 pr-3">OpEx</th>
-                <th className="pb-2 pr-3">Gross Margin</th>
-                <th className="pb-2 pr-3">EBITDA</th>
-                <th className="pb-2 pr-3">Net Income</th>
-                <th className="pb-2 pr-3">Active Customers</th>
-                <th className="pb-2 pr-3">Burn</th>
-              </tr>
-            </thead>
-            <tbody>
-              {financeWorkbookData.monthlySeries.map((row) => (
-                <tr key={row.month} className={`border-b transition ${isDarkMode ? "border-slate-800 hover:bg-slate-800/40" : "border-slate-100 hover:bg-slate-50/70"}`}>
-                  <td className={`py-2 pr-3 font-semibold ${isDarkMode ? "text-slate-200" : "text-slate-700"}`}>{row.month}</td>
-                  <td className="py-2 pr-3">{VND.format(row.revenue)}</td>
-                  <td className="py-2 pr-3">{VND.format(row.mrr)}</td>
-                  <td className="py-2 pr-3">{VND.format(row.arrRunRate)}</td>
-                  <td className="py-2 pr-3">{VND.format(row.cogs)}</td>
-                  <td className="py-2 pr-3">{VND.format(row.opex)}</td>
-                  <td className="py-2 pr-3">{row.grossMarginPct.toFixed(1)}%</td>
-                  <td className="py-2 pr-3">{VND.format(row.ebitda)}</td>
-                  <td className="py-2 pr-3">{VND.format(row.netIncome)}</td>
-                  <td className="py-2 pr-3">{INTEGER.format(row.activeCustomers)}</td>
-                  <td className="py-2 pr-3">{VND.format(row.burnProxy)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm text-center">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
+            LTV ước tính
+          </p>
+          <p className="text-2xl font-extrabold text-slate-900 mt-2">
+            {data.activeSubscriptions > 0
+              ? VND.format(
+                  Math.round(data.totalRevenue / data.activeSubscriptions),
+                )
+              : "—"}
+          </p>
+          <p className="text-xs text-slate-500 mt-1">
+            Doanh thu / Học sinh trả phí
+          </p>
         </div>
-      </section>
-      </RevealSection>
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm text-center">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
+            ARPU
+          </p>
+          <p className="text-2xl font-extrabold text-slate-900 mt-2">
+            {data.activeSubscriptions > 0
+              ? VND.format(
+                  Math.round(data.mrr / data.activeSubscriptions),
+                )
+              : "—"}
+          </p>
+          <p className="text-xs text-slate-500 mt-1">
+            MRR / Học sinh trả phí
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

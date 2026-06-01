@@ -11,7 +11,17 @@ import {
 } from "recharts";
 import { useActiveChild } from "@/shared/lib/activeChild";
 
-const GOAL_MINUTES = 40; // minutes/day goal – swap with API value later
+/** Tính mục tiêu phút/ngày dựa trên dữ liệu thật của bé.
+ *  Mặc định 30 phút nếu chưa có dữ liệu. */
+function useGoalMinutes(): number {
+  const { dashboardData } = useActiveChild();
+  const stats = dashboardData?.stats;
+  if (!stats?.weeklyMinutes) return 30;
+  // Mục tiêu = trung bình ngày + 10 phút (khuyến khích), tối thiểu 20, làm tròn lên 5
+  const avgPerDay = Math.round((stats.weeklyMinutes || 0) / 7);
+  const goal = Math.max(20, Math.ceil((avgPerDay + 10) / 5) * 5);
+  return goal;
+}
 
 function CustomTooltip({
   active,
@@ -44,6 +54,7 @@ function CustomTooltip({
 }
 
 export function StudyProgressChart() {
+  const GOAL_MINUTES = useGoalMinutes();
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
