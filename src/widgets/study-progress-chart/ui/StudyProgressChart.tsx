@@ -27,10 +27,12 @@ function CustomTooltip({
   active,
   payload,
   label,
+  goalMinutes = 30,
 }: {
   active?: boolean;
   payload?: { value: number }[];
   label?: string;
+  goalMinutes?: number;
 }) {
   if (active && payload && payload.length) {
     const val = payload[0].value;
@@ -41,11 +43,11 @@ function CustomTooltip({
           {val} phút
         </p>
         <p
-          className={`text-xs mt-0.5 ${val >= GOAL_MINUTES ? "text-green-600" : "text-orange-500"}`}
+          className={`text-xs mt-0.5 ${val >= goalMinutes ? "text-green-600" : "text-orange-500"}`}
         >
-          {val >= GOAL_MINUTES
+          {val >= goalMinutes
             ? "✓ Đạt mục tiêu"
-            : `Còn ${GOAL_MINUTES - val} phút`}
+            : `Còn ${goalMinutes - val} phút`}
         </p>
       </div>
     );
@@ -140,7 +142,7 @@ export function StudyProgressChart() {
             tick={{ fontSize: 12, fill: "#9ca3af" }}
             unit=" ph"
           />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: "#f9fafb" }} />
+          <Tooltip content={<CustomTooltip goalMinutes={GOAL_MINUTES} />} cursor={{ fill: "#f9fafb" }} />
           <Bar
             dataKey="minutes"
             radius={[8, 8, 0, 0]}

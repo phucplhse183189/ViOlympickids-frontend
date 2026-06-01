@@ -430,7 +430,7 @@ export function ProgressPage() {
                     boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
                   }}
                   labelStyle={{ fontWeight: "600", color: "#374151" }}
-                  formatter={(value: number) => [`${value} điểm`, "Điểm TB"]}
+                  formatter={(value: number | undefined) => [`${value ?? 0} điểm`, "Điểm TB"]}
                 />
                 <Area
                   type="monotone"

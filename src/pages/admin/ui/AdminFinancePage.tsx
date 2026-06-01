@@ -237,7 +237,7 @@ export function AdminFinancePage() {
                   tickFormatter={(v) => formatCompact(v)}
                 />
                 <Tooltip
-                  formatter={(value: number) => [VND.format(value), "Doanh thu"]}
+                  formatter={(value: number | undefined) => [VND.format(value ?? 0), "Doanh thu"]}
                   labelStyle={{ fontWeight: 700 }}
                   contentStyle={{
                     borderRadius: 12,
@@ -284,7 +284,7 @@ export function AdminFinancePage() {
                 ))}
               </Pie>
               <Tooltip
-                formatter={(value: number) => VND.format(value)}
+                formatter={(value: number | undefined) => VND.format(value ?? 0)}
                 contentStyle={{
                   borderRadius: 12,
                   border: "1px solid #e2e8f0",

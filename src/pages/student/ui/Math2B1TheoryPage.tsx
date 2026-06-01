@@ -412,9 +412,6 @@ export function Math2B1TheoryPage() {
 
   // ── Grid highlight logic per step ─────────────────────────────────────
   const highlightTens = step === 1;
-  const highlightNum = step === 2 ? 47 : null;
-  const compareNums: [number, number] | null = step === 3 ? [35, 53] : null;
-  const sortNums = step === 4 ? [13, 28, 45, 72, 91] : null;
 
   /* ════════════════════════ RENDER ════════════════════════ */
   return (

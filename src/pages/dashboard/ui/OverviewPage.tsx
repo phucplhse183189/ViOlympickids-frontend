@@ -132,7 +132,6 @@ function computeDailyGoals(dashboardData: any) {
     year: "numeric",
   });
   const activities = dashboardData?.activities || [];
-  const stats = dashboardData?.stats;
   const studyDays = dashboardData?.studyDays || [];
 
   // 1) Hoàn thành 1 bài hoc hôm nay
