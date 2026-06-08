@@ -28,6 +28,7 @@ export const activityStatusEnum = pgEnum("activity_status", [
 ]);
 export const txStatusEnum = pgEnum("tx_status", ["Thành công", "Thất bại"]);
 export const alertTypeEnum = pgEnum("alert_type", ["success", "warning"]);
+export const lessonStatusEnum = pgEnum("lesson_status", ["published", "draft"]);
 
 // ── Bảng: users (Phụ huynh + Admin) ─────────────────────────────────────────
 export const users = pgTable("users", {
@@ -213,6 +214,7 @@ export const lessons = pgTable("lessons", {
   emoji: varchar("emoji", { length: 10 }),
   description: text("description"),
   requiredPlan: planEnum("required_plan").default("FREE").notNull(),
+  status: lessonStatusEnum("status").default("draft").notNull(),
 });
 
 // ── Bảng: quiz_questions ─────────────────────────────────────────────────────

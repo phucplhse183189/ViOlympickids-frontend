@@ -99,6 +99,7 @@ export interface AdminLesson {
   emoji: string | null;
   description: string | null;
   requiredPlan: "FREE" | "PRO" | "VIP";
+  status: "published" | "draft";
   topicName: string;
   topicNumber: number;
 }

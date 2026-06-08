@@ -18,15 +18,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const data = req.body;
-    
-    // Only update allowed fields
-    const updateData: any = {};
-    if (data.title !== undefined) updateData.title = data.title;
-    if (data.description !== undefined) updateData.description = data.description;
-    if (data.requiredPlan !== undefined) updateData.requiredPlan = data.requiredPlan;
-    if (data.gameType !== undefined) updateData.gameType = data.gameType;
-    if (data.emoji !== undefined) updateData.emoji = data.emoji;
+    const { title, description, requiredPlan, gameType, emoji, status } = req.body;
+
+    const updateData: Partial<typeof schema.lessons.$inferInsert> = {};
+    if (title !== undefined) updateData.title = title;
+    if (description !== undefined) updateData.description = description;
+    if (requiredPlan !== undefined) updateData.requiredPlan = requiredPlan;
+    if (gameType !== undefined) updateData.gameType = gameType;
+    if (emoji !== undefined) updateData.emoji = emoji;
+    if (status !== undefined) updateData.status = status;
 
     if (Object.keys(updateData).length === 0) {
       return res.status(400).json({ error: "Không có dữ liệu cập nhật" });
