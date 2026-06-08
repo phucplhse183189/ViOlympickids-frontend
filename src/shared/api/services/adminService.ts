@@ -89,3 +89,30 @@ export async function getFinanceStats(): Promise<FinanceStats> {
   return apiGet<FinanceStats>("/admin/finance-stats");
 }
 
+/** Quản lý bài học */
+export interface AdminLesson {
+  id: string;
+  topicId: string;
+  lessonNumber: number;
+  title: string;
+  gameType: string | null;
+  emoji: string | null;
+  description: string | null;
+  requiredPlan: "FREE" | "PRO" | "VIP";
+  topicName: string;
+  topicNumber: number;
+}
+
+/** Lấy danh sách bài học */
+export async function getAdminLessons(): Promise<AdminLesson[]> {
+  return apiGet<AdminLesson[]>("/admin/lessons");
+}
+
+/** Cập nhật bài học */
+export async function updateAdminLesson(
+  id: string,
+  data: Partial<AdminLesson>
+): Promise<AdminLesson> {
+  return apiPut<AdminLesson>(`/admin/lessons/${id}`, data);
+}
+

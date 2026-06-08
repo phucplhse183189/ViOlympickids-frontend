@@ -7,6 +7,8 @@ import adminStudentsIdStatus from "./_internal/admin_students_[id]_status.js";
 import adminInitDb from "./_internal/admin_init_db.js";
 import adminSeedLessons from "./_internal/admin_seed_lessons.js";
 import adminFinanceStats from "./_internal/admin_finance_stats.js";
+import adminLessons from "./_internal/admin_lessons.js";
+import adminLessonsId from "./_internal/admin_lessons_[id].js";
 
 import authLogin from "./_internal/auth_login.js";
 import authRegister from "./_internal/auth_register.js";
@@ -56,6 +58,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (segs.length === 1 && segs[0] === "parents") return adminParents(req, res);
     if (segs.length === 1 && segs[0] === "stats") return adminStats(req, res);
     if (segs.length === 1 && segs[0] === "finance-stats") return adminFinanceStats(req, res);
+    if (segs.length === 1 && segs[0] === "lessons") return adminLessons(req, res);
+    if (segs.length === 2 && segs[0] === "lessons") { req.query.id = segs[1]; return adminLessonsId(req, res); }
     if (segs.length === 3 && segs[0] === "parents" && segs[2] === "status") { req.query.id = segs[1]; return adminParentsIdStatus(req, res); }
     if (segs.length === 3 && segs[0] === "students" && segs[2] === "status") { req.query.id = segs[1]; return adminStudentsIdStatus(req, res); }
   }

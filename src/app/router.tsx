@@ -41,6 +41,7 @@ import {
   AdminPerformancePage,
   AdminFinancePage,
   AdminUsersPage,
+  AdminLessonsPage,
 } from "@/pages/admin";
 import { AdminLayout } from "@/widgets/admin-layout";
 
@@ -110,6 +111,7 @@ export function RouterProvider() {
         <Route path="performance" element={<AdminPerformancePage />} />
         <Route path="finance" element={<AdminFinancePage />} />
         <Route path="users" element={<AdminUsersPage />} />
+        <Route path="lessons" element={<AdminLessonsPage />} />
       </Route>
     </Routes>
   );
