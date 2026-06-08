@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from "react";
-import { Camera, Check, Pencil, X, Loader2 } from "lucide-react";
-import { useAuth } from "@/shared/lib/auth";
+import { Camera, Check, Pencil, X, Loader2, Lock } from "lucide-react";
+import { useAuth, PARENT_PIN_KEY, DEFAULT_PARENT_PIN } from "@/shared/lib/auth";
 import { apiGet, apiPut } from "@/shared/api/client";
 import type { UserInfo } from "@/shared/api/services/authService";
 
@@ -167,6 +167,102 @@ function EditableField({
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Change PIN ─────────────────────────────────────────────
+function ChangePinCard() {
+  const [currentPin, setCurrentPin] = useState("");
+  const [newPin, setNewPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  function handleChangePin() {
+    setError(null);
+    setSuccess(false);
+
+    const savedPin = localStorage.getItem(PARENT_PIN_KEY) || DEFAULT_PARENT_PIN;
+
+    if (currentPin !== savedPin) {
+      setError("⚠️ Mã PIN hiện tại không đúng.");
+      return;
+    }
+    if (!/^\d{4}$/.test(newPin)) {
+      setError("⚠️ Mã PIN mới phải gồm 4 chữ số.");
+      return;
+    }
+    if (newPin !== confirmPin) {
+      setError("⚠️ Mã PIN xác nhận không khớp.");
+      return;
+    }
+
+    localStorage.setItem(PARENT_PIN_KEY, newPin);
+    setSuccess(true);
+    setCurrentPin("");
+    setNewPin("");
+    setConfirmPin("");
+    setTimeout(() => setSuccess(false), 3000);
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center">
+          <Lock size={16} className="text-orange-500" />
+        </div>
+        <h2 className="text-sm font-bold text-gray-600">Bảo mật Góc Phụ Huynh</h2>
+      </div>
+      
+      <div className="space-y-4">
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-bold text-gray-400 uppercase tracking-wide">Mã PIN hiện tại</label>
+          <input
+            type="password"
+            maxLength={4}
+            value={currentPin}
+            onChange={(e) => setCurrentPin(e.target.value.replace(/\D/g, ""))}
+            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:border-orange-400 outline-none text-sm font-semibold text-gray-800 transition bg-gray-50 focus:bg-white"
+            placeholder="Nhập mã PIN 4 số hiện tại..."
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-bold text-gray-400 uppercase tracking-wide">Mã PIN mới</label>
+          <input
+            type="password"
+            maxLength={4}
+            value={newPin}
+            onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ""))}
+            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:border-orange-400 outline-none text-sm font-semibold text-gray-800 transition bg-gray-50 focus:bg-white"
+            placeholder="Nhập mã PIN 4 số mới..."
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-bold text-gray-400 uppercase tracking-wide">Xác nhận mã PIN mới</label>
+          <input
+            type="password"
+            maxLength={4}
+            value={confirmPin}
+            onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ""))}
+            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:border-orange-400 outline-none text-sm font-semibold text-gray-800 transition bg-gray-50 focus:bg-white"
+            placeholder="Nhập lại mã PIN mới..."
+          />
+        </div>
+
+        {error && <p className="text-sm text-red-500 font-medium animate-in fade-in slide-in-from-top-1">{error}</p>}
+        {success && <p className="text-sm text-emerald-600 font-medium flex items-center gap-1 animate-in fade-in slide-in-from-top-1"><Check size={16} /> Đổi mã PIN thành công!</p>}
+
+        <div className="pt-2">
+          <button
+            onClick={handleChangePin}
+            disabled={!currentPin || !newPin || !confirmPin}
+            className="px-5 py-2.5 bg-gray-100 text-gray-600 font-extrabold text-sm rounded-xl hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Cập nhật mã PIN
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -372,6 +468,9 @@ export function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Security (Change PIN) card */}
+      <ChangePinCard />
 
       {/* Save error */}
       {saveError && (
