@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   getAnalyticsStats,
   type AnalyticsStats,
@@ -27,6 +27,9 @@ const RANGE_OPTIONS = [
   { label: "90 ngày", value: 90 },
 ];
 
+/** Chu kỳ tự động làm mới (near real-time) */
+const REFRESH_MS = 30_000;
+
 const DEVICE_META: Record<string, { label: string; color: string; icon: string }> = {
   desktop: { label: "Máy tính", color: "#6366f1", icon: "🖥️" },
   mobile: { label: "Điện thoại", color: "#22c55e", icon: "📱" },
@@ -49,29 +52,47 @@ function formatDayLabel(date: string): string {
 export function AdminAnalyticsPage() {
   const [data, setData] = useState<AnalyticsStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [days, setDays] = useState(30);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [autoRefresh, setAutoRefresh] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    getAnalyticsStats(days)
-      .then((d) => {
-        if (!cancelled) setData(d);
-      })
-      .catch((err) => {
+  const load = useCallback(
+    async (silent = false) => {
+      if (silent) setRefreshing(true);
+      else setLoading(true);
+      try {
+        const d = await getAnalyticsStats(days);
+        setData(d);
+        setLastUpdated(new Date());
+        setError(null);
+      } catch (err) {
         console.error("Failed to load analytics stats:", err);
-        if (!cancelled)
+        // Khi đang polling ngầm, giữ nguyên dữ liệu cũ và không phá UI bằng lỗi
+        if (!silent)
           setError("Không thể tải dữ liệu truy cập. Vui lòng thử lại sau.");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [days]);
+      } finally {
+        if (silent) setRefreshing(false);
+        else setLoading(false);
+      }
+    },
+    [days],
+  );
+
+  // Tải đầy đủ khi mở trang và mỗi khi đổi khoảng thời gian
+  useEffect(() => {
+    load(false);
+  }, [load]);
+
+  // Tự động làm mới ngầm (near real-time), tạm dừng khi tab không hiển thị
+  useEffect(() => {
+    if (!autoRefresh) return;
+    const id = setInterval(() => {
+      if (document.visibilityState === "visible") load(true);
+    }, REFRESH_MS);
+    return () => clearInterval(id);
+  }, [autoRefresh, load]);
 
   const avgPerVisitor = useMemo(() => {
     if (!data || data.uniqueVisitors === 0) return 0;
@@ -182,20 +203,73 @@ export function AdminAnalyticsPage() {
             Dữ liệu thu thập trực tiếp từ người dùng (không tính khu vực admin)
           </p>
         </div>
-        <div className="flex gap-1 bg-white/15 rounded-xl p-1 self-start">
-          {RANGE_OPTIONS.map((opt) => (
+        <div className="flex flex-col items-start sm:items-end gap-2">
+          <div className="flex gap-1 bg-white/15 rounded-xl p-1">
+            {RANGE_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setDays(opt.value)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                  days === opt.value
+                    ? "bg-white text-indigo-700"
+                    : "text-white hover:bg-white/15"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Trạng thái cập nhật */}
+            <span className="inline-flex items-center gap-1.5 text-[11px] text-cyan-100">
+              <span className="relative flex h-2 w-2">
+                {autoRefresh && (
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
+                )}
+                <span
+                  className={`relative inline-flex rounded-full h-2 w-2 ${
+                    autoRefresh ? "bg-emerald-300" : "bg-slate-300"
+                  }`}
+                />
+              </span>
+              {lastUpdated
+                ? `Cập nhật ${lastUpdated.toLocaleTimeString("vi-VN")}`
+                : "Đang chờ..."}
+            </span>
+
+            {/* Bật/tắt tự động làm mới */}
             <button
-              key={opt.value}
-              onClick={() => setDays(opt.value)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-                days === opt.value
-                  ? "bg-white text-indigo-700"
-                  : "text-white hover:bg-white/15"
-              }`}
+              onClick={() => setAutoRefresh((v) => !v)}
+              className="px-2.5 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-[11px] font-semibold transition-colors"
+              title="Bật/tắt tự động cập nhật mỗi 30 giây"
             >
-              {opt.label}
+              {autoRefresh ? "Tự động: BẬT" : "Tự động: TẮT"}
             </button>
-          ))}
+
+            {/* Làm mới thủ công */}
+            <button
+              onClick={() => load(true)}
+              disabled={refreshing}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white text-indigo-700 hover:bg-cyan-50 text-[11px] font-bold transition-colors disabled:opacity-60"
+              title="Làm mới ngay"
+            >
+              <svg
+                className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M16.023 9.348h4.992V4.356M3.04 14.652H8.03v4.992M3.182 9.348a8.25 8.25 0 0113.803-3.04L20.5 9.348M20.818 14.652a8.25 8.25 0 01-13.803 3.04L3.5 14.652"
+                />
+              </svg>
+              {refreshing ? "Đang..." : "Làm mới"}
+            </button>
+          </div>
         </div>
       </div>
 
