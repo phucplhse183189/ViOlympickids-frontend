@@ -178,6 +178,19 @@ export function AdminOverviewPage() {
             Mở quản lý →
           </p>
         </Link>
+
+        <Link
+          to="/admin/analytics"
+          className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
+        >
+          <p className="text-sm font-bold text-slate-900">Lượt truy cập website</p>
+          <p className="text-xs text-slate-500 mt-1">
+            Web Analytics: lượt xem, khách duy nhất, thiết bị, nguồn truy cập.
+          </p>
+          <p className="text-indigo-600 text-sm font-semibold mt-4">
+            Mở báo cáo →
+          </p>
+        </Link>
       </div>
 
       <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">

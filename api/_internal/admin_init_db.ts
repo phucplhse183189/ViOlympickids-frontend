@@ -42,7 +42,25 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
       ALTER TABLE payment_orders ALTER COLUMN order_code TYPE bigint;
     `);
 
-    return res.status(200).json({ success: true, message: "Đã khởi tạo database và cập nhật bigint cho order_code thành công!" });
+    // Khởi tạo bảng page_views cho Web Analytics tự build
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS page_views (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        path varchar(300) NOT NULL,
+        referrer varchar(300),
+        device varchar(20) DEFAULT 'desktop' NOT NULL,
+        visitor_id varchar(64) NOT NULL,
+        session_id varchar(64) NOT NULL,
+        created_at timestamp NOT NULL DEFAULT now()
+      );
+    `);
+
+    // Index giúp truy vấn thống kê theo thời gian nhanh hơn
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS idx_page_views_created_at ON page_views (created_at);
+    `);
+
+    return res.status(200).json({ success: true, message: "Đã khởi tạo database, page_views và cập nhật bigint cho order_code thành công!" });
   } catch (err: any) {
     console.error("Init DB error:", err);
     return res.status(500).json({ error: err.message || "Lỗi tạo bảng" });

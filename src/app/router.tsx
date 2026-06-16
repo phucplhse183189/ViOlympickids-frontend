@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import { PageTracker } from "./PageTracker";
 import { HomePage } from "@/pages/home";
 import { LoginPage } from "@/pages/login";
 import { RegisterPage } from "@/pages/register";
@@ -42,12 +43,15 @@ import {
   AdminFinancePage,
   AdminUsersPage,
   AdminLessonsPage,
+  AdminAnalyticsPage,
 } from "@/pages/admin";
 import { AdminLayout } from "@/widgets/admin-layout";
 
 export function RouterProvider() {
   return (
-    <Routes>
+    <>
+      <PageTracker />
+      <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
@@ -112,7 +116,9 @@ export function RouterProvider() {
         <Route path="finance" element={<AdminFinancePage />} />
         <Route path="users" element={<AdminUsersPage />} />
         <Route path="lessons" element={<AdminLessonsPage />} />
+        <Route path="analytics" element={<AdminAnalyticsPage />} />
       </Route>
     </Routes>
+    </>
   );
 }

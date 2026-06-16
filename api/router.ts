@@ -9,6 +9,9 @@ import adminSeedLessons from "./_internal/admin_seed_lessons.js";
 import adminFinanceStats from "./_internal/admin_finance_stats.js";
 import adminLessons from "./_internal/admin_lessons.js";
 import adminLessonsId from "./_internal/admin_lessons_[id].js";
+import adminAnalyticsStats from "./_internal/admin_analytics_stats.js";
+
+import analyticsTrack from "./_internal/analytics_track.js";
 
 import authLogin from "./_internal/auth_login.js";
 import authRegister from "./_internal/auth_register.js";
@@ -58,6 +61,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (segs.length === 1 && segs[0] === "parents") return adminParents(req, res);
     if (segs.length === 1 && segs[0] === "stats") return adminStats(req, res);
     if (segs.length === 1 && segs[0] === "finance-stats") return adminFinanceStats(req, res);
+    if (segs.length === 1 && segs[0] === "analytics-stats") return adminAnalyticsStats(req, res);
     if (segs.length === 1 && segs[0] === "lessons") return adminLessons(req, res);
     if (segs.length === 2 && segs[0] === "lessons") { req.query.id = segs[1]; return adminLessonsId(req, res); }
     if (segs.length === 3 && segs[0] === "parents" && segs[2] === "status") { req.query.id = segs[1]; return adminParentsIdStatus(req, res); }
@@ -107,6 +111,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (group === "payos") {
     if (segs.length === 1 && segs[0] === "create-payment") return payosCreatePayment(req, res);
     if (segs.length === 1 && segs[0] === "check-order") return payosCheckOrder(req, res);
+  }
+
+  if (group === "analytics") {
+    if (segs.length === 1 && segs[0] === "track") return analyticsTrack(req, res);
   }
 
   if (group === "chat-b1") {

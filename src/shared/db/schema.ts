@@ -258,6 +258,17 @@ export const quizAttempts = pgTable("quiz_attempts", {
   completedAt: timestamp("completed_at").defaultNow().notNull(),
 });
 
+// ── Bảng: page_views (Web Analytics tự build) ───────────────────────────────
+export const pageViews = pgTable("page_views", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  path: varchar("path", { length: 300 }).notNull(),
+  referrer: varchar("referrer", { length: 300 }),
+  device: varchar("device", { length: 20 }).default("desktop").notNull(), // mobile | tablet | desktop
+  visitorId: varchar("visitor_id", { length: 64 }).notNull(),
+  sessionId: varchar("session_id", { length: 64 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // ── Bảng: password_reset_tokens ──────────────────────────────────────────────
 export const passwordResetTokens = pgTable("password_reset_tokens", {
   id: uuid("id").defaultRandom().primaryKey(),
