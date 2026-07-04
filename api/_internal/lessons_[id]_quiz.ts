@@ -22,6 +22,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       "math2-b1": "number-review-game",
       "math2-b2": "number-sequence-chart",
       "math2-b7": "add-across-ten-game",
+      "math2-b46": "math2-quiz-3d",
+      "math2-quiz-3d": "math2-quiz-3d",
       "pipe-balance": "pipe-balance-game",
       "matific-canvas": "matific-canvas-game",
     };

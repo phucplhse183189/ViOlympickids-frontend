@@ -26,6 +26,7 @@ import {
   Math2B46DetectiveGame,
   Math2B1Game,
   Math2B1QuizPage,
+  Math2B46QuizPage,
   MatificCoinGame,
   Math2B2TheoryPage,
   Math2B1TheoryPage,
@@ -97,6 +98,8 @@ export function RouterProvider() {
           path="game/math2-b46-detective"
           element={<Math2B46DetectiveGame />}
         />
+        <Route path="quiz/math2-b46" element={<Math2B46QuizPage />} />
+        <Route path="result/math2-b46" element={<Math2ResultPage />} />
 
         {/* Lesson 2 */}
         <Route path="theory/math2-b2" element={<Math2B2TheoryPage />} />

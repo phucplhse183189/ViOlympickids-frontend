@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { eq, asc, inArray } from "drizzle-orm";
+import { eq, asc } from "drizzle-orm";
 import { db, schema } from "../_db.js";
 
 /**
@@ -12,7 +12,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // GROUP BY để loại trùng (trường hợp có nhiều câu hỏi - dù hiện tại ta lấy toàn bộ lessons)
     const rows = await db
       .selectDistinctOn([schema.lessons.id], {
         id: schema.lessons.id,
@@ -23,11 +22,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         lessonNumber: schema.lessons.lessonNumber,
       })
       .from(schema.lessons)
+      .innerJoin(schema.topics, eq(schema.topics.id, schema.lessons.topicId))
       .innerJoin(
-        schema.topics,
-        eq(schema.topics.id, schema.lessons.topicId)
+        schema.quizQuestions,
+        eq(schema.quizQuestions.lessonId, schema.lessons.id)
       )
-      .where(inArray(schema.lessons.lessonNumber, [2, 46]))
       .orderBy(
         schema.lessons.id,
         asc(schema.topics.topicNumber),

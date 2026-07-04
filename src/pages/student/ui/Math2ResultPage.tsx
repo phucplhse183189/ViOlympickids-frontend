@@ -74,6 +74,7 @@ function getRankLabel(stars: number) {
 const RESULT_TO_LESSON: Record<string, string> = {
   "math2-b1": "math2-b1",
   "math2-b2": "math2-b2",
+  "math2-b46": "math2-b46",
 };
 
 export function Math2ResultPage() {
@@ -138,7 +139,11 @@ export function Math2ResultPage() {
         {/* Header */}
         <div className="bg-gradient-to-r from-orange-400 to-amber-300 px-5 py-3 text-center">
           <p className="text-white text-sm font-extrabold">
-            {lessonId === "math2-b1-t1" ? "📊 Bài 1 (Tiết 1): Đọc, viết, xếp thứ tự" : "📊 Bài 2: Tia số · Số liền trước, số liền sau"}
+            {lessonId === "math2-b1-t1"
+              ? "📊 Bài 1 (Tiết 1): Đọc, viết, xếp thứ tự"
+              : lessonId === "math2-b46"
+                ? "📊 Bài 46: Khối trụ và Khối cầu"
+                : "📊 Bài 2: Tia số · Số liền trước, số liền sau"}
           </p>
         </div>
 

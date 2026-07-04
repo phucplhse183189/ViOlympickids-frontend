@@ -457,6 +457,7 @@ async function seed() {
 
   const lesson1Id = lessonMap.get(1)!;
   const lesson2Id = lessonMap.get(2)!;
+  const lesson46Id = lessonMap.get(46)!;
 
   // MATH2_B1_QUIZ — 5 câu
   await db.insert(schema.quizQuestions).values([
@@ -481,7 +482,19 @@ async function seed() {
     { lessonId: lesson2Id, questionNumber: 10, question: "Điền số thiếu vào tia số: 2, 4, ▢, 8, 10", visual: "2 → 4 → ▢ → 8 → 10", options: ["5","7","6","3"], correctIndex: 2, explanation: "Dãy số tăng dần 2 đơn vị: 2, 4, 6, 8, 10." },
   ]);
 
-  console.log("  ✅ 15 quiz questions created");
+  // MATH2_B46_QUIZ — 8 câu (Khối trụ & Khối cầu)
+  await db.insert(schema.quizQuestions).values([
+    { lessonId: lesson46Id, questionNumber: 1, question: "Khối trụ có bao nhiêu mặt đáy hình tròn?", options: ["1 mặt","2 mặt","3 mặt","Không có"], correctIndex: 1, explanation: "Khối trụ có 2 mặt đáy hình tròn ở hai đầu." },
+    { lessonId: lesson46Id, questionNumber: 2, question: "Khối cầu có bao nhiêu mặt cong?", options: ["1 mặt","2 mặt","3 mặt","4 mặt"], correctIndex: 0, explanation: "Khối cầu chỉ có 1 mặt cong duy nhất, không có cạnh và đỉnh." },
+    { lessonId: lesson46Id, questionNumber: 3, question: "Đồ vật nào có dạng khối trụ?", options: ["Quả bóng đá","Lon nước ngọt","Xúc xắc","Hộp quà"], correctIndex: 1, explanation: "Lon nước ngọt có 2 đáy tròn và thân cong — đó là khối trụ." },
+    { lessonId: lesson46Id, questionNumber: 4, question: "Đồ vật nào có dạng khối cầu?", options: ["Cuộn giấy vệ sinh","Cục pin","Quả bóng đá","Cái trống"], correctIndex: 2, explanation: "Quả bóng đá tròn vo, lăn được mọi hướng — đó là khối cầu." },
+    { lessonId: lesson46Id, questionNumber: 5, question: "Khi mở khối trụ ra, ta được những hình nào?", options: ["2 hình tròn và 1 hình chữ nhật","1 hình tròn và 2 hình vuông","2 bán cầu","1 hình tam giác"], correctIndex: 0, explanation: "Khối trụ khi trải ra gồm 2 hình tròn (2 đáy) và 1 hình chữ nhật (mặt bên)." },
+    { lessonId: lesson46Id, questionNumber: 6, question: "Khi cắt khối cầu làm đôi, ta được gì?", options: ["2 hình tròn","2 bán cầu","1 hình chữ nhật","2 hình vuông"], correctIndex: 1, explanation: "Khối cầu khi cắt đôi ta được 2 bán cầu, mỗi bán cầu có 1 mặt phẳng và 1 mặt cong." },
+    { lessonId: lesson46Id, questionNumber: 7, question: "Khối trụ có bao nhiêu mặt bên cong?", options: ["Không có","1 mặt","2 mặt","3 mặt"], correctIndex: 1, explanation: "Khối trụ có 1 mặt bên cong bao quanh thân." },
+    { lessonId: lesson46Id, questionNumber: 8, question: "Cuộn giấy vệ sinh thuộc loại hình khối nào?", options: ["Khối cầu","Khối trụ","Khối lập phương","Khối hộp chữ nhật"], correctIndex: 1, explanation: "Cuộn giấy có 2 đáy tròn và thân cong — đó là khối trụ." },
+  ]);
+
+  console.log("  ✅ 23 quiz questions created");
 
   // ══════════════════════════════════════════════════════════════
   console.log("\n🎉🎉🎉 SEED HOÀN TẤT! 🎉🎉🎉");
@@ -500,7 +513,7 @@ async function seed() {
   console.log(`  🔔 4 alerts`);
   console.log(`  📚 ${createdTopics.length} topics`);
   console.log(`  📖 ${createdLessons.length} lessons`);
-  console.log(`  ❓ 15 quiz questions`);
+  console.log(`  ❓ 23 quiz questions`);
   console.log("─────────────────────────────");
 
   await sql.end();

@@ -5,7 +5,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { animated, config, useSpring } from "@react-spring/three";
 import * as THREE from "three";
-import { Volume2, VolumeX, X, Gamepad2, RotateCcw, Sparkles } from "lucide-react";
+import { Volume2, VolumeX, X, Gamepad2, RotateCcw, Sparkles, ClipboardList } from "lucide-react";
 
 /* ─── TTS helper ─────────────────────────────────────────────── */
 function speak(text: string, onEnd?: () => void) {
@@ -710,6 +710,18 @@ export default function Math2Quiz3DShapesPage() {
           >
             <Sparkles size={16} />
             Tóm tắt bài học
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate("/student/quiz/math2-b46")}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-extrabold text-white shadow-lg hover:shadow-xl active:scale-95 transition-all"
+            style={{
+              background: "linear-gradient(135deg, #38bdf8, #0ea5e9)",
+              boxShadow: "0 4px 14px rgba(14,165,233,0.35)",
+            }}
+          >
+            <ClipboardList size={16} />
+            Làm quiz: Khối trụ & Khối cầu
           </button>
           <button
             type="button"

@@ -10,6 +10,7 @@ import {
   Star,
   Sparkles,
   Heart,
+  ClipboardList,
 } from "lucide-react";
 
 /* ─── TTS helper ─────────────────────────────────────────────── */
@@ -596,7 +597,20 @@ export default function Math2B46WarehouseGame() {
               )}
 
               {/* Actions */}
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto">
+              <div className="flex flex-col items-center justify-center gap-3 max-w-md mx-auto">
+                <button
+                  onClick={() => navigate("/student/quiz/math2-b46")}
+                  className="w-full inline-flex items-center justify-center gap-2 px-6 py-4 rounded-2xl font-black text-base transition-all active:scale-95 shadow-lg hover:shadow-xl"
+                  style={{
+                    background: "linear-gradient(135deg, #38bdf8, #0ea5e9)",
+                    color: "white",
+                    boxShadow: "0 6px 0 #0369a1, 0 8px 20px rgba(14,165,233,0.35)",
+                  }}
+                >
+                  <ClipboardList size={18} />
+                  Làm bài quiz ngay ➔
+                </button>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full">
                 <button
                   onClick={handleReset}
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl font-extrabold text-sm transition-all active:scale-95 shadow-lg hover:shadow-xl"
@@ -624,6 +638,7 @@ export default function Math2B46WarehouseGame() {
                     <ArrowRight size={16} />
                   </button>
                 )}
+                </div>
               </div>
             </div>
           </div>

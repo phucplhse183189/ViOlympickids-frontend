@@ -11,6 +11,7 @@ import {
   Zap,
   Home,
   Check,
+  ClipboardList,
 } from "lucide-react";
 
 /* ─── TTS helper ─────────────────────────────────────────────── */
@@ -377,7 +378,19 @@ export default function Math2B46DetectiveGame() {
             </div>
 
             {/* Actions */}
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => navigate("/student/quiz/math2-b46")}
+                className="w-full inline-flex items-center justify-center gap-2 px-5 py-4 rounded-2xl font-black text-base text-white transition-all active:scale-95 shadow-lg"
+                style={{
+                  background: "linear-gradient(135deg, #38bdf8, #0ea5e9)",
+                  boxShadow: "0 6px 0 #0369a1, 0 8px 20px rgba(14,165,233,0.35)",
+                }}
+              >
+                <ClipboardList size={18} />
+                Làm bài quiz ngay ➔
+              </button>
+              <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={handleReset}
                 className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl font-extrabold text-sm text-white transition-all active:scale-95 shadow-lg"
@@ -407,6 +420,7 @@ export default function Math2B46DetectiveGame() {
                 <Home size={16} />
                 Mục lục
               </button>
+              </div>
             </div>
           </div>
         </div>

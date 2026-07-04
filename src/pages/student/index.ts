@@ -7,6 +7,7 @@ export { default as Math2B46WarehouseGame } from "./ui/Math2B46WarehouseGame";
 export { Math2ResultPage } from "./ui/Math2ResultPage";
 export { Math2B1Game } from "./ui/Math2B1Game";
 export { Math2B1QuizPage } from "./ui/Math2B1QuizPage";
+export { Math2B46QuizPage } from "./ui/Math2B46QuizPage";
 export { MatificCoinGame } from "./ui/MatificCoinGame";
 export { Math2B2TheoryPage } from "./ui/Math2B2TheoryPage";
 export { Math2B1TheoryPage } from "./ui/Math2B1TheoryPage";
