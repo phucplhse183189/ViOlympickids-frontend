@@ -117,6 +117,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (segs.length === 1 && segs[0] === "track") return analyticsTrack(req, res);
   }
 
+  if (group === "feedback") {
+    const feedbackIndex = (await import("./_internal/feedback_index.js")).default;
+    const feedbackReply = (await import("./_internal/feedback_[id]_reply.js")).default;
+    const feedbackLike = (await import("./_internal/feedback_[id]_like.js")).default;
+
+    if (segs.length === 0) return feedbackIndex(req, res);
+    if (segs.length === 2 && segs[1] === "reply") { req.query.id = segs[0]; return feedbackReply(req, res); }
+    if (segs.length === 2 && segs[1] === "like") { req.query.id = segs[0]; return feedbackLike(req, res); }
+  }
+
   if (group === "chat-b1") {
     return chatB1(req, res);
   }

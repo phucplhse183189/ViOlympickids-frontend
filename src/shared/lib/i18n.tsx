@@ -224,6 +224,23 @@ export const translations = {
         confirmPasswordMismatch: "Mật khẩu không khớp",
       },
     },
+    feedback: {
+      title: "Phụ Huynh Nói Gì?",
+      writeReview: "Viết đánh giá",
+      loginToReview: "Đăng nhập để đánh giá",
+      submitting: "Đang gửi...",
+      submit: "Gửi đánh giá",
+      contentPlaceholder: "Chia sẻ trải nghiệm của bạn về ViOlympicKids...",
+      replyPlaceholder: "Viết bình luận...",
+      reply: "Trả lời",
+      viewMoreReplies: "Xem thêm bình luận",
+      hideReplies: "Thu gọn",
+      errors: {
+        contentRequired: "Vui lòng nhập nội dung đánh giá",
+        ratingRequired: "Vui lòng chọn số sao",
+        generic: "Có lỗi xảy ra, vui lòng thử lại sau"
+      }
+    },
   },
 
   en: {
@@ -418,6 +435,23 @@ export const translations = {
         confirmPasswordRequired: "Please confirm your password",
         confirmPasswordMismatch: "Passwords do not match",
       },
+    },
+    feedback: {
+      title: "What Parents Say",
+      writeReview: "Write a review",
+      loginToReview: "Log in to review",
+      submitting: "Submitting...",
+      submit: "Submit Review",
+      contentPlaceholder: "Share your experience with ViOlympicKids...",
+      replyPlaceholder: "Write a reply...",
+      reply: "Reply",
+      viewMoreReplies: "View more replies",
+      hideReplies: "Hide replies",
+      errors: {
+        contentRequired: "Please enter your review content",
+        ratingRequired: "Please select a rating",
+        generic: "An error occurred, please try again later"
+      }
     },
   },
 } as const;

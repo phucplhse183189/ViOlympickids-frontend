@@ -305,3 +305,40 @@ export const paymentOrders = pgTable("payment_orders", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   paidAt: timestamp("paid_at"),
 });
+
+// ── Bảng: feedback_posts (Đánh giá của phụ huynh) ────────────────────────────
+export const feedbackPosts = pgTable("feedback_posts", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
+  rating: integer("rating").notNull(),
+  content: text("content").notNull(),
+  likesCount: integer("likes_count").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ── Bảng: feedback_replies (Bình luận trong đánh giá) ────────────────────────
+export const feedbackReplies = pgTable("feedback_replies", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  postId: uuid("post_id")
+    .references(() => feedbackPosts.id)
+    .notNull(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ── Bảng: feedback_likes (Lượt thích đánh giá) ──────────────────────────────
+export const feedbackLikes = pgTable("feedback_likes", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  postId: uuid("post_id")
+    .references(() => feedbackPosts.id)
+    .notNull(),
+  userId: uuid("user_id")
+    .references(() => users.id)
+    .notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
