@@ -1,11 +1,21 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { sql } from "@vercel/postgres";
 
+// Map avatar_id to emoji
+const AVATAR_MAP: Record<string, string> = {
+  fox: "🦊", panda: "🐼", frog: "🐸", tiger: "🐯",
+  lion: "🦁", penguin: "🐧", octopus: "🐙", unicorn: "🦄",
+  dragon: "🐲", rabbit: "🐰", butterfly: "🦋", dolphin: "🐬",
+};
+
+function getEmoji(avatarId: string | null, initials: string | null): string {
+  if (avatarId && AVATAR_MAP[avatarId]) return AVATAR_MAP[avatarId];
+  return initials || "👤";
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     if (req.method === "GET") {
-      // Get all feedback posts with author details and replies
-      // Note: We use raw sql because the query with nested relations can be complex
       const { rows: posts } = await sql`
         SELECT 
           p.id, 
@@ -14,14 +24,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           p.likes_count as "likesCount",
           p.created_at as "createdAt",
           u.name as "authorName",
-          u.avatar_emoji as "authorAvatar",
+          u.avatar_id as "authorAvatarId",
+          u.avatar_initials as "authorInitials",
           (
             SELECT json_agg(json_build_object(
               'id', r.id,
               'content', r.content,
               'createdAt', r.created_at,
               'authorName', ru.name,
-              'authorAvatar', ru.avatar_emoji
+              'authorAvatarId', ru.avatar_id,
+              'authorInitials', ru.avatar_initials
             ) ORDER BY r.created_at ASC)
             FROM feedback_replies r
             JOIN users ru ON r.user_id = ru.id
@@ -33,11 +45,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         LIMIT 50
       `;
 
-      // Handle null replies (when there are no replies, json_agg returns null)
       const formattedPosts = posts.map(post => ({
         ...post,
-        replies: post.replies || [],
-        authorAvatar: post.authorAvatar || "🦊"
+        authorAvatar: getEmoji(post.authorAvatarId, post.authorInitials),
+        replies: (post.replies || []).map((r: any) => ({
+          ...r,
+          authorAvatar: getEmoji(r.authorAvatarId, r.authorInitials),
+        })),
       }));
 
       return res.status(200).json(formattedPosts);
@@ -58,15 +72,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         RETURNING id, rating, content, likes_count as "likesCount", created_at as "createdAt"
       `;
 
-      // Fetch author info to return complete object
       const { rows: userRows } = await sql`
-        SELECT name, avatar_emoji FROM users WHERE id = ${userId}
+        SELECT name, avatar_id, avatar_initials FROM users WHERE id = ${userId}
       `;
 
       const newPost = {
         ...rows[0],
         authorName: userRows[0]?.name || "Parent",
-        authorAvatar: userRows[0]?.avatar_emoji || "🦊",
+        authorAvatar: getEmoji(userRows[0]?.avatar_id, userRows[0]?.avatar_initials),
         replies: []
       };
 

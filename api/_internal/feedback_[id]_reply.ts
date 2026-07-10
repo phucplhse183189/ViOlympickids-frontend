@@ -1,6 +1,17 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { sql } from "@vercel/postgres";
 
+const AVATAR_MAP: Record<string, string> = {
+  fox: "🦊", panda: "🐼", frog: "🐸", tiger: "🐯",
+  lion: "🦁", penguin: "🐧", octopus: "🐙", unicorn: "🦄",
+  dragon: "🐲", rabbit: "🐰", butterfly: "🦋", dolphin: "🐬",
+};
+
+function getEmoji(avatarId: string | null, initials: string | null): string {
+  if (avatarId && AVATAR_MAP[avatarId]) return AVATAR_MAP[avatarId];
+  return initials || "👤";
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     if (req.method === "POST") {
@@ -20,15 +31,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         RETURNING id, content, created_at as "createdAt"
       `;
 
-      // Fetch author info to return complete object
       const { rows: userRows } = await sql`
-        SELECT name, avatar_emoji FROM users WHERE id = ${userId}
+        SELECT name, avatar_id, avatar_initials FROM users WHERE id = ${userId}
       `;
 
       const newReply = {
         ...rows[0],
         authorName: userRows[0]?.name || "Parent",
-        authorAvatar: userRows[0]?.avatar_emoji || "🦊",
+        authorAvatar: getEmoji(userRows[0]?.avatar_id, userRows[0]?.avatar_initials),
       };
 
       return res.status(201).json(newReply);
