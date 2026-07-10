@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { X, ShieldCheck } from "lucide-react";
-import { PARENT_PIN_KEY, DEFAULT_PARENT_PIN } from "@/shared/lib/auth";
+import { PARENT_PIN_KEY, DEFAULT_PARENT_PIN } from "@/features/auth/context/auth";
 
 interface ParentGateProps {
   onSuccess: () => void;

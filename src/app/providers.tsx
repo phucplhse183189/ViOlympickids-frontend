@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 import { BrowserRouter } from "react-router-dom";
 import { LanguageProvider } from "@/shared/lib/i18n";
-import { AuthProvider } from "@/shared/lib/auth";
-import { ActiveChildProvider } from "@/shared/lib/activeChild";
+import { AuthProvider } from "@/features/auth/context/auth";
+import { ActiveChildProvider } from "@/features/dashboard/context/activeChild";
 
 interface ProvidersProps {
   children: ReactNode;

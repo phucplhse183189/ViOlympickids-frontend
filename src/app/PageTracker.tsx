@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import { trackPageView } from "@/shared/api/services/analyticsService";
+import { trackPageView } from "@/shared/api/analytics";
 
 /**
  * Ghi nhận lượt xem trang mỗi khi đổi route (SPA).

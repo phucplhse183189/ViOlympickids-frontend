@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Settings, Check, LogOut, Pencil, X } from "lucide-react";
 import { useLang, type Language } from "@/shared/lib/i18n";
-import { useAuth, AVATARS } from "@/shared/lib/auth";
+import { useAuth, AVATARS } from "@/features/auth/context/auth";
 
 const LANGUAGES: { code: Language; flag: string; label: string }[] = [
   { code: "vi", flag: "VN", label: "Tiếng Việt" },

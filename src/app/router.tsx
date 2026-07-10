@@ -1,52 +1,46 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { PageTracker } from "./PageTracker";
-import { HomePage } from "@/pages/home";
-import { LoginPage } from "@/pages/login";
-import { RegisterPage } from "@/pages/register";
-import { ForgotPasswordPage } from "@/pages/forgot-password";
-import { ResetPasswordPage } from "@/pages/reset-password";
-import { ProfilePickerPage } from "@/pages/profile-picker";
-import {
-  OverviewPage,
-  ProgressPage,
-  HistoryPage,
-  SubscriptionPage,
-  PaymentPage,
-  ProfilePage,
-  PaymentResultPage,
-  PaymentCancelPage,
-} from "@/pages/dashboard";
-import {
-  Math2TableOfContents,
-  NumberSequenceGame,
-  Math2QuizPage,
-  Math2ResultPage,
-  Math2Quiz3DShapesPage,
-  Math2B46WarehouseGame,
-  Math2B46DetectiveGame,
-  Math2B1Game,
-  Math2B1QuizPage,
-  Math2B46QuizPage,
-  MatificCoinGame,
-  Math2B2TheoryPage,
-  Math2B1TheoryPage,
-  Math2B2GamePage,
-  Math2B7Game,
-  PipeBalanceGame,
-  LeaderboardPage,
-} from "@/pages/student";
-import { AddChildPage } from "@/pages/add-child";
-import { ParentDashboardLayout } from "@/widgets/dashboard-layout";
-import { StudentLayout } from "@/widgets/student-layout";
-import {
-  AdminOverviewPage,
-  AdminPerformancePage,
-  AdminFinancePage,
-  AdminUsersPage,
-  AdminLessonsPage,
-  AdminAnalyticsPage,
-} from "@/pages/admin";
-import { AdminLayout } from "@/widgets/admin-layout";
+import { HomePage } from "@/features/home/pages/HomePage";
+import { LoginPage } from "@/features/auth/pages/LoginPage";
+import { RegisterPage } from "@/features/auth/pages/RegisterPage";
+import { ForgotPasswordPage } from "@/features/auth/pages/ForgotPasswordPage";
+import { ResetPasswordPage } from "@/features/auth/pages/ResetPasswordPage";
+import { ProfilePickerPage } from "@/features/dashboard/pages/ProfilePickerPage";
+import { OverviewPage } from "@/features/dashboard/pages/OverviewPage";
+import { ProgressPage } from "@/features/dashboard/pages/ProgressPage";
+import { HistoryPage } from "@/features/dashboard/pages/HistoryPage";
+import { SubscriptionPage } from "@/features/dashboard/pages/SubscriptionPage";
+import { PaymentPage } from "@/features/dashboard/pages/PaymentPage";
+import { ProfilePage } from "@/features/dashboard/pages/ProfilePage";
+import { PaymentResultPage } from "@/features/dashboard/pages/PaymentResultPage";
+import { PaymentCancelPage } from "@/features/dashboard/pages/PaymentCancelPage";
+import { Math2TableOfContents } from "@/features/student/pages/Math2TableOfContents";
+import { NumberSequenceGame } from "@/features/student/pages/NumberSequenceGame";
+import { Math2QuizPage } from "@/features/student/pages/Math2QuizPage";
+import { Math2ResultPage } from "@/features/student/pages/Math2ResultPage";
+import { Math2Quiz3DShapesPage } from "@/features/student/pages/Math2Quiz3DShapesPage";
+import { Math2B46WarehouseGame } from "@/features/student/pages/Math2B46WarehouseGame";
+import { Math2B46DetectiveGame } from "@/features/student/pages/Math2B46DetectiveGame";
+import { Math2B1Game } from "@/features/student/pages/Math2B1Game";
+import { Math2B1QuizPage } from "@/features/student/pages/Math2B1QuizPage";
+import { Math2B46QuizPage } from "@/features/student/pages/Math2B46QuizPage";
+import { MatificCoinGame } from "@/features/student/pages/MatificCoinGame";
+import { Math2B2TheoryPage } from "@/features/student/pages/Math2B2TheoryPage";
+import { Math2B1TheoryPage } from "@/features/student/pages/Math2B1TheoryPage";
+import { Math2B2GamePage } from "@/features/student/pages/Math2B2GamePage";
+import { Math2B7Game } from "@/features/student/pages/Math2B7Game";
+import { PipeBalanceGame } from "@/features/student/pages/PipeBalanceGame";
+import { LeaderboardPage } from "@/features/student/pages/LeaderboardPage";
+import { AddChildPage } from "@/features/dashboard/pages/AddChildPage";
+import { ParentDashboardLayout } from "@/features/dashboard/components/ParentDashboardLayout";
+import { StudentLayout } from "@/features/student/components/StudentLayout";
+import { AdminOverviewPage } from "@/features/admin/pages/AdminOverviewPage";
+import { AdminPerformancePage } from "@/features/admin/pages/AdminPerformancePage";
+import { AdminFinancePage } from "@/features/admin/pages/AdminFinancePage";
+import { AdminUsersPage } from "@/features/admin/pages/AdminUsersPage";
+import { AdminLessonsPage } from "@/features/admin/pages/AdminLessonsPage";
+import { AdminAnalyticsPage } from "@/features/admin/pages/AdminAnalyticsPage";
+import { AdminLayout } from "@/features/admin/components/AdminLayout";
 
 export function RouterProvider() {
   return (

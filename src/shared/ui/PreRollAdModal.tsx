@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { X, Play, Loader2, Info } from "lucide-react";
-import { useAuth } from "@/shared/lib/auth";
+import { useAuth } from "@/features/auth/context/auth";
 
 interface PreRollAdModalProps {
   isOpen: boolean;

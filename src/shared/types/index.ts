@@ -5,7 +5,6 @@
  * ============================================================
  */
 
-export * from "./admin";
-export * from "./dashboard";
-export * from "./lesson";
-export * from "./payment";
+
+
+
