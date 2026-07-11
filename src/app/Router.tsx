@@ -5,6 +5,7 @@ import { LoginPage } from "@/features/auth/pages/LoginPage";
 import { RegisterPage } from "@/features/auth/pages/RegisterPage";
 import { ForgotPasswordPage } from "@/features/auth/pages/ForgotPasswordPage";
 import { ResetPasswordPage } from "@/features/auth/pages/ResetPasswordPage";
+import { CommunityPage } from "@/features/community/pages/CommunityPage";
 import { ProfilePickerPage } from "@/features/dashboard/pages/ProfilePickerPage";
 import { OverviewPage } from "@/features/dashboard/pages/OverviewPage";
 import { ProgressPage } from "@/features/dashboard/pages/ProgressPage";
@@ -40,6 +41,7 @@ import { AdminFinancePage } from "@/features/admin/pages/AdminFinancePage";
 import { AdminUsersPage } from "@/features/admin/pages/AdminUsersPage";
 import { AdminLessonsPage } from "@/features/admin/pages/AdminLessonsPage";
 import { AdminAnalyticsPage } from "@/features/admin/pages/AdminAnalyticsPage";
+import { AdminFeedbackPage } from "@/features/admin/pages/AdminFeedbackPage";
 import { AdminLayout } from "@/features/admin/components/AdminLayout";
 
 export function RouterProvider() {
@@ -52,6 +54,7 @@ export function RouterProvider() {
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/community" element={<CommunityPage />} />
       <Route path="/profile-picker" element={<ProfilePickerPage />} />
       <Route path="/add-child" element={<AddChildPage />} />
 
@@ -114,6 +117,7 @@ export function RouterProvider() {
         <Route path="users" element={<AdminUsersPage />} />
         <Route path="lessons" element={<AdminLessonsPage />} />
         <Route path="analytics" element={<AdminAnalyticsPage />} />
+        <Route path="feedback" element={<AdminFeedbackPage />} />
       </Route>
     </Routes>
     </>

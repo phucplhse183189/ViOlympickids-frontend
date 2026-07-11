@@ -37,6 +37,20 @@ function getInitials(name: string) {
   return name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase();
 }
 
+function formatDate(dateString?: string) {
+  if (!dateString) return "Chưa cập nhật";
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    return new Intl.DateTimeFormat('vi-VN', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    }).format(date);
+  } catch {
+    return dateString;
+  }
+}
+
 export function AdminUsersPage() {
   const [parents, setParents] = useState<adminService.ParentWithChildren[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,6 +66,17 @@ export function AdminUsersPage() {
   const [selectedParent, setSelectedParent] = useState<adminService.ParentWithChildren | null>(
     null,
   );
+
+  useEffect(() => {
+    if (selectedParent) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [selectedParent]);
 
   const reload = async () => {
     try {
@@ -650,112 +675,132 @@ export function AdminUsersPage() {
       )}
 
       {selectedParent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
           <div
-            className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
             onClick={() => setSelectedParent(null)}
           />
-          <div className="relative bg-white border border-slate-200 rounded-3xl w-full max-w-lg p-6 max-h-[80vh] overflow-y-auto shadow-2xl">
+          <div className="relative bg-white rounded-[2rem] w-full max-w-5xl p-6 sm:p-8 shadow-2xl ring-1 ring-slate-900/5 transition-all overflow-hidden flex flex-col max-h-[90vh]">
             <button
-              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg"
+              className="absolute top-5 right-5 p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors z-10"
               onClick={() => setSelectedParent(null)}
             >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6 18L18 6M6 6l12 12"
-                />
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
 
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center text-white font-bold text-lg">
-                {getInitials(selectedParent.name)}
-              </div>
-              <div>
-                <h3 className="text-slate-900 font-extrabold text-lg">
-                  {selectedParent.name}
-                </h3>
-                <p className="text-slate-500 text-sm">{selectedParent.phone}</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 mb-6">
-              <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
-                <p className="text-slate-500 text-xs">Điện thoại</p>
-                <p className="text-slate-900 text-sm font-semibold mt-0.5">
-                  {selectedParent.phone}
-                </p>
-              </div>
-              <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
-                <p className="text-slate-500 text-xs">Ngày đăng ký</p>
-                <p className="text-slate-900 text-sm font-semibold mt-0.5">
-                  {selectedParent.createdAt}
-                </p>
-              </div>
-              <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
-                <p className="text-slate-500 text-xs">Trạng thái</p>
-                <p
-                  className={`text-sm font-semibold mt-0.5 ${STATUS_LABELS[selectedParent.status || "active"].color}`}
-                >
-                  {STATUS_LABELS[selectedParent.status || "active"].label}
-                </p>
-              </div>
-              <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
-                <p className="text-slate-500 text-xs">Số con</p>
-                <p className="text-slate-900 text-sm font-semibold mt-0.5">
-                  {selectedParent.children.length}
-                </p>
-              </div>
-            </div>
-
-            <h4 className="text-slate-900 font-semibold text-sm mb-3">
-              Danh sách học sinh
-            </h4>
-            <div className="space-y-2">
-              {selectedParent.children.map((child) => {
-                const plan = PLAN_BADGES[child.plan as PlanType];
-                const cStatus = STATUS_LABELS[child.status || "active"];
-
-                return (
-                  <div
-                    key={child.id}
-                    className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl p-3"
-                  >
-                    <div className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-lg">
-                      {child.avatarEmoji}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-slate-900 text-sm font-semibold">
-                          {child.name}
-                        </span>
-                        <span
-                          className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${plan.bg} ${plan.color}`}
-                        >
-                          {child.plan}
-                        </span>
-                      </div>
-                      <div className="text-slate-500 text-xs mt-0.5">
-                        {child.grade} · {child.gender === "boy" ? "Nam" : "Nữ"}{" "}
-                        · TB {child.avgScore || 0}đ · {child.totalLessons || 0} bài
-                      </div>
-                    </div>
-                    <span
-                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${cStatus.bg} ${cStatus.color}`}
-                    >
-                      {cStatus.label}
-                    </span>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full overflow-y-auto lg:overflow-hidden">
+              
+              {/* Left Column: Parent Info */}
+              <div className="lg:col-span-4 flex flex-col gap-6">
+                <div className="text-center mt-4">
+                  <div className="w-28 h-28 mx-auto bg-gradient-to-br from-indigo-500 via-blue-500 to-blue-600 rounded-[2rem] flex items-center justify-center text-white font-black text-4xl shadow-inner ring-8 ring-indigo-50 mb-5">
+                    {getInitials(selectedParent.name)}
                   </div>
-                );
-              })}
+                  <h3 className="text-slate-900 font-extrabold text-2xl tracking-tight">
+                    {selectedParent.name}
+                  </h3>
+                  <div className="inline-flex items-center gap-1.5 mt-3 bg-slate-50 border border-slate-100 py-1.5 px-3.5 rounded-xl">
+                    <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-2.896-1.596-5.432-4.132-7.028-7.028l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg>
+                    <span className="text-slate-600 font-bold text-sm">{selectedParent.phone}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-3 mt-2">
+                  <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-4 border border-slate-200/80 shadow-sm flex items-center gap-4">
+                    <div className="w-11 h-11 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 shrink-0 shadow-inner">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                    <div>
+                      <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-0.5">Ngày đăng ký</p>
+                      <p className="text-slate-900 text-sm font-bold">
+                        {formatDate(selectedParent.createdAt)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-slate-50 to-white rounded-2xl p-4 border border-slate-200/80 shadow-sm flex items-center gap-4">
+                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-inner ${STATUS_LABELS[selectedParent.status || "active"].bg} ${STATUS_LABELS[selectedParent.status || "active"].color}`}>
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-0.5">Trạng thái</p>
+                      <span className={`inline-block mt-0.5 text-xs font-bold px-2.5 py-1 rounded-lg ${STATUS_LABELS[selectedParent.status || "active"].bg} ${STATUS_LABELS[selectedParent.status || "active"].color}`}>
+                        {STATUS_LABELS[selectedParent.status || "active"].label}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Students List */}
+              <div className="lg:col-span-8 flex flex-col min-h-0 bg-slate-50/50 rounded-3xl p-6 border border-slate-100">
+                <div className="flex items-center justify-between mb-6 shrink-0">
+                  <h4 className="text-slate-900 font-extrabold text-xl">
+                    Hồ sơ học sinh
+                  </h4>
+                  <span className="text-sm font-bold px-3 py-1 bg-white shadow-sm text-indigo-600 rounded-xl border border-slate-200">
+                    Tổng số: {selectedParent.children.length} bé
+                  </span>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 overflow-y-auto overflow-x-hidden pr-2 pb-2">
+                  {selectedParent.children.map((child) => {
+                    const plan = PLAN_BADGES[child.plan as PlanType];
+                    const cStatus = STATUS_LABELS[child.status || "active"];
+
+                    return (
+                      <div
+                        key={child.id}
+                        className="group flex flex-col gap-4 bg-white border border-slate-200 hover:border-indigo-300 hover:shadow-lg transition-all duration-300 rounded-2xl p-5"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                           <div className="flex items-center gap-3 flex-1 min-w-0">
+                             <div className="relative shrink-0">
+                               <div className="w-14 h-14 bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-100/50 rounded-2xl flex items-center justify-center text-3xl shadow-sm">
+                                 {child.avatarEmoji}
+                               </div>
+                               <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-[3px] border-white ${cStatus.bg.replace('bg-', 'bg-').replace('100', '500')}`} title={cStatus.label} />
+                             </div>
+                             <div className="min-w-0 flex-1">
+                               <div className="flex flex-col gap-1.5 mb-1">
+                                 <span className="text-slate-900 text-base font-bold truncate group-hover:text-indigo-600 transition-colors">
+                                   {child.name}
+                                 </span>
+                                 <div className="flex">
+                                   <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wider ${plan.bg} ${plan.color}`}>
+                                     {child.plan}
+                                   </span>
+                                 </div>
+                               </div>
+                             </div>
+                           </div>
+                           <span className={`shrink-0 text-[11px] font-bold px-2 py-1 rounded-lg whitespace-nowrap ${cStatus.bg} ${cStatus.color}`}>
+                             {cStatus.label}
+                           </span>
+                        </div>
+                        
+                        <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-100">
+                          <div className="flex flex-wrap items-center gap-2 text-slate-500 text-xs font-medium">
+                            <span className="bg-slate-100 px-2 py-1 rounded-md text-slate-700 font-bold">{child.grade}</span>
+                            <span className="flex items-center gap-1 font-bold text-slate-600 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
+                              <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>
+                              {child.totalLessons || 0} bài
+                            </span>
+                          </div>
+                          <span className="flex items-center gap-1 text-amber-600 bg-amber-50 px-2 py-1 rounded-md font-black text-xs border border-amber-100/50 shadow-sm">
+                            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clipRule="evenodd" /></svg>
+                            {child.avgScore || 0} đ
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </div>
         </div>

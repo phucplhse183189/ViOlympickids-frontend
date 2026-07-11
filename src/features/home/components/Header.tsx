@@ -17,6 +17,7 @@ export function Header() {
     { href: "#about", label: t.nav.about },
     { href: "#courses", label: t.nav.courses },
     { href: "#reviews", label: t.nav.reviews },
+    { href: "/community", label: "Cộng Đồng" },
     { href: "#contact", label: t.nav.contact },
   ];
 

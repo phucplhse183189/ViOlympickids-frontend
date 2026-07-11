@@ -248,12 +248,13 @@ export const translations = {
       "🎉\u00a0 Try free for 7 days — No credit card required!\u00a0",
     registerNow: "Sign up now",
     nav: {
-      about: "About Us",
+      about: "About",
       courses: "Courses",
-      reviews: "Parent Reviews",
+      reviews: "Testimonials",
       contact: "Contact",
     },
-    login: "Log In",
+
+    login: "Login",
     register: "Sign Up Free",
     settings: { title: "Settings", language: "Language" },
     hero: {

@@ -18,6 +18,7 @@ import {
 import { useAuth } from "@/features/auth/context/auth";
 import { ProfileSelector } from "./ProfileSelector";
 import { ChildAvatarBar } from "./ChildAvatarBar";
+import { FeedbackWidget } from "@/shared/components/ui/FeedbackWidget";
 
 // ─── Nav items ────────────────────────────────────────────────
 const navItems = [
@@ -341,6 +342,7 @@ export function ParentDashboardLayout() {
           </div>
         </main>
       </div>
+      <FeedbackWidget />
     </div>
   );
 }

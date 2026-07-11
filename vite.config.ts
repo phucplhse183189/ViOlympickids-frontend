@@ -17,9 +17,9 @@ export default defineConfig({
     },
     proxy: {
       "/api": {
-        target: "https://violympickids.vercel.app",
+        target: "http://localhost:3000",
         changeOrigin: true,
-        secure: true,
+        secure: false,
       },
     },
   },

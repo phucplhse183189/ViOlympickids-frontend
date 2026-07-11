@@ -1,28 +1,23 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { useLang } from "@/shared/lib/i18n";
-import { useAuth } from "@/features/auth/context/auth";
 import { useInView } from "@/shared/hooks/useInView";
 import { getFeedbacks } from "../api/feedbackService";
 import type { FeedbackPost } from "../types";
 import { FeedbackCard } from "./FeedbackCard";
-import { FeedbackForm } from "./FeedbackForm";
-import { MessageSquarePlus } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Sparkles, ArrowRight } from "lucide-react";
 
 export function FeedbackSection() {
   const { t } = useLang();
-  const { user } = useAuth();
-  const navigate = useNavigate();
   const { ref, inView } = useInView<HTMLElement>();
-
   const [posts, setPosts] = useState<FeedbackPost[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
 
   const loadFeedbacks = async () => {
     try {
       const data = await getFeedbacks();
-      setPosts(data);
+      // Show only top 3 most recent feedbacks on homepage
+      setPosts(data.slice(0, 3));
     } catch (err) {
       console.error(err);
     } finally {
@@ -34,74 +29,64 @@ export function FeedbackSection() {
     loadFeedbacks();
   }, []);
 
-  const handleWriteReview = () => {
-    if (!user) {
-      navigate("/login");
-    } else {
-      setShowForm(true);
-    }
-  };
-
   return (
-    <section ref={ref} className="py-24 bg-gradient-to-b from-white to-orange-50 relative overflow-hidden">
+    <section id="reviews" ref={ref} className="py-24 relative overflow-hidden font-sans bg-slate-50">
       {/* Decorative background elements */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute top-10 left-10 w-64 h-64 bg-brand-primary/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-10 right-10 w-80 h-80 bg-blue-400/5 rounded-full blur-3xl" />
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-10 left-10 w-96 h-96 bg-indigo-400/10 rounded-full blur-[80px]" />
+        <div className="absolute bottom-10 right-10 w-[500px] h-[500px] bg-pink-400/10 rounded-full blur-[100px]" />
       </div>
 
       <div className="container mx-auto px-6 max-w-6xl relative z-10">
-        <div className={`reveal ${inView ? "visible" : ""} text-center mb-16`}>
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 text-gray-800">
-            {t.feedback.title}
+        <div className={`reveal ${inView ? "visible" : ""} text-center mb-16 flex flex-col items-center`}>
+          <div className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-indigo-100 text-indigo-700 font-bold text-sm mb-6">
+            <Sparkles size={16} /> Phụ huynh nói gì về chúng tôi
+          </div>
+          <h2 className="text-4xl md:text-5xl font-black mb-6 text-slate-800 leading-tight">
+            Hàng ngàn gia đình <br className="hidden md:block" />
+            đã tin tưởng <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-pink-500">ViOlympicKids</span>
           </h2>
-          <p className="text-gray-500 text-lg max-w-2xl mx-auto">
-            {t.feedback.contentPlaceholder}
+          <p className="text-slate-500 text-lg md:text-xl font-medium max-w-2xl mx-auto">
+            {t.feedback.contentPlaceholder || "Những chia sẻ chân thực nhất từ trải nghiệm học tập của các bé trên hệ thống."}
           </p>
         </div>
 
-        {showForm ? (
-          <FeedbackForm 
-            onSuccess={() => {
-              setShowForm(false);
-              loadFeedbacks();
-            }} 
-            onCancel={() => setShowForm(false)} 
-          />
-        ) : (
-          <div className="flex justify-center mb-12">
-            <button
-              onClick={handleWriteReview}
-              className={`reveal scale-up ${inView ? "visible" : ""} flex items-center gap-2 px-8 py-3 bg-white border-2 border-brand-primary text-brand-primary rounded-full font-bold hover:bg-brand-primary hover:text-white transition-all transform hover:-translate-y-1 hover:shadow-xl`}
-            >
-              <MessageSquarePlus size={20} />
-              {user ? t.feedback.writeReview : t.feedback.loginToReview}
-            </button>
-          </div>
-        )}
-
         {loading ? (
           <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary"></div>
+            <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {posts.map((post, index) => (
-              <div 
-                key={post.id} 
-                className={`reveal slide-up ${inView ? "visible" : ""}`}
-                style={{ transitionDelay: `${index * 100}ms` }}
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+              {posts.map((post, index) => (
+                <div 
+                  key={post.id} 
+                  className={`reveal slide-up ${inView ? "visible" : ""} h-full`}
+                  style={{ transitionDelay: `${index * 100}ms` }}
+                >
+                  <div className="h-full bg-white/70 backdrop-blur-md border border-white shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 rounded-[24px]">
+                    <FeedbackCard post={post} onRefresh={loadFeedbacks} />
+                  </div>
+                </div>
+              ))}
+              
+              {posts.length === 0 && (
+                <div className="col-span-full text-center py-12 text-slate-400 font-medium text-lg">
+                  Chưa có đánh giá nào được hiển thị.
+                </div>
+              )}
+            </div>
+
+            <div className={`reveal scale-up ${inView ? "visible" : ""} flex justify-center`}>
+              <Link
+                to="/community"
+                className="group flex items-center gap-3 px-8 py-4 bg-white border-2 border-slate-200 text-slate-700 rounded-2xl font-bold text-lg hover:border-indigo-500 hover:text-indigo-600 transition-all duration-300 hover:shadow-[0_10px_40px_-10px_rgba(79,70,229,0.3)]"
               >
-                <FeedbackCard post={post} onRefresh={loadFeedbacks} />
-              </div>
-            ))}
-            
-            {posts.length === 0 && !loading && (
-              <div className="col-span-full text-center py-12 text-gray-500">
-                Chưa có đánh giá nào. Hãy là người đầu tiên!
-              </div>
-            )}
-          </div>
+                Xem tất cả đánh giá
+                <ArrowRight className="group-hover:translate-x-1 transition-transform" size={20} />
+              </Link>
+            </div>
+          </>
         )}
       </div>
     </section>

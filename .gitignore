@@ -33,3 +33,5 @@ src/assets/**/*.fbx
 src/assets/**/*.obj
 
 .env*.local
+
+.env*.local

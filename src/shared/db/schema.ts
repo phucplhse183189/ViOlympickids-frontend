@@ -29,6 +29,7 @@ export const activityStatusEnum = pgEnum("activity_status", [
 export const txStatusEnum = pgEnum("tx_status", ["Thành công", "Thất bại"]);
 export const alertTypeEnum = pgEnum("alert_type", ["success", "warning"]);
 export const lessonStatusEnum = pgEnum("lesson_status", ["published", "draft"]);
+export const feedbackStatusEnum = pgEnum("feedback_status", ["pending", "public", "hidden", "resolved"]);
 
 // ── Bảng: users (Phụ huynh + Admin) ─────────────────────────────────────────
 export const users = pgTable("users", {
@@ -315,6 +316,7 @@ export const feedbackPosts = pgTable("feedback_posts", {
   rating: integer("rating").notNull(),
   content: text("content").notNull(),
   likesCount: integer("likes_count").default(0),
+  status: feedbackStatusEnum("status").default("pending").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

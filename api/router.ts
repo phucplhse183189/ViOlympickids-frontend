@@ -10,8 +10,12 @@ import adminFinanceStats from "./_internal/admin_finance_stats.js";
 import adminLessons from "./_internal/admin_lessons.js";
 import adminLessonsId from "./_internal/admin_lessons_[id].js";
 import adminAnalyticsStats from "./_internal/admin_analytics_stats.js";
+import adminFeedback from "./_internal/admin_feedback.js";
+import adminFeedbackIdStatus from "./_internal/admin_feedback_[id]_status.js";
 
 import analyticsTrack from "./_internal/analytics_track.js";
+import feedbackSubmit from "./_internal/feedback_submit.js";
+import feedbackPublic from "./_internal/feedback_public.js";
 
 import authLogin from "./_internal/auth_login.js";
 import authRegister from "./_internal/auth_register.js";
@@ -66,6 +70,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (segs.length === 2 && segs[0] === "lessons") { req.query.id = segs[1]; return adminLessonsId(req, res); }
     if (segs.length === 3 && segs[0] === "parents" && segs[2] === "status") { req.query.id = segs[1]; return adminParentsIdStatus(req, res); }
     if (segs.length === 3 && segs[0] === "students" && segs[2] === "status") { req.query.id = segs[1]; return adminStudentsIdStatus(req, res); }
+    if (segs.length === 1 && segs[0] === "feedback") return adminFeedback(req, res);
+    if (segs.length === 3 && segs[0] === "feedback" && segs[2] === "status") { req.query.id = segs[1]; return adminFeedbackIdStatus(req, res); }
   }
 
   if (group === "auth") {
@@ -97,6 +103,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (group === "transactions") {
     if (segs.length === 0) return transactionsIndex(req, res);
+  }
+
+  if (group === "feedback") {
+    if (segs.length === 1 && segs[0] === "submit") return feedbackSubmit(req, res);
+    if (segs.length === 1 && segs[0] === "public") return feedbackPublic(req, res);
   }
 
   if (group === "leaderboard") {
