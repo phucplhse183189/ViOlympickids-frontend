@@ -40,6 +40,31 @@ async function migrate() {
     }
   }
 
+  // 3. Make phone column nullable (Google users will have phone = null)
+  try {
+    await sql`ALTER TABLE users ALTER COLUMN phone DROP NOT NULL`;
+    console.log("✅ Made phone column nullable");
+  } catch (err: any) {
+    console.log("⏭️  phone column already nullable or error:", err.message);
+  }
+
+  // 4. Clean up old placeholder phones (g_ prefix and 00 prefix) → set to NULL
+  try {
+    await sql`UPDATE users SET phone = NULL WHERE phone LIKE 'g_%' OR phone LIKE '00%'`;
+    console.log("✅ Cleaned up placeholder phone values → NULL");
+  } catch (err: any) {
+    console.log("⚠️  Error cleaning up placeholder phones:", err.message);
+  }
+
+  // 5. Update admin phone numbers to realistic VN format
+  try {
+    await sql`UPDATE users SET phone = '0938471256' WHERE phone = '0999999991'`;
+    await sql`UPDATE users SET phone = '0372856194' WHERE phone = '0999999992'`;
+    console.log("✅ Updated admin phone numbers to realistic VN format");
+  } catch (err: any) {
+    console.log("⚠️  Error updating admin phones:", err.message);
+  }
+
   console.log("🎉 Schema migration complete!");
 }
 

@@ -121,7 +121,7 @@ export function AdminLoginPage() {
                   inputMode="numeric"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  placeholder="0901234567"
+                  placeholder="0938471256"
                   className="w-full pl-12 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-indigo-300/40 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 transition-all duration-200"
                   required
                 />
@@ -260,7 +260,7 @@ export function AdminLoginPage() {
                 🔑 Thông tin đăng nhập:
               </p>
               <p className="text-indigo-200 text-xs font-mono">
-                Số điện thoại: 0901234567
+                Số điện thoại: 0938471256
               </p>
               <p className="text-indigo-200 text-xs font-mono">
                 Mật khẩu: admin123

@@ -41,7 +41,7 @@ async function clearAndInit() {
 
   await db.insert(schema.users).values([
     {
-      phone: "0999999991",
+      phone: "0938471256",
       passwordHash: adminHash1,
       name: "Admin ViOlympicKids 1",
       email: "admin1@violympickids.com",
@@ -49,7 +49,7 @@ async function clearAndInit() {
       status: "active",
     },
     {
-      phone: "0999999992",
+      phone: "0372856194",
       passwordHash: adminHash2,
       name: "Admin ViOlympicKids 2",
       email: "admin2@violympickids.com",
@@ -59,8 +59,8 @@ async function clearAndInit() {
   ]);
 
   console.log("Đã tạo thành công 2 tài khoản Admin:");
-  console.log("1. Số điện thoại: 0999999991 | Mật khẩu: admin123");
-  console.log("2. Số điện thoại: 0999999992 | Mật khẩu: admin456");
+  console.log("1. Số điện thoại: 0938471256 | Mật khẩu: admin123");
+  console.log("2. Số điện thoại: 0372856194 | Mật khẩu: admin456");
   
   await sql.end();
   console.log("Hoàn tất!");

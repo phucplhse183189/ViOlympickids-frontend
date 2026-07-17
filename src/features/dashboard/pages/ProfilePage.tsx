@@ -3,6 +3,9 @@ import { Camera, Check, Pencil, X, Loader2, Lock } from "lucide-react";
 import { useAuth, PARENT_PIN_KEY, DEFAULT_PARENT_PIN } from "@/features/auth/context/auth";
 import { apiGet, apiPut } from "@/shared/api/client";
 import type { UserInfo } from "@/features/auth/api/authService";
+import { getProfiles, deleteChild, type ChildProfile } from "@/features/dashboard/api/childrenService";
+import { useActiveChild } from "@/features/dashboard/context/activeChild";
+import { useNavigate } from "react-router-dom";
 
 // ── Local state shape for the profile form ────────────────────
 interface ParentProfileForm {
@@ -267,6 +270,168 @@ function ChangePinCard() {
   );
 }
 
+// ── Manage Children (Danger Zone) ─────────────────────────────────────────────
+function ManageChildrenCard() {
+  const { activeChild, switchChild, refreshProfiles } = useActiveChild();
+  const navigate = useNavigate();
+  
+  const [children, setChildren] = useState<ChildProfile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [deletingChild, setDeletingChild] = useState<ChildProfile | null>(null);
+  const [confirmName, setConfirmName] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    loadChildren();
+  }, []);
+
+  const loadChildren = async () => {
+    const parentId = sessionStorage.getItem("vio_parent_id");
+    if (!parentId) return;
+    try {
+      const data = await getProfiles(parentId);
+      setChildren(data);
+    } catch (err) {
+      console.error("Failed to load children", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deletingChild) return;
+    try {
+      setIsDeleting(true);
+      await deleteChild(deletingChild.id);
+      
+      // Update context profiles
+      await refreshProfiles();
+
+      // Remove from local list
+      const newList = children.filter(c => c.id !== deletingChild.id);
+      setChildren(newList);
+      
+      // If deleted child was active, switch active child or go to picker
+      if (activeChild?.id === deletingChild.id) {
+        if (newList.length > 0) {
+          switchChild(newList[0].id);
+        } else {
+          localStorage.removeItem("vio_active_child_id");
+          navigate("/profile-picker");
+        }
+      }
+      
+      setDeletingChild(null);
+      setConfirmName("");
+    } catch (err: any) {
+      alert("Lỗi khi xóa: " + (err.message || "Unknown error"));
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-red-100 shadow-sm p-6 space-y-4">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center">
+          <X size={16} className="text-red-500" />
+        </div>
+        <div>
+          <h2 className="text-sm font-bold text-gray-800">Quản lý hồ sơ học sinh</h2>
+          <p className="text-xs text-gray-500">Xóa các hồ sơ không còn sử dụng. Dữ liệu sẽ không thể khôi phục.</p>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {loading ? (
+          <div className="text-center text-sm text-gray-400 py-4">Đang tải...</div>
+        ) : children.length === 0 ? (
+          <div className="text-center text-sm text-gray-400 py-4">Chưa có hồ sơ học sinh nào.</div>
+        ) : (
+          children.map(child => (
+            <div key={child.id} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:border-red-100 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center text-xl bg-gray-50">
+                  {child.avatarEmoji}
+                </div>
+                <div>
+                  <div className="font-bold text-gray-800 text-sm">{child.name}</div>
+                  <div className="text-xs text-gray-500">{child.plan} Plan</div>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setDeletingChild(child);
+                  setConfirmName("");
+                }}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold text-red-500 hover:bg-red-50 transition-colors border border-transparent hover:border-red-100"
+              >
+                Xóa hồ sơ
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Danger Zone Modal */}
+      {deletingChild && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95">
+            <div className="p-6 border-b border-gray-100 bg-red-50/50">
+              <h3 className="text-xl font-black text-red-600 flex items-center gap-2">
+                <X size={24} />
+                Bạn có chắc chắn?
+              </h3>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Hành động này <span className="font-bold text-gray-900">không thể hoàn tác</span>. Toàn bộ tiến trình học tập, 
+                điểm số, bảng xếp hạng và các gói cước liên kết với tài khoản của bé <span className="font-bold text-gray-900">{deletingChild.name}</span> sẽ bị xóa vĩnh viễn khỏi hệ thống.
+              </p>
+              
+              <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                <label className="block text-xs font-bold text-gray-600 mb-2">
+                  Vui lòng nhập <span className="text-red-500 select-none font-mono font-black text-sm px-1 bg-red-100 rounded">{deletingChild.name}</span> để xác nhận.
+                </label>
+                <input 
+                  type="text" 
+                  value={confirmName}
+                  onChange={e => setConfirmName(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-lg border-2 border-gray-200 focus:border-red-400 focus:ring-4 focus:ring-red-400/20 outline-none transition-all font-medium text-gray-800"
+                  placeholder="Nhập tên bé..."
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <div className="p-4 bg-gray-50 flex gap-3 justify-end border-t border-gray-100">
+              <button
+                onClick={() => setDeletingChild(null)}
+                className="px-4 py-2.5 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-200 transition-colors"
+                disabled={isDeleting}
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={confirmName !== deletingChild.name || isDeleting}
+                className="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+              >
+                {isDeleting ? (
+                  <><Loader2 size={16} className="animate-spin" /> Đang xóa...</>
+                ) : (
+                  "Tôi hiểu hậu quả, xóa hồ sơ"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main page ──────────────────────────────────────────────────
 export function ProfilePage() {
   const { user, updateUser } = useAuth();
@@ -294,7 +459,7 @@ export function ProfilePage() {
       .then((profile) => {
         setForm({
           name: profile.name || user?.nickname || "Phụ Huynh",
-          phone: profile.phone?.startsWith("g_") ? "" : (profile.phone || user?.phone || ""),
+          phone: profile.phone || "",
           email: profile.email || user?.email || "",
           avatarUrl: profile.avatarId || null,
         });
@@ -471,6 +636,9 @@ export function ProfilePage() {
 
       {/* Security (Change PIN) card */}
       <ChangePinCard />
+      
+      {/* Manage Children (Danger Zone) */}
+      <ManageChildrenCard />
 
       {/* Save error */}
       {saveError && (

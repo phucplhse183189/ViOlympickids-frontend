@@ -387,6 +387,121 @@ export function AdminFinancePage() {
         </div>
       )}
 
+      {/* ── Chi tiết đơn PayOS (kèm phụ huynh + bé) ─────────────────── */}
+      {data.recentPaymentOrders && data.recentPaymentOrders.length > 0 && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+          <h3 className="text-sm font-bold text-slate-900 mb-4">
+            📋 Chi tiết đơn hàng PayOS
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-100">
+                  <th className="text-left py-3 px-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                    Phụ huynh
+                  </th>
+                  <th className="text-left py-3 px-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                    Bé
+                  </th>
+                  <th className="text-center py-3 px-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                    Gói
+                  </th>
+                  <th className="text-right py-3 px-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                    Số tiền
+                  </th>
+                  <th className="text-center py-3 px-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                    Trạng thái
+                  </th>
+                  <th className="text-left py-3 px-3 text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                    Thời gian
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.recentPaymentOrders.map((order) => (
+                  <tr
+                    key={order.id}
+                    className="border-b border-slate-50 hover:bg-slate-50 transition-colors"
+                  >
+                    <td className="py-3 px-3">
+                      <div className="flex flex-col">
+                        <span className="font-bold text-slate-800 text-sm">
+                          {order.parentName}
+                        </span>
+                        {order.parentPhone && (
+                          <span className="text-xs text-slate-400">
+                            {order.parentPhone}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-3 px-3">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-base">{order.childEmoji}</span>
+                        <span className="font-medium text-slate-700 text-sm">
+                          {order.childName}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-3 text-center">
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold ${
+                          order.plan === "VIP"
+                            ? "bg-amber-50 text-amber-700"
+                            : "bg-indigo-50 text-indigo-700"
+                        }`}
+                      >
+                        {order.plan === "VIP" ? "👑 " : "⚡ "}
+                        {order.plan}{" "}
+                        <span className="font-normal ml-1 text-slate-400">
+                          ({order.cycle === "year" ? "Năm" : "Tháng"})
+                        </span>
+                      </span>
+                      {order.status === "PAID" && order.planDaysLeft != null && (
+                        <div className="text-[11px] font-semibold text-slate-500 mt-1">
+                          Còn {order.planDaysLeft} ngày
+                        </div>
+                      )}
+                    </td>
+                    <td className="py-3 px-3 text-right font-bold text-slate-900">
+                      {VND.format(order.amount)}
+                    </td>
+                    <td className="py-3 px-3 text-center">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
+                          order.status === "PAID"
+                            ? "bg-emerald-50 text-emerald-700"
+                            : order.status === "PENDING"
+                              ? "bg-amber-50 text-amber-700"
+                              : "bg-rose-50 text-rose-700"
+                        }`}
+                      >
+                        {order.status === "PAID"
+                          ? "✅ Đã thanh toán"
+                          : order.status === "PENDING"
+                            ? "⏳ Chờ xử lý"
+                            : "❌ Đã hủy"}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 text-slate-600 text-xs">
+                      <div>
+                        {new Date((order.status === "PAID" && order.paidAt) ? order.paidAt : order.createdAt).toLocaleDateString("vi-VN")}
+                      </div>
+                      <div className="text-slate-400">
+                        {new Date((order.status === "PAID" && order.paidAt) ? order.paidAt : order.createdAt).toLocaleTimeString("vi-VN", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* ── Recent Transactions ───────────────────────────────────────── */}
       <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
         <h3 className="text-sm font-bold text-slate-900 mb-4">

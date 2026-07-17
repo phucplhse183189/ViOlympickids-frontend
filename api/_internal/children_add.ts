@@ -27,6 +27,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: "Thiếu thông tin bắt buộc" });
     }
 
+    const finalPlan = plan ?? "PRO";
+    const finalPlanDaysLeft = finalPlan === "PRO" ? 3 : null;
+
     const [child] = await db
       .insert(schema.children)
       .values({
@@ -35,7 +38,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         grade,
         avatarEmoji,
         avatarBg: avatarBg ?? "bg-blue-100",
-        plan: plan ?? "FREE",
+        plan: finalPlan,
+        planDaysLeft: finalPlanDaysLeft,
         gender,
         status: "active",
       })

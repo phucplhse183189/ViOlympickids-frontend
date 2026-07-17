@@ -150,6 +150,25 @@ const NAV_SECTIONS = [
           </svg>
         ),
       },
+      {
+        label: "Quản lý BXH",
+        path: "/admin/leaderboard",
+        icon: (
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.5}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0"
+            />
+          </svg>
+        ),
+      },
     ],
   },
 ];
@@ -190,9 +209,8 @@ export function AdminLayout() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex">
       <aside
-        className={`hidden lg:flex flex-col bg-white/90 backdrop-blur border-r border-slate-200 transition-all duration-300 ${
-          sidebarCollapsed ? "w-20" : "w-72"
-        }`}
+        className={`hidden lg:flex flex-col bg-white/90 backdrop-blur border-r border-slate-200 transition-all duration-300 ${sidebarCollapsed ? "w-20" : "w-72"
+          }`}
       >
         <div className="h-16 flex items-center gap-3 px-5 border-b border-slate-200">
           <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
@@ -233,18 +251,16 @@ export function AdminLayout() {
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group ${
-                      isActive(item.path)
-                        ? "bg-indigo-50 text-indigo-700"
-                        : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
-                    }`}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group ${isActive(item.path)
+                      ? "bg-indigo-50 text-indigo-700"
+                      : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+                      }`}
                   >
                     <div
-                      className={`shrink-0 ${
-                        isActive(item.path)
-                          ? "text-indigo-500"
-                          : "text-slate-400 group-hover:text-slate-600"
-                      }`}
+                      className={`shrink-0 ${isActive(item.path)
+                        ? "text-indigo-500"
+                        : "text-slate-400 group-hover:text-slate-600"
+                        }`}
                     >
                       {item.icon}
                     </div>
@@ -313,22 +329,7 @@ export function AdminLayout() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button className="relative p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors">
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.5}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"
-                />
-              </svg>
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full" />
-            </button>
+
 
             <div className="flex items-center gap-3 pl-3 border-l border-slate-200">
               <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-violet-500 rounded-lg flex items-center justify-center">
@@ -403,11 +404,10 @@ export function AdminLayout() {
                       key={item.path}
                       to={item.path}
                       onClick={() => setMobileMenuOpen(false)}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
-                        isActive(item.path)
-                          ? "bg-indigo-50 text-indigo-700"
-                          : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
-                      }`}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${isActive(item.path)
+                        ? "bg-indigo-50 text-indigo-700"
+                        : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+                        }`}
                     >
                       {item.icon}
                       <span className="text-sm font-semibold">

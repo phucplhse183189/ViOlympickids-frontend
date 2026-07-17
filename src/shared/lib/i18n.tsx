@@ -23,7 +23,7 @@ export const translations = {
       titleAccent: "Với 3D & AI",
       subtitle:
         "Giúp con hiểu sâu bản chất Toán học, tự giác học tập mỗi ngày mà ba mẹ không cần ngồi kèm. Chi phí chỉ bằng một cốc trà sữa!",
-      ctaPrimary: "Bắt đầu học thử 7 ngày",
+      ctaPrimary: "Bắt đầu học thử 3 ngày",
       ctaSecondary: "Xem Video Demo",
       videoPlaceholder:
         "[Khu vực chèn Video hoặc Animation 3D mô phỏng bé đang tương tác với khối Rubik]",
@@ -264,7 +264,7 @@ export const translations = {
       titleAccent: "With 3D & AI",
       subtitle:
         "Help children deeply understand Math and study independently every day — without parents sitting beside them. All for the price of a bubble tea!",
-      ctaPrimary: "Start 7-Day Free Trial",
+      ctaPrimary: "Start 3-Day Free Trial",
       ctaSecondary: "Watch Video Demo",
       videoPlaceholder:
         "[Video or 3D Animation Area — Child Interacting with a Rubik's Cube]",

@@ -1,10 +1,22 @@
 import { useLang } from "@/shared/lib/i18n";
 import { useInView } from "@/shared/hooks/useInView";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/features/auth/context/auth";
 
 export function CoursesSection() {
   const { t } = useLang();
   const { ref, inView } = useInView<HTMLElement>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const delays = ["", "delay-100", "delay-200"];
+
+  const handlePlanClick = () => {
+    if (!user) {
+      navigate("/login");
+    } else {
+      navigate("/dashboard/subscription");
+    }
+  };
 
   return (
     <section
@@ -149,6 +161,7 @@ export function CoursesSection() {
 
               {/* CTA */}
               <button
+                onClick={handlePlanClick}
                 className={`mt-8 group w-full relative overflow-hidden py-4 font-bold text-base rounded-2xl shadow-lg hover:-translate-y-1 hover:shadow-xl active:translate-y-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 ${
                   plan.highlight
                     ? "text-white"

@@ -1,4 +1,4 @@
-import { apiGet, apiPut } from "@/shared/api/client";
+import { apiGet, apiPut, apiDelete } from "@/shared/api/client";
 import type { ChildProfile } from "@/features/dashboard/api/childrenService";
 import type { UserInfo } from "@/features/auth/api/authService";
 
@@ -28,6 +28,18 @@ export async function getParents(): Promise<ParentWithChildren[]> {
  */
 export async function getStats(): Promise<AdminStats> {
   return apiGet<AdminStats>("/admin/stats");
+}
+
+export async function getFeedbackStats() {
+  return apiGet<any>("/admin/feedback");
+}
+
+export async function getLeaderboardAttempts(): Promise<AdminQuizAttempt[]> {
+  return apiGet<AdminQuizAttempt[]>("/admin/leaderboard");
+}
+
+export async function deleteLeaderboardAttempt(id: string): Promise<{ success: boolean }> {
+  return apiDelete<{ success: boolean }>(`/admin/leaderboard?id=${id}`);
 }
 
 /**
@@ -80,6 +92,21 @@ export interface FinanceStats {
     count: number;
     total: number;
   }>;
+  recentPaymentOrders: Array<{
+    id: string;
+    orderCode: number;
+    plan: string;
+    cycle: string;
+    amount: number;
+    status: string;
+    createdAt: string;
+    paidAt: string | null;
+    parentName: string;
+    parentPhone: string | null;
+    childName: string;
+    childEmoji: string;
+    planDaysLeft?: number;
+  }>;
 }
 
 /**
@@ -90,6 +117,28 @@ export async function getFinanceStats(): Promise<FinanceStats> {
 }
 
 /** Quản lý bài học */
+export interface Alert {
+  id: string;
+  childId: string;
+  childName?: string;
+  type: "low_score" | "streak_lost" | "inactive";
+  title: string;
+  message: string;
+  time: string;
+  isRead: boolean;
+}
+
+export interface AdminQuizAttempt {
+  id: string;
+  score: number;
+  totalQuestions: number;
+  attemptNumber: number;
+  completedAt: string;
+  childName: string;
+  lessonTitle: string;
+  lessonId: string;
+}
+
 export interface AdminLesson {
   id: string;
   topicId: string;

@@ -97,14 +97,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
         : displayName.slice(0, 2).toUpperCase();
 
-    // Tạo placeholder phone và password cho Google user
-    const placeholderPhone = `g_${googleId.slice(0, 15)}`;
+    // Google user → phone = null, người dùng tự cập nhật trong Profile
     const placeholderHash = await bcrypt.hash(crypto.randomUUID(), 10);
 
     const [newUser] = await db
       .insert(schema.users)
       .values({
-        phone: placeholderPhone,
+        phone: null,
         passwordHash: placeholderHash,
         name: displayName,
         email,

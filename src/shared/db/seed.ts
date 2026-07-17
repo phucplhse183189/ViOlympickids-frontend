@@ -25,7 +25,7 @@ async function seed() {
   await db
     .insert(schema.users)
     .values({
-      phone: "0901234567",
+      phone: "0938471256",
       passwordHash: adminHash,
       name: "Admin ViOlympicKids",
       avatarInitials: "AD",

@@ -1,4 +1,5 @@
 
+import { useEffect, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { AlertTriangle, ArrowLeft, RefreshCw } from "lucide-react";
 
@@ -6,6 +7,19 @@ export function PaymentCancelPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const orderCode = searchParams.get("orderCode");
+  const hasCancelled = useRef(false);
+
+  // Gọi API cancel-order để cập nhật trạng thái PENDING → CANCELLED
+  useEffect(() => {
+    if (!orderCode || hasCancelled.current) return;
+    hasCancelled.current = true;
+
+    fetch("/api/payos/cancel-order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderCode: Number(orderCode) }),
+    }).catch((err) => console.error("Cancel order error:", err));
+  }, [orderCode]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 py-8 animate-fade-in">

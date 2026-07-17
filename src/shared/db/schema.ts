@@ -34,7 +34,7 @@ export const feedbackStatusEnum = pgEnum("feedback_status", ["pending", "public"
 // ── Bảng: users (Phụ huynh + Admin) ─────────────────────────────────────────
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
-  phone: varchar("phone", { length: 20 }).unique().notNull(),
+  phone: varchar("phone", { length: 20 }).unique(),
   passwordHash: varchar("password_hash", { length: 255 }).notNull(),
   name: varchar("name", { length: 100 }).notNull(),
   email: varchar("email", { length: 200 }),

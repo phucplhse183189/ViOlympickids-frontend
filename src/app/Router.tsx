@@ -42,6 +42,7 @@ import { AdminUsersPage } from "@/features/admin/pages/AdminUsersPage";
 import { AdminLessonsPage } from "@/features/admin/pages/AdminLessonsPage";
 import { AdminAnalyticsPage } from "@/features/admin/pages/AdminAnalyticsPage";
 import { AdminFeedbackPage } from "@/features/admin/pages/AdminFeedbackPage";
+import { AdminLeaderboardPage } from "@/features/admin/pages/AdminLeaderboardPage";
 import { AdminLayout } from "@/features/admin/components/AdminLayout";
 
 export function RouterProvider() {
@@ -118,6 +119,7 @@ export function RouterProvider() {
         <Route path="lessons" element={<AdminLessonsPage />} />
         <Route path="analytics" element={<AdminAnalyticsPage />} />
         <Route path="feedback" element={<AdminFeedbackPage />} />
+        <Route path="leaderboard" element={<AdminLeaderboardPage />} />
       </Route>
     </Routes>
     </>

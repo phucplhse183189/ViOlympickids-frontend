@@ -8,6 +8,7 @@ import { resolveLessonId } from "./_resolve_lesson_id.js";
  * POST /api/leaderboard/submit
  * Body: { childId, lessonId, score, totalQuestions }
  * Ghi nhận kết quả làm quiz của bé, tự tính attemptNumber.
+ * Đồng thời cập nhật dữ liệu dashboard cho phụ huynh.
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
@@ -52,8 +53,54 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       })
       .returning();
 
+    // ── Đánh dấu hoàn thành bài học (nếu chưa) ───────────────────────────
+    const [existingCompletion] = await db
+      .select({ id: schema.completedLessons.id })
+      .from(schema.completedLessons)
+      .where(
+        and(
+          eq(schema.completedLessons.childId, childId),
+          eq(schema.completedLessons.lessonId, lessonId)
+        )
+      );
+
+    let isFirstCompletion = false;
+    if (!existingCompletion) {
+      await db.insert(schema.completedLessons).values({
+        childId,
+        lessonId,
+      });
+      isFirstCompletion = true;
+    }
+
+    // ── Cập nhật Dashboard Stats ─────────────────────────────────────────
+    const [stats] = await db
+      .select()
+      .from(schema.dashboardStats)
+      .where(eq(schema.dashboardStats.childId, childId));
+
+    if (stats) {
+      await db
+        .update(schema.dashboardStats)
+        .set({
+          overallScore: (stats.overallScore || 0) + Number(score),
+          completedLessons: isFirstCompletion ? (stats.completedLessons || 0) + 1 : stats.completedLessons,
+          weeklyMinutes: (stats.weeklyMinutes || 0) + 15, // Cố định 15 phút cho mỗi bài học
+        })
+        .where(eq(schema.dashboardStats.childId, childId));
+    } else {
+      await db.insert(schema.dashboardStats).values({
+        childId,
+        overallScore: Number(score),
+        completedLessons: isFirstCompletion ? 1 : 0,
+        weeklyMinutes: 15,
+        streakDays: 1,
+      });
+    }
+
     // ── Xoá cache để lần query kế sẽ lấy dữ liệu mới ────────────────────
     invalidateCache(`leaderboard:${lessonId}`);
+    invalidateCache(`leaderboard:global`);
 
     return res.status(201).json(created);
   } catch (err) {

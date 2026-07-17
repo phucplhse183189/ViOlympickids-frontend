@@ -70,3 +70,15 @@ export async function apiPut<T>(path: string, body: unknown): Promise<T> {
   });
   return handleResponse<T>(response);
 }
+
+/**
+ * DELETE request
+ * @param path — đường dẫn API
+ */
+export async function apiDelete<T>(path: string): Promise<T> {
+  const response = await fetch(`${BASE_URL}${path}`, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+  return handleResponse<T>(response);
+}

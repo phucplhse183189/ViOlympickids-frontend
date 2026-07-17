@@ -140,3 +140,12 @@ export async function addChild(
 ): Promise<ChildProfile> {
   return apiPost<ChildProfile>("/children/add", { parentId, ...data });
 }
+
+/**
+ * Xóa hồ sơ bé (Soft delete)
+ */
+export async function deleteChild(childId: string): Promise<{ success: boolean; message: string }> {
+  // Use apiDelete from client.ts which we added earlier. Wait, let's verify if apiDelete is imported.
+  // It might not be imported yet. We need to check imports.
+  return (await import("@/shared/api/client")).apiDelete(`/children/${childId}/delete`);
+}

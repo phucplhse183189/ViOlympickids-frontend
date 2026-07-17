@@ -155,7 +155,7 @@ export function RegisterPage() {
 
   // ── Step 3 (final) ─────────────────────────────
   function handleFinish() {
-    if (!registeredUser) return;
+    if (!registeredUser || isLoading) return;
     const avatar = AVATAR_OPTIONS[selectedAvatar];
     setIsLoading(true);
 
@@ -792,21 +792,23 @@ export function RegisterPage() {
               <button
                 type="button"
                 onClick={handleFinish}
-                className="flex-1 py-3.5 rounded-2xl border-2 border-gray-200 text-sm font-semibold text-gray-500 hover:bg-gray-50 transition"
+                disabled={isLoading}
+                className="flex-1 py-3.5 rounded-2xl border-2 border-gray-200 text-sm font-semibold text-gray-500 hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Bỏ qua
               </button>
               <button
                 type="button"
                 onClick={handleFinish}
-                className="flex-[2] py-3.5 rounded-2xl text-sm font-extrabold text-white flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] shadow-lg hover:shadow-xl"
+                disabled={isLoading}
+                className="flex-[2] py-3.5 rounded-2xl text-sm font-extrabold text-white flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] shadow-lg hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed"
                 style={{
                   background:
                     "linear-gradient(135deg, var(--brand-primary) 0%, #f97316 100%)",
                   boxShadow: "0 4px 15px rgba(249,115,22,0.35)",
                 }}
               >
-                Bắt đầu học ngay! 🚀
+                {isLoading ? "Đang xử lý..." : "Bắt đầu học ngay! 🚀"}
               </button>
             </div>
           </div>

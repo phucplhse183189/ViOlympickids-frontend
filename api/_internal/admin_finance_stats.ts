@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { eq, count, sum, sql, desc } from "drizzle-orm";
+import { eq, count, sum, sql, desc, and, lt } from "drizzle-orm";
 import { db, schema } from "../_db.js";
 
 /**
@@ -9,7 +9,7 @@ import { db, schema } from "../_db.js";
  *   - Doanh thu theo tháng (12 tháng gần nhất)
  *   - Phân loại theo gói (PRO/VIP)
  *   - Giao dịch gần đây nhất
- *   - Thống kê PayOS
+ *   - Thống kê PayOS + chi tiết đơn hàng (kèm tên phụ huynh + tên bé)
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "GET") {
@@ -17,6 +17,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    // ── Auto-cancel: đơn PENDING quá 30 phút → CANCELLED ──────────────
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+    await db
+      .update(schema.paymentOrders)
+      .set({ status: "CANCELLED" })
+      .where(
+        and(
+          eq(schema.paymentOrders.status, "PENDING"),
+          lt(schema.paymentOrders.createdAt, thirtyMinutesAgo)
+        )
+      );
+
     const [
       totalRevenueResult,
       totalTransactionsResult,
@@ -27,6 +39,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       recentTransactionsResult,
       paymentOrdersStatsResult,
       activeSubscriptionsResult,
+      recentPaymentOrdersResult,
     ] = await Promise.all([
       // Tổng doanh thu (giao dịch thành công)
       db
@@ -108,6 +121,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .where(
           sql`${schema.children.plan} IN ('PRO', 'VIP')`
         ),
+
+      // 10 đơn hàng PayOS gần nhất — kèm tên phụ huynh + tên bé
+      db
+        .select({
+          id: schema.paymentOrders.id,
+          orderCode: schema.paymentOrders.orderCode,
+          plan: schema.paymentOrders.plan,
+          cycle: schema.paymentOrders.cycle,
+          amount: schema.paymentOrders.amount,
+          status: schema.paymentOrders.status,
+          createdAt: schema.paymentOrders.createdAt,
+          paidAt: schema.paymentOrders.paidAt,
+          parentName: schema.users.name,
+          parentPhone: schema.users.phone,
+          childName: schema.children.name,
+          childEmoji: schema.children.avatarEmoji,
+          planDaysLeft: schema.children.planDaysLeft,
+        })
+        .from(schema.paymentOrders)
+        .leftJoin(schema.users, eq(schema.paymentOrders.parentId, schema.users.id))
+        .leftJoin(schema.children, eq(schema.paymentOrders.childId, schema.children.id))
+        .orderBy(desc(schema.paymentOrders.createdAt))
+        .limit(10),
     ]);
 
     // Tính MRR (Monthly Recurring Revenue) từ billing
@@ -152,6 +188,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       total: Number(r.total ?? 0),
     }));
 
+    // PayOS recent orders (kèm thông tin phụ huynh + bé)
+    const recentPaymentOrders = (recentPaymentOrdersResult || []).map((o) => ({
+      id: o.id,
+      orderCode: o.orderCode,
+      plan: o.plan,
+      cycle: o.cycle,
+      amount: o.amount,
+      status: o.status,
+      createdAt: o.createdAt,
+      paidAt: o.paidAt,
+      parentName: o.parentName || "Không rõ",
+      parentPhone: o.parentPhone || null,
+      childName: o.childName || "Không rõ",
+      childEmoji: o.childEmoji || "👶",
+      planDaysLeft: o.planDaysLeft,
+    }));
+
     return res.status(200).json({
       // Tổng quan
       totalRevenue: Number(totalRevenueResult[0]?.value ?? 0),
@@ -166,6 +219,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       planBreakdown,
       recentTransactions,
       paymentOrdersStats,
+      recentPaymentOrders,
     });
   } catch (err) {
     console.error("Admin finance stats error:", err);

@@ -12,6 +12,7 @@ import adminLessonsId from "./_internal/admin_lessons_[id].js";
 import adminAnalyticsStats from "./_internal/admin_analytics_stats.js";
 import adminFeedback from "./_internal/admin_feedback.js";
 import adminFeedbackIdStatus from "./_internal/admin_feedback_[id]_status.js";
+import adminLeaderboard from "./_internal/admin_leaderboard.js";
 
 import analyticsTrack from "./_internal/analytics_track.js";
 import feedbackSubmit from "./_internal/feedback_submit.js";
@@ -25,6 +26,7 @@ import authResetPassword from "./_internal/auth_reset_password.js";
 
 import childrenAdd from "./_internal/children_add.js";
 import childrenIndex from "./_internal/children_index.js";
+import childrenIdDelete from "./_internal/children_[id]_delete.js";
 import childrenIdActivities from "./_internal/children_[id]_activities.js";
 import childrenIdDashboard from "./_internal/children_[id]_dashboard.js";
 import childrenIdPlan from "./_internal/children_[id]_plan.js";
@@ -44,7 +46,11 @@ import leaderboardQuiz from "./_internal/leaderboard_quiz.js";
 
 import payosCreatePayment from "./_internal/payos_create_payment.js";
 import payosCheckOrder from "./_internal/payos_check_order.js";
+import payosCancelOrder from "./_internal/payos_cancel_order.js";
+import cronDaily from "./_internal/cron_daily.js";
 import chatB1 from "./chat-b1.js";
+
+import migrateTrial from "./_internal/migrate_trial.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -62,6 +68,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (group === "admin") {
     if (segs.length === 1 && segs[0] === "init-db") return adminInitDb(req, res);
     if (segs.length === 1 && segs[0] === "seed-lessons") return adminSeedLessons(req, res);
+    if (segs.length === 1 && segs[0] === "migrate-trial") return migrateTrial(req, res);
     if (segs.length === 1 && segs[0] === "parents") return adminParents(req, res);
     if (segs.length === 1 && segs[0] === "stats") return adminStats(req, res);
     if (segs.length === 1 && segs[0] === "finance-stats") return adminFinanceStats(req, res);
@@ -72,6 +79,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (segs.length === 3 && segs[0] === "students" && segs[2] === "status") { req.query.id = segs[1]; return adminStudentsIdStatus(req, res); }
     if (segs.length === 1 && segs[0] === "feedback") return adminFeedback(req, res);
     if (segs.length === 3 && segs[0] === "feedback" && segs[2] === "status") { req.query.id = segs[1]; return adminFeedbackIdStatus(req, res); }
+    if (segs.length === 1 && segs[0] === "leaderboard") return adminLeaderboard(req, res);
   }
 
   if (group === "auth") {
@@ -88,6 +96,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (segs.length === 2 && segs[1] === "dashboard") { req.query.id = segs[0]; return childrenIdDashboard(req, res); }
     if (segs.length === 2 && segs[1] === "activities") { req.query.id = segs[0]; return childrenIdActivities(req, res); }
     if (segs.length === 2 && segs[1] === "plan") { req.query.id = segs[0]; return childrenIdPlan(req, res); }
+    if (segs.length === 2 && segs[1] === "delete") { req.query.id = segs[0]; return childrenIdDelete(req, res); }
   }
 
   if (group === "lessons") {
@@ -122,6 +131,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (group === "payos") {
     if (segs.length === 1 && segs[0] === "create-payment") return payosCreatePayment(req, res);
     if (segs.length === 1 && segs[0] === "check-order") return payosCheckOrder(req, res);
+    if (segs.length === 1 && segs[0] === "cancel-order") return payosCancelOrder(req, res);
   }
 
   if (group === "analytics") {
@@ -140,6 +150,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (group === "chat-b1") {
     return chatB1(req, res);
+  }
+
+  if (group === "cron-daily") {
+    return cronDaily(req, res);
   }
 
   return res.status(404).json({ error: "Route not found in master router" });

@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { eq } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { db, schema } from "../_db.js";
 
 /**
@@ -27,7 +27,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const kids = await db
       .select()
       .from(schema.children)
-      .where(eq(schema.children.parentId, parentId));
+      .where(
+        sql`${schema.children.parentId} = ${parentId} AND ${schema.children.status} != 'inactive'`
+      );
 
     return res.status(200).json(kids);
   } catch (err) {

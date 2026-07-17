@@ -2,11 +2,23 @@ import { useState } from "react";
 import { Volume2, VolumeX } from "lucide-react";
 import { useLang } from "@/shared/lib/i18n";
 import { useInView } from "@/shared/hooks/useInView";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/features/auth/context/auth";
 
 export function HeroSection() {
   const { t } = useLang();
   const { ref, inView } = useInView<HTMLElement>(0);
   const [isMuted, setIsMuted] = useState(true);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const handleStartTrial = () => {
+    if (!user) {
+      navigate("/login");
+    } else {
+      navigate("/dashboard");
+    }
+  };
 
   return (
     <section
@@ -68,6 +80,7 @@ export function HeroSection() {
             className={`reveal from-left delay-300 ${inView ? "visible" : ""} flex flex-col xl:flex-row gap-4 justify-center md:justify-start`}
           >
             <button
+              onClick={handleStartTrial}
               className="px-6 py-3 text-white text-lg font-bold rounded-2xl shadow-lg transition-all btn-bounce active:translate-y-1 hover:-translate-y-1 hover:shadow-xl"
               style={{
                 backgroundColor: "var(--brand-primary)",

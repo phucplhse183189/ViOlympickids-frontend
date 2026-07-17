@@ -53,7 +53,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const updates: Record<string, unknown> = {};
       if (name !== undefined) updates.name = name.trim();
       if (email !== undefined) updates.email = email.trim() || null;
-      if (phone !== undefined) updates.phone = phone.replace(/\D/g, "");
+      if (phone !== undefined) {
+        const cleaned = phone.replace(/\D/g, "");
+        if (cleaned === "") {
+          updates.phone = null; // cho phép để trống
+        } else if (/^(0[3|5|7|8|9])[0-9]{8}$/.test(cleaned)) {
+          updates.phone = cleaned;
+        } else {
+          return res.status(400).json({ error: "Số điện thoại không đúng định dạng VN" });
+        }
+      }
       if (avatarId !== undefined) updates.avatarId = avatarId;
 
       if (Object.keys(updates).length === 0) {
