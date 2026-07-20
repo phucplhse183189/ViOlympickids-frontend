@@ -70,6 +70,5 @@ export async function createPayment(data: {
  * Kiểm tra trạng thái đơn hàng PayOS
  */
 export async function checkOrder(orderCode: number): Promise<CheckOrderResult> {
-  return apiGet<CheckOrderResult>(`/payos/check-order?orderCode=${orderCode}`);
+  return apiGet<CheckOrderResult>(`/payos/check-order?orderCode=${orderCode}`, { ttlMs: 0 });
 }
-

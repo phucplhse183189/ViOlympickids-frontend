@@ -1,320 +1,88 @@
-import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  Search,
-  Download,
-  Filter,
-  CheckCircle2,
-  Clock,
-  XCircle,
-} from "lucide-react";
-const SUBJECT_FILTER_OPTIONS = [
-  "Tất cả",
-  "Số học",
-  "Hình học",
-  "Đo lường",
-  "Lời văn",
-  "Logic",
-];
-import type { ActivityStatus } from "@/features/dashboard/types/dashboard";
+import { useDeferredValue, useMemo, useState } from "react";
+import { BookOpenCheck, CheckCircle2, Clock3, Download, History, Search, X } from "lucide-react";
+import { motion } from "framer-motion";
 import { useActiveChild } from "@/features/dashboard/context/activeChild";
+import { useLang } from "@/shared/lib/i18n";
+import { CustomSelect } from "@/shared/ui/CustomSelect";
+import { DashboardCard, DashboardSkeleton, EmptyState, PageHeader } from "../components/DashboardPrimitives";
+import { pageMotion } from "../components/dashboardMotion";
 
-const statusStyle: Record<ActivityStatus, string> = {
-  "Hoàn thành": "bg-green-100 text-green-700",
-  "Đang dở": "bg-yellow-100 text-yellow-700",
-  "Chưa làm": "bg-gray-100 text-gray-500",
-};
-
-const statusIcon: Record<ActivityStatus, React.ReactNode> = {
-  "Hoàn thành": <CheckCircle2 size={12} className="shrink-0" />,
-  "Đang dở": <Clock size={12} className="shrink-0" />,
-  "Chưa làm": <XCircle size={12} className="shrink-0" />,
-};
-
-const PAGE_SIZE = 7;
+type StatusFilter = "all" | "done" | "progress";
 
 export function HistoryPage() {
-  const { dashboardData, isLoading, profiles } = useActiveChild();
-  const navigate = useNavigate();
-  
-  const activities = dashboardData?.activities || [];
+  const { activeChild, dashboardData, isLoading, profiles } = useActiveChild();
+  const { lang } = useLang();
+  const text = (vi: string, en: string) => lang === "vi" ? vi : en;
   const [search, setSearch] = useState("");
-  const [subjectFilter, setSubjectFilter] = useState("Tất cả");
-  const [statusFilter, setStatusFilter] = useState<"Tất cả" | ActivityStatus>(
-    "Tất cả",
-  );
-  const [page, setPage] = useState(1);
+  const [subject, setSubject] = useState("all");
+  const [status, setStatus] = useState<StatusFilter>("all");
+  const deferredSearch = useDeferredValue(search);
+  const activities = useMemo(() => dashboardData?.activities ?? [], [dashboardData?.activities]);
+  const subjects = useMemo(() => Array.from(new Set(activities.map((item) => item.subject))).filter(Boolean), [activities]);
 
-  const filtered = useMemo(() => {
-    return activities.filter((a) => {
-      const matchSearch = a.lesson.toLowerCase().includes(search.toLowerCase());
-      const matchSubject =
-        subjectFilter === "Tất cả" || a.subject === subjectFilter;
-      const matchStatus =
-        statusFilter === "Tất cả" || a.status === statusFilter;
-      return matchSearch && matchSubject && matchStatus;
-    });
-  }, [search, subjectFilter, statusFilter, activities]);
+  const filtered = useMemo(() => activities.filter((item) => {
+    const query = deferredSearch.trim().toLocaleLowerCase(lang === "vi" ? "vi" : "en");
+    const normalizedStatus = item.status.toLocaleLowerCase("vi");
+    const statusKey: Exclude<StatusFilter, "all"> | "other" = normalizedStatus.includes("hoàn") ? "done" : normalizedStatus.includes("dở") ? "progress" : "other";
+    return (!query || `${item.lesson} ${item.subject}`.toLocaleLowerCase("vi").includes(query))
+      && (subject === "all" || item.subject === subject)
+      && (status === "all" || status === statusKey);
+  }), [activities, deferredSearch, lang, status, subject]);
 
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const completed = activities.filter((item) => item.status.toLocaleLowerCase("vi").includes("hoàn")).length;
+  const subjectOptions = [
+    { value: "all", label: text("Tất cả môn", "All subjects") },
+    ...subjects.map((item) => ({ value: item, label: item })),
+  ];
+  const statusOptions = [
+    { value: "all" as const, label: text("Mọi trạng thái", "All statuses") },
+    { value: "done" as const, label: text("Hoàn thành", "Completed") },
+    { value: "progress" as const, label: text("Đang dở", "In progress") },
+  ];
 
-  // Reset to first page when filters change
-  const handleSearch = (v: string) => {
-    setSearch(v);
-    setPage(1);
+  const exportCsv = () => {
+    const rows = [["Date", "Lesson", "Subject", "Duration", "Score", "Status"], ...filtered.map((item) => [item.datetime, item.lesson, item.subject, item.duration, item.score ?? "", item.status])];
+    const csv = rows.map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `learning-history-${activeChild?.name ?? "student"}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
-  const handleSubject = (v: string) => {
-    setSubjectFilter(v);
-    setPage(1);
-  };
-  const handleStatus = (v: string) => {
-    setStatusFilter(v as "Tất cả" | ActivityStatus);
-    setPage(1);
-  };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-20 text-gray-500">
-        Đang tải lịch sử học tập...
-      </div>
-    );
-  }
-
-  if (!isLoading && profiles.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
-        <span className="text-5xl mb-4">📚</span>
-        <h3 className="text-lg font-bold text-gray-700 mb-1">Chưa có hồ sơ học sinh</h3>
-        <p className="text-sm text-gray-400 mb-6">Hãy thêm hồ sơ cho bé để sử dụng tính năng này</p>
-        <button
-          onClick={() => navigate("/add-child")}
-          className="px-6 py-3 rounded-xl text-sm font-bold text-white transition-all hover:shadow-lg"
-          style={{ background: "linear-gradient(135deg, var(--brand-primary), #f97316)" }}
-        >
-          + Thêm hồ sơ học sinh
-        </button>
-      </div>
-    );
-  }
-
-  if (!dashboardData) {
-    return (
-      <div className="flex items-center justify-center py-20 text-gray-500">
-        Đang tải lịch sử học tập...
-      </div>
-    );
-  }
-
-  // Stats summary
-  const total = activities.length;
-  const done = activities.filter((a) => a.status === "Hoàn thành").length;
-  const inProgress = activities.filter(
-    (a) => a.status === "Đang dở",
-  ).length;
+  if (isLoading) return <DashboardSkeleton />;
+  if (!profiles.length) return <EmptyState icon={History} title={text("Chưa có lịch sử học tập", "No learning history yet")} description={text("Lịch sử sẽ xuất hiện sau khi bé bắt đầu học.", "History will appear after your child starts learning.")} />;
+  if (!activeChild || !dashboardData) return <DashboardSkeleton />;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-bold text-gray-800">Lịch sử học tập</h2>
-          <p className="text-sm text-gray-400 mt-0.5">
-            {total} hoạt động được ghi nhận
-          </p>
-        </div>
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-all self-start sm:self-auto shadow-sm shadow-blue-200">
-          <Download size={15} />
-          Xuất báo cáo
-        </button>
+    <motion.div {...pageMotion} className="space-y-6">
+      <PageHeader title={text(`Lịch sử học tập của ${activeChild.name}`, `${activeChild.name}'s learning history`)} description={text("Tìm lại bài học, điểm số và thời lượng theo từng buổi học.", "Review lessons, scores and duration for every study session.")} action={<button onClick={exportCsv} disabled={!filtered.length} className="flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 shadow-sm transition hover:border-blue-300 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"><Download className="h-4 w-4" />{text("Xuất CSV", "Export CSV")}</button>} />
+
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { icon: BookOpenCheck, label: text("Tổng hoạt động", "All activity"), value: activities.length, tone: "text-blue-500 bg-blue-50 dark:bg-blue-500/10" },
+          { icon: CheckCircle2, label: text("Hoàn thành", "Completed"), value: completed, tone: "text-emerald-500 bg-emerald-50 dark:bg-emerald-500/10" },
+          { icon: Clock3, label: text("Đang dở", "In progress"), value: Math.max(0, activities.length - completed), tone: "text-amber-500 bg-amber-50 dark:bg-amber-500/10" },
+        ].map((item) => <DashboardCard key={item.label} className="p-3 sm:p-4"><div className="flex items-center gap-3"><span className={`grid h-10 w-10 shrink-0 place-items-center rounded-2xl ${item.tone}`}><item.icon className="h-4 w-4" /></span><span><span className="block text-xl font-black text-slate-950 dark:text-white">{item.value}</span><span className="hidden text-xs font-bold text-slate-400 sm:block">{item.label}</span></span></div></DashboardCard>)}
       </div>
 
-      {/* Summary chips */}
-      <div className="flex flex-wrap gap-3">
-        <div className="flex items-center gap-2 bg-white border border-gray-100 shadow-sm rounded-xl px-4 py-2.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-gray-300 inline-block" />
-          <span className="text-sm font-bold text-gray-700">{total}</span>
-          <span className="text-sm text-gray-400">Tổng hoạt động</span>
-        </div>
-        <div className="flex items-center gap-2 bg-green-50 border border-green-100 rounded-xl px-4 py-2.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-green-400 inline-block" />
-          <span className="text-sm font-bold text-green-700">{done}</span>
-          <span className="text-sm text-green-600">Hoàn thành</span>
-        </div>
-        <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-100 rounded-xl px-4 py-2.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-yellow-400 inline-block" />
-          <span className="text-sm font-bold text-yellow-700">
-            {inProgress}
-          </span>
-          <span className="text-sm text-yellow-600">Đang dở</span>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-col sm:flex-row gap-3">
-        {/* Search */}
-        <div className="relative flex-1">
-          <Search
-            size={15}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-          />
-          <input
-            type="text"
-            placeholder="Tìm bài học..."
-            value={search}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-700 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition"
-          />
-        </div>
-        {/* Subject */}
-        <div className="relative">
-          <Filter
-            size={13}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-          />
-          <select
-            value={subjectFilter}
-            onChange={(e) => handleSubject(e.target.value)}
-            className="pl-8 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300 bg-white transition appearance-none cursor-pointer"
-          >
-            {SUBJECT_FILTER_OPTIONS.map((s) => (
-              <option key={s}>{s}</option>
-            ))}
-          </select>
-        </div>
-        {/* Status */}
-        <select
-          value={statusFilter}
-          onChange={(e) => handleStatus(e.target.value)}
-          className="px-4 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-600 outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300 bg-white transition appearance-none cursor-pointer"
-        >
-          {["Tất cả", "Hoàn thành", "Đang dở"].map((s) => (
-            <option key={s}>{s}</option>
-          ))}
-        </select>
-      </div>
-
-      {/* Table */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        {paginated.length === 0 ? (
-          <div className="flex flex-col items-center py-16 gap-3">
-            <Search size={36} className="text-gray-200" />
-            <p className="text-gray-400 text-sm font-medium">
-              Không tìm thấy kết quả phù hợp.
-            </p>
-            <button
-              onClick={() => {
-                setSearch("");
-                setSubjectFilter("Tất cả");
-                setStatusFilter("Tất cả");
-              }}
-              className="text-sm text-blue-600 font-semibold hover:underline"
-            >
-              Xóa bộ lọc
-            </button>
+      <DashboardCard className="p-3 sm:p-4">
+        <div className="flex flex-col gap-3 lg:flex-row">
+          <label className="relative flex-1"><Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={text("Tìm tên bài học hoặc môn học...", "Search lessons or subjects...")} className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-10 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white" />{search && <button type="button" onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"><X className="h-4 w-4" /></button>}</label>
+          <div className="grid grid-cols-2 gap-2 lg:flex">
+            <div className="min-w-0 lg:w-48"><CustomSelect value={subject} onValueChange={setSubject} options={subjectOptions} ariaLabel={text("Lọc theo môn học", "Filter by subject")} className="h-12 rounded-2xl bg-white dark:bg-slate-800" /></div>
+            <div className="min-w-0 lg:w-48"><CustomSelect value={status} onValueChange={setStatus} options={statusOptions} ariaLabel={text("Lọc theo trạng thái", "Filter by status")} className="h-12 rounded-2xl bg-white dark:bg-slate-800" /></div>
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-gray-400 bg-gray-50 border-b border-gray-100">
-                  <th className="px-6 py-3.5 font-semibold whitespace-nowrap">
-                    Ngày / Giờ
-                  </th>
-                  <th className="px-6 py-3.5 font-semibold">Tên bài học</th>
-                  <th className="px-6 py-3.5 font-semibold whitespace-nowrap">
-                    Chủ đề
-                  </th>
-                  <th className="px-6 py-3.5 font-semibold whitespace-nowrap">
-                    Thời gian
-                  </th>
-                  <th className="px-6 py-3.5 font-semibold whitespace-nowrap">
-                    Điểm số
-                  </th>
-                  <th className="px-6 py-3.5 font-semibold whitespace-nowrap">
-                    Trạng thái
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {paginated.map((a, i) => (
-                  <tr
-                    key={a.id}
-                    className="hover:bg-gray-50/70 transition-colors animate-row-in"
-                    style={{ animationDelay: `${i * 50}ms` }}
-                  >
-                    <td className="px-6 py-3.5 text-gray-400 whitespace-nowrap font-medium">
-                      {a.datetime}
-                    </td>
-                    <td className="px-6 py-3.5 font-semibold text-gray-700 max-w-[200px]">
-                      {a.lesson}
-                    </td>
-                    <td className="px-6 py-3.5">
-                      <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full whitespace-nowrap">
-                        {a.subject}
-                      </span>
-                    </td>
-                    <td className="px-6 py-3.5 text-gray-500 whitespace-nowrap">
-                      {a.duration}
-                    </td>
-                    <td className="px-6 py-3.5 font-bold text-gray-700 whitespace-nowrap">
-                      {a.score ?? "—"}
-                    </td>
-                    <td className="px-6 py-3.5">
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${statusStyle[a.status as ActivityStatus]}`}
-                      >
-                        {statusIcon[a.status as ActivityStatus]}
-                        {a.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        </div>
+      </DashboardCard>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100">
-            <p className="text-xs text-gray-400">
-              Hiển thị {(page - 1) * PAGE_SIZE + 1}–
-              {Math.min(page * PAGE_SIZE, filtered.length)} / {filtered.length}{" "}
-              kết quả
-            </p>
-            <div className="flex items-center gap-1.5">
-              <button
-                disabled={page === 1}
-                onClick={() => setPage((p) => p - 1)}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition"
-              >
-                ← Trước
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setPage(p)}
-                  className={`w-8 h-8 rounded-lg text-xs font-bold transition ${
-                    p === page
-                      ? "bg-blue-600 text-white shadow-sm"
-                      : "text-gray-500 hover:bg-gray-100"
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
-              <button
-                disabled={page === totalPages}
-                onClick={() => setPage((p) => p + 1)}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-500 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition"
-              >
-                Tiếp →
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+      <DashboardCard className="overflow-hidden p-0">
+        {filtered.length ? <div className="divide-y divide-slate-100 dark:divide-slate-800">{filtered.map((activity, index) => {
+          const done = activity.status.toLocaleLowerCase("vi").includes("hoàn");
+          return <motion.div key={activity.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(index * .025, .2) }} className="grid gap-3 p-4 transition hover:bg-slate-50 dark:hover:bg-slate-800/40 sm:grid-cols-[minmax(0,1fr)_130px_90px_110px] sm:items-center sm:px-5"><div className="flex min-w-0 items-center gap-3"><span className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl ${done ? "bg-emerald-50 text-emerald-500 dark:bg-emerald-500/10" : "bg-amber-50 text-amber-500 dark:bg-amber-500/10"}`}>{done ? <CheckCircle2 className="h-5 w-5" /> : <Clock3 className="h-5 w-5" />}</span><span className="min-w-0"><span className="block truncate text-sm font-black text-slate-800 dark:text-white">{activity.lesson}</span><span className="text-xs font-semibold text-slate-400">{activity.subject} · {activity.datetime}</span></span></div><span className="text-xs font-bold text-slate-500 dark:text-slate-400">{activity.duration}</span><span className="text-sm font-black text-slate-800 dark:text-white">{activity.score ?? "—"}</span><span className={`w-fit rounded-full px-2.5 py-1 text-[11px] font-black ${done ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300" : "bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300"}`}>{activity.status}</span></motion.div>;
+        })}</div> : <div className="grid min-h-[320px] place-items-center px-5 text-center"><div><Search className="mx-auto h-10 w-10 text-slate-300 dark:text-slate-600" /><h2 className="mt-4 text-lg font-black text-slate-800 dark:text-white">{text("Không tìm thấy kết quả", "No results found")}</h2><p className="mt-1 text-sm text-slate-400">{text("Thử thay đổi từ khóa hoặc bộ lọc.", "Try another keyword or filter.")}</p><button onClick={() => { setSearch(""); setSubject("all"); setStatus("all"); }} className="mt-4 text-sm font-black text-blue-600 dark:text-blue-400">{text("Xóa bộ lọc", "Clear filters")}</button></div></div>}
+      </DashboardCard>
+    </motion.div>
   );
 }

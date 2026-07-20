@@ -1,679 +1,85 @@
-import { useRef, useState, useEffect } from "react";
-import { Camera, Check, Pencil, X, Loader2, Lock } from "lucide-react";
-import { useAuth, PARENT_PIN_KEY, DEFAULT_PARENT_PIN } from "@/features/auth/context/auth";
-import { apiGet, apiPut } from "@/shared/api/client";
-import type { UserInfo } from "@/features/auth/api/authService";
-import { getProfiles, deleteChild, type ChildProfile } from "@/features/dashboard/api/childrenService";
-import { useActiveChild } from "@/features/dashboard/context/activeChild";
+import { useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "framer-motion";
+import { AlertTriangle, Camera, CheckCircle2, KeyRound, Loader2, Mail, Phone, Plus, Save, ShieldCheck, Trash2, UserRound, UsersRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import type { UserInfo } from "@/features/auth/api/authService";
+import { DEFAULT_PARENT_PIN, PARENT_PIN_KEY, useAuth } from "@/features/auth/context/auth";
+import { deleteChild, type ChildProfile } from "@/features/dashboard/api/childrenService";
+import { childrenQueryKeys, useActiveChild } from "@/features/dashboard/context/activeChild";
+import { getParentProfile, parentProfileKeys, updateParentProfile } from "@/features/dashboard/api/parentProfileService";
+import { useLang } from "@/shared/lib/i18n";
+import { DashboardCard, DashboardSkeleton, PageHeader } from "../components/DashboardPrimitives";
+import { pageMotion } from "../components/dashboardMotion";
 
-// ── Local state shape for the profile form ────────────────────
-interface ParentProfileForm {
-  name: string;
-  phone: string;
-  email: string;
-  avatarUrl: string | null; // data-URL from upload or existing URL
-}
+type Tab = "personal" | "security" | "students";
 
-// ── Avatar display ─────────────────────────────────────────────
-function AvatarDisplay({
-  avatarUrl,
-  initials,
-  onUpload,
-}: {
-  avatarUrl: string | null;
-  initials: string;
-  onUpload: (dataUrl: string) => void;
-}) {
+function PersonalTab({ profile }: { profile: UserInfo }) {
+  const { lang } = useLang();
+  const { updateUser } = useAuth();
+  const queryClient = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
-
-  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Ảnh quá lớn. Vui lòng chọn ảnh dưới 5MB.");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      if (typeof ev.target?.result === "string") onUpload(ev.target.result);
-    };
-    reader.readAsDataURL(file);
-  }
-
-  return (
-    <div className="relative group w-24 h-24 shrink-0">
-      {avatarUrl ? (
-        <img
-          src={avatarUrl}
-          alt="Avatar"
-          className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
-        />
-      ) : (
-        <div
-          className="w-24 h-24 rounded-full flex items-center justify-center text-white text-2xl font-extrabold border-4 border-white shadow-lg"
-          style={{ backgroundColor: "var(--brand-primary)" }}
-        >
-          {initials}
-        </div>
-      )}
-
-      {/* Upload overlay on hover */}
-      <button
-        onClick={() => fileRef.current?.click()}
-        className="absolute inset-0 rounded-full bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-        title="Thay ảnh đại diện"
-      >
-        <Camera size={20} className="text-white" />
-        <span className="text-white text-[10px] font-bold mt-0.5">Đổi ảnh</span>
-      </button>
-
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={handleFile}
-      />
-
-      {/* Camera badge */}
-      <div
-        className="absolute bottom-0 right-0 w-7 h-7 rounded-full flex items-center justify-center border-2 border-white shadow"
-        style={{ backgroundColor: "var(--brand-primary)" }}
-      >
-        <Camera size={13} className="text-white" />
-      </div>
-    </div>
-  );
-}
-
-// ── Editable field ─────────────────────────────────────────────
-function EditableField({
-  label,
-  value,
-  placeholder,
-  type = "text",
-  onChange,
-}: {
-  label: string;
-  value: string;
-  placeholder?: string;
-  type?: string;
-  onChange: (v: string) => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(value);
-
-  useEffect(() => {
-    setDraft(value);
-  }, [value]);
-
-  function confirm() {
-    onChange(draft.trim() || value);
-    setEditing(false);
-  }
-  function cancel() {
-    setDraft(value);
-    setEditing(false);
-  }
-
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-bold text-gray-400 uppercase tracking-wide">
-        {label}
-      </label>
-      {editing ? (
-        <div className="flex items-center gap-2">
-          <input
-            autoFocus
-            type={type}
-            value={draft}
-            placeholder={placeholder}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") confirm();
-              if (e.key === "Escape") cancel();
-            }}
-            className="flex-1 px-3 py-2 rounded-xl border-2 border-orange-300 focus:border-orange-400 outline-none text-sm font-semibold text-gray-800 bg-orange-50 transition"
-          />
-          <button
-            onClick={confirm}
-            className="w-8 h-8 rounded-xl bg-orange-500 flex items-center justify-center text-white hover:bg-orange-600 transition shrink-0"
-          >
-            <Check size={14} strokeWidth={3} />
-          </button>
-          <button
-            onClick={cancel}
-            className="w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition shrink-0"
-          >
-            <X size={14} />
-          </button>
-        </div>
-      ) : (
-        <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-gray-50 border border-gray-100 group">
-          <span className="text-sm font-semibold text-gray-700 truncate">
-            {value || (
-              <span className="text-gray-300 font-normal">{placeholder}</span>
-            )}
-          </span>
-          <button
-            onClick={() => {
-              setDraft(value);
-              setEditing(true);
-            }}
-            className="opacity-0 group-hover:opacity-100 transition p-1 rounded-lg hover:bg-gray-200 text-gray-400 hover:text-gray-600 shrink-0"
-          >
-            <Pencil size={12} />
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Change PIN ─────────────────────────────────────────────
-function ChangePinCard() {
-  const [currentPin, setCurrentPin] = useState("");
-  const [newPin, setNewPin] = useState("");
-  const [confirmPin, setConfirmPin] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [name, setName] = useState(profile.name || "");
+  const [phone, setPhone] = useState(profile.phone || "");
+  const [email, setEmail] = useState(profile.email || "");
+  const [avatar, setAvatar] = useState<string | null>(profile.avatarId);
+  const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-
-  function handleChangePin() {
-    setError(null);
-    setSuccess(false);
-
-    const savedPin = localStorage.getItem(PARENT_PIN_KEY) || DEFAULT_PARENT_PIN;
-
-    if (currentPin !== savedPin) {
-      setError("⚠️ Mã PIN hiện tại không đúng.");
-      return;
-    }
-    if (!/^\d{4}$/.test(newPin)) {
-      setError("⚠️ Mã PIN mới phải gồm 4 chữ số.");
-      return;
-    }
-    if (newPin !== confirmPin) {
-      setError("⚠️ Mã PIN xác nhận không khớp.");
-      return;
-    }
-
-    localStorage.setItem(PARENT_PIN_KEY, newPin);
-    setSuccess(true);
-    setCurrentPin("");
-    setNewPin("");
-    setConfirmPin("");
-    setTimeout(() => setSuccess(false), 3000);
-  }
-
-  return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
-      <div className="flex items-center gap-2 mb-2">
-        <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center">
-          <Lock size={16} className="text-orange-500" />
-        </div>
-        <h2 className="text-sm font-bold text-gray-600">Bảo mật Góc Phụ Huynh</h2>
-      </div>
-      
-      <div className="space-y-4">
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-bold text-gray-400 uppercase tracking-wide">Mã PIN hiện tại</label>
-          <input
-            type="password"
-            maxLength={4}
-            value={currentPin}
-            onChange={(e) => setCurrentPin(e.target.value.replace(/\D/g, ""))}
-            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:border-orange-400 outline-none text-sm font-semibold text-gray-800 transition bg-gray-50 focus:bg-white"
-            placeholder="Nhập mã PIN 4 số hiện tại..."
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-bold text-gray-400 uppercase tracking-wide">Mã PIN mới</label>
-          <input
-            type="password"
-            maxLength={4}
-            value={newPin}
-            onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ""))}
-            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:border-orange-400 outline-none text-sm font-semibold text-gray-800 transition bg-gray-50 focus:bg-white"
-            placeholder="Nhập mã PIN 4 số mới..."
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-bold text-gray-400 uppercase tracking-wide">Xác nhận mã PIN mới</label>
-          <input
-            type="password"
-            maxLength={4}
-            value={confirmPin}
-            onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ""))}
-            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 focus:border-orange-400 outline-none text-sm font-semibold text-gray-800 transition bg-gray-50 focus:bg-white"
-            placeholder="Nhập lại mã PIN mới..."
-          />
-        </div>
-
-        {error && <p className="text-sm text-red-500 font-medium animate-in fade-in slide-in-from-top-1">{error}</p>}
-        {success && <p className="text-sm text-emerald-600 font-medium flex items-center gap-1 animate-in fade-in slide-in-from-top-1"><Check size={16} /> Đổi mã PIN thành công!</p>}
-
-        <div className="pt-2">
-          <button
-            onClick={handleChangePin}
-            disabled={!currentPin || !newPin || !confirmPin}
-            className="px-5 py-2.5 bg-gray-100 text-gray-600 font-extrabold text-sm rounded-xl hover:bg-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Cập nhật mã PIN
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Manage Children (Danger Zone) ─────────────────────────────────────────────
-function ManageChildrenCard() {
-  const { activeChild, switchChild, refreshProfiles } = useActiveChild();
-  const navigate = useNavigate();
-  
-  const [children, setChildren] = useState<ChildProfile[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [deletingChild, setDeletingChild] = useState<ChildProfile | null>(null);
-  const [confirmName, setConfirmName] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  useEffect(() => {
-    loadChildren();
-  }, []);
-
-  const loadChildren = async () => {
-    const parentId = sessionStorage.getItem("vio_parent_id");
-    if (!parentId) return;
-    try {
-      const data = await getProfiles(parentId);
-      setChildren(data);
-    } catch (err) {
-      console.error("Failed to load children", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!deletingChild) return;
-    try {
-      setIsDeleting(true);
-      await deleteChild(deletingChild.id);
-      
-      // Update context profiles
-      await refreshProfiles();
-
-      // Remove from local list
-      const newList = children.filter(c => c.id !== deletingChild.id);
-      setChildren(newList);
-      
-      // If deleted child was active, switch active child or go to picker
-      if (activeChild?.id === deletingChild.id) {
-        if (newList.length > 0) {
-          switchChild(newList[0].id);
-        } else {
-          localStorage.removeItem("vio_active_child_id");
-          navigate("/profile-picker");
-        }
-      }
-      
-      setDeletingChild(null);
-      setConfirmName("");
-    } catch (err: any) {
-      alert("Lỗi khi xóa: " + (err.message || "Unknown error"));
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  return (
-    <div className="bg-white rounded-2xl border border-red-100 shadow-sm p-6 space-y-4">
-      <div className="flex items-center gap-2 mb-2">
-        <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center">
-          <X size={16} className="text-red-500" />
-        </div>
-        <div>
-          <h2 className="text-sm font-bold text-gray-800">Quản lý hồ sơ học sinh</h2>
-          <p className="text-xs text-gray-500">Xóa các hồ sơ không còn sử dụng. Dữ liệu sẽ không thể khôi phục.</p>
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        {loading ? (
-          <div className="text-center text-sm text-gray-400 py-4">Đang tải...</div>
-        ) : children.length === 0 ? (
-          <div className="text-center text-sm text-gray-400 py-4">Chưa có hồ sơ học sinh nào.</div>
-        ) : (
-          children.map(child => (
-            <div key={child.id} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:border-red-100 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center text-xl bg-gray-50">
-                  {child.avatarEmoji}
-                </div>
-                <div>
-                  <div className="font-bold text-gray-800 text-sm">{child.name}</div>
-                  <div className="text-xs text-gray-500">{child.plan} Plan</div>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  setDeletingChild(child);
-                  setConfirmName("");
-                }}
-                className="px-3 py-1.5 rounded-lg text-xs font-bold text-red-500 hover:bg-red-50 transition-colors border border-transparent hover:border-red-100"
-              >
-                Xóa hồ sơ
-              </button>
-            </div>
-          ))
-        )}
-      </div>
-
-      {/* Danger Zone Modal */}
-      {deletingChild && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95">
-            <div className="p-6 border-b border-gray-100 bg-red-50/50">
-              <h3 className="text-xl font-black text-red-600 flex items-center gap-2">
-                <X size={24} />
-                Bạn có chắc chắn?
-              </h3>
-            </div>
-            
-            <div className="p-6 space-y-4">
-              <p className="text-sm text-gray-600 leading-relaxed">
-                Hành động này <span className="font-bold text-gray-900">không thể hoàn tác</span>. Toàn bộ tiến trình học tập, 
-                điểm số, bảng xếp hạng và các gói cước liên kết với tài khoản của bé <span className="font-bold text-gray-900">{deletingChild.name}</span> sẽ bị xóa vĩnh viễn khỏi hệ thống.
-              </p>
-              
-              <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                <label className="block text-xs font-bold text-gray-600 mb-2">
-                  Vui lòng nhập <span className="text-red-500 select-none font-mono font-black text-sm px-1 bg-red-100 rounded">{deletingChild.name}</span> để xác nhận.
-                </label>
-                <input 
-                  type="text" 
-                  value={confirmName}
-                  onChange={e => setConfirmName(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-lg border-2 border-gray-200 focus:border-red-400 focus:ring-4 focus:ring-red-400/20 outline-none transition-all font-medium text-gray-800"
-                  placeholder="Nhập tên bé..."
-                  autoFocus
-                />
-              </div>
-            </div>
-
-            <div className="p-4 bg-gray-50 flex gap-3 justify-end border-t border-gray-100">
-              <button
-                onClick={() => setDeletingChild(null)}
-                className="px-4 py-2.5 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-200 transition-colors"
-                disabled={isDeleting}
-              >
-                Hủy bỏ
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={confirmName !== deletingChild.name || isDeleting}
-                className="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
-              >
-                {isDeleting ? (
-                  <><Loader2 size={16} className="animate-spin" /> Đang xóa...</>
-                ) : (
-                  "Tôi hiểu hậu quả, xóa hồ sơ"
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Main page ──────────────────────────────────────────────────
-export function ProfilePage() {
-  const { user, updateUser } = useAuth();
-  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [form, setForm] = useState<ParentProfileForm>({
-    name: user?.nickname ?? "Phụ Huynh",
-    phone: user?.phone ?? "",
-    email: user?.email ?? "",
-    avatarUrl: null,
+  const text = (vi: string, en: string) => lang === "vi" ? vi : en;
+  const initials = (name || "P").split(" ").map((part) => part[0]).join("").slice(0, 2).toUpperCase();
+  const mutation = useMutation({
+    mutationFn: () => updateParentProfile({ id: profile.id, name: name.trim(), phone: phone.trim(), email: email.trim(), avatarId: avatar }),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(parentProfileKeys.detail(profile.id), updated);
+      updateUser({ nickname: updated.name, phone: updated.phone, email: updated.email || "", avatarId: updated.avatarId || "" });
+      setSuccess(true); setTimeout(() => setSuccess(false), 3000);
+    },
+    onError: (cause: Error) => setError(cause.message || text("Không thể lưu thay đổi.", "Could not save changes.")),
   });
-  const [saved, setSaved] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  const chooseImage = (file?: File) => {
+    setError("");
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return setError(text("Vui lòng chọn đúng định dạng ảnh.", "Please choose an image file."));
+    if (file.size > 2 * 1024 * 1024) return setError(text("Ảnh phải nhỏ hơn 2 MB.", "Image must be smaller than 2 MB."));
+    const reader = new FileReader(); reader.onload = () => { if (typeof reader.result === "string") setAvatar(reader.result); }; reader.readAsDataURL(file);
+  };
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault(); setError("");
+    if (name.trim().length < 2) return setError(text("Họ tên cần ít nhất 2 ký tự.", "Name must be at least 2 characters."));
+    if (phone && !/^(0[35789])[0-9]{8}$/.test(phone.replace(/\D/g, ""))) return setError(text("Số điện thoại không đúng định dạng Việt Nam.", "Invalid Vietnamese phone number."));
+    mutation.mutate();
+  };
+  return <motion.form onSubmit={submit} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} className="grid gap-5 xl:grid-cols-[330px_1fr]">
+    <DashboardCard className="relative overflow-hidden text-center"><div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-r from-blue-500/15 to-violet-500/15" /><div className="relative mx-auto mt-7 h-32 w-32"><div className="grid h-32 w-32 place-items-center overflow-hidden rounded-[36px] border-4 border-white bg-gradient-to-br from-orange-400 to-rose-500 text-3xl font-black text-white shadow-xl dark:border-slate-900">{avatar ? <img src={avatar} alt="" className="h-full w-full object-cover" /> : initials}</div><button type="button" onClick={() => fileRef.current?.click()} className="absolute -bottom-2 -right-2 grid h-11 w-11 place-items-center rounded-2xl border-4 border-white bg-blue-600 text-white shadow-lg transition hover:scale-105 dark:border-slate-900"><Camera className="h-4 w-4" /></button><input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(event) => chooseImage(event.target.files?.[0])} /></div><h2 className="mt-6 truncate text-xl font-black text-slate-900 dark:text-white">{name || text("Phụ huynh", "Parent")}</h2><p className="mt-1 text-sm font-semibold text-slate-400">{text("Tài khoản phụ huynh", "Parent account")}</p><div className="mt-5 rounded-2xl bg-emerald-50 p-3 text-xs font-bold text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300"><ShieldCheck className="mr-1.5 inline h-4 w-4" />{text("Tài khoản đang hoạt động", "Account is active")}</div></DashboardCard>
+    <DashboardCard><div><p className="text-xs font-black uppercase tracking-[.16em] text-slate-400">{text("Thông tin tài khoản", "Account details")}</p><h2 className="mt-1 text-xl font-black text-slate-900 dark:text-white">{text("Thông tin cá nhân", "Personal information")}</h2></div><div className="mt-6 grid gap-5 md:grid-cols-2"><Field icon={UserRound} label={text("Họ và tên", "Full name")} value={name} onChange={setName} /><Field icon={Phone} label={text("Số điện thoại", "Phone number")} value={phone} onChange={(value) => setPhone(value.replace(/\D/g, "").slice(0, 10))} inputMode="numeric" /><div className="md:col-span-2"><Field icon={Mail} label="Email" value={email} onChange={setEmail} type="email" /></div></div><AnimatePresence>{error && <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="mt-4 text-sm font-bold text-rose-500">{error}</motion.p>}{success && <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="mt-4 flex items-center gap-2 text-sm font-bold text-emerald-500"><CheckCircle2 className="h-4 w-4" />{text("Đã lưu thay đổi.", "Changes saved.")}</motion.p>}</AnimatePresence><div className="mt-7 flex justify-end"><button disabled={mutation.isPending} className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-500/20 transition hover:-translate-y-0.5 disabled:opacity-60">{mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}{mutation.isPending ? text("Đang lưu...", "Saving...") : text("Lưu thay đổi", "Save changes")}</button></div></DashboardCard>
+  </motion.form>;
+}
 
-  // Load profile from API on mount
-  useEffect(() => {
-    const parentId = sessionStorage.getItem("vio_parent_id");
-    if (!parentId) {
-      setIsLoadingProfile(false);
-      return;
-    }
+function Field({ icon: Icon, label, value, onChange, type = "text", inputMode }: { icon: typeof UserRound; label: string; value: string; onChange: (value: string) => void; type?: string; inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"] }) {
+  return <label className="block"><span className="mb-2 block text-xs font-black uppercase tracking-wider text-slate-400">{label}</span><span className="relative block"><Icon className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input type={type} inputMode={inputMode} value={value} onChange={(event) => onChange(event.target.value)} className="h-13 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm font-bold text-slate-800 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:focus:bg-slate-900" /></span></label>;
+}
 
-    apiGet<UserInfo>(`/parent/profile?id=${parentId}`)
-      .then((profile) => {
-        setForm({
-          name: profile.name || user?.nickname || "Phụ Huynh",
-          phone: profile.phone || "",
-          email: profile.email || user?.email || "",
-          avatarUrl: profile.avatarId || null,
-        });
-        setLoadError(null);
-      })
-      .catch((err) => {
-        console.error("Load profile failed:", err);
-        setLoadError("Không thể tải thông tin hồ sơ. Đang dùng dữ liệu cục bộ.");
-      })
-      .finally(() => setIsLoadingProfile(false));
-  }, []);
+function SecurityTab() {
+  const { lang } = useLang();
+  const text = (vi: string, en: string) => lang === "vi" ? vi : en;
+  const [currentPin, setCurrentPin] = useState(""); const [newPin, setNewPin] = useState(""); const [confirmPin, setConfirmPin] = useState(""); const [message, setMessage] = useState<{ type: "error" | "success"; text: string } | null>(null);
+  const updatePin = (event: React.FormEvent) => { event.preventDefault(); const saved = localStorage.getItem(PARENT_PIN_KEY) || DEFAULT_PARENT_PIN; if (currentPin !== saved) return setMessage({ type: "error", text: text("Mã PIN hiện tại không đúng.", "Current PIN is incorrect.") }); if (!/^\d{4}$/.test(newPin)) return setMessage({ type: "error", text: text("Mã PIN mới phải gồm đúng 4 chữ số.", "New PIN must contain exactly 4 digits.") }); if (newPin !== confirmPin) return setMessage({ type: "error", text: text("Mã PIN xác nhận không khớp.", "PIN confirmation does not match.") }); localStorage.setItem(PARENT_PIN_KEY, newPin); setCurrentPin(""); setNewPin(""); setConfirmPin(""); setMessage({ type: "success", text: text("Đã cập nhật mã PIN.", "PIN updated.") }); };
+  return <motion.div initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} className="grid gap-5 xl:grid-cols-[1fr_340px]"><DashboardCard><div className="flex items-start gap-4"><span className="grid h-12 w-12 place-items-center rounded-2xl bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300"><KeyRound className="h-5 w-5" /></span><div><h2 className="text-xl font-black text-slate-900 dark:text-white">{text("Mã PIN Góc Phụ Huynh", "Parent area PIN")}</h2><p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">{text("PIN ngăn bé truy cập nhầm các báo cáo và phần thanh toán.", "The PIN prevents children from opening reports and billing by mistake.")}</p></div></div><form onSubmit={updatePin} className="mt-7 grid gap-5 md:grid-cols-2"><label className="md:col-span-2"><span className="mb-2 block text-xs font-black uppercase tracking-wider text-slate-400">{text("Mã PIN hiện tại", "Current PIN")}</span><PinInput value={currentPin} onChange={setCurrentPin} /></label><label><span className="mb-2 block text-xs font-black uppercase tracking-wider text-slate-400">{text("Mã PIN mới", "New PIN")}</span><PinInput value={newPin} onChange={setNewPin} /></label><label><span className="mb-2 block text-xs font-black uppercase tracking-wider text-slate-400">{text("Xác nhận PIN", "Confirm PIN")}</span><PinInput value={confirmPin} onChange={setConfirmPin} /></label><div className="md:col-span-2">{message && <p className={`mb-4 text-sm font-bold ${message.type === "success" ? "text-emerald-500" : "text-rose-500"}`}>{message.text}</p>}<button className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-black text-white transition hover:bg-blue-600 dark:bg-white dark:text-slate-950 dark:hover:bg-blue-400">{text("Cập nhật mã PIN", "Update PIN")}</button></div></form></DashboardCard><DashboardCard className="bg-gradient-to-br from-slate-900 to-indigo-950 text-white dark:border-indigo-500/20"><ShieldCheck className="h-8 w-8 text-emerald-400" /><h3 className="mt-6 text-xl font-black">{text("Lưu ý bảo mật", "Security note")}</h3><p className="mt-2 text-sm font-medium leading-6 text-slate-300">{text("Mã PIN hiện được lưu trên thiết bị này. Không sử dụng mã khóa điện thoại hoặc mật khẩu ngân hàng.", "This PIN is stored on this device. Do not reuse your phone passcode or banking password.")}</p></DashboardCard></motion.div>;
+}
 
-  function update(field: keyof ParentProfileForm, value: string) {
-    setForm((prev) => ({ ...prev, [field]: value }));
-    setSaved(false);
-    setSaveError(null);
-  }
+function PinInput({ value, onChange }: { value: string; onChange: (value: string) => void }) { return <input type="password" inputMode="numeric" maxLength={4} value={value} onChange={(event) => onChange(event.target.value.replace(/\D/g, ""))} className="h-13 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-center text-xl font-black tracking-[.5em] text-slate-800 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white" placeholder="••••" />; }
 
-  function handleSave() {
-    const parentId = sessionStorage.getItem("vio_parent_id");
-    if (!parentId) {
-      // Fallback: chỉ cập nhật local context
-      updateUser({ nickname: form.name, email: form.email });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2500);
-      return;
-    }
+function StudentsTab() {
+  const { profiles, activeChild, switchChild, refreshProfiles } = useActiveChild(); const { lang } = useLang(); const navigate = useNavigate(); const queryClient = useQueryClient(); const [target, setTarget] = useState<ChildProfile | null>(null); const [confirmName, setConfirmName] = useState(""); const text = (vi: string, en: string) => lang === "vi" ? vi : en;
+  const mutation = useMutation({ mutationFn: (childId: string) => deleteChild(childId), onSuccess: async (_, childId) => { await refreshProfiles(); queryClient.removeQueries({ queryKey: childrenQueryKeys.dashboard(childId) }); const remaining = profiles.filter((item) => item.id !== childId); if (activeChild?.id === childId && remaining[0]) switchChild(remaining[0].id); if (!remaining.length) navigate("/profile-picker", { replace: true }); setTarget(null); setConfirmName(""); } });
+  return <motion.div initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }}><div className="mb-4 flex items-center justify-between gap-3"><div><h2 className="text-xl font-black text-slate-900 dark:text-white">{text("Hồ sơ học sinh", "Student profiles")}</h2><p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{text(`${profiles.length} hồ sơ trong gia đình`, `${profiles.length} family profiles`)}</p></div><button onClick={() => navigate("/add-child")} className="flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-black text-white"><Plus className="h-4 w-4" />{text("Thêm hồ sơ", "Add profile")}</button></div><div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{profiles.map((child, index) => <motion.article key={child.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * .05 }} className="rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/80"><div className="flex items-start gap-3"><span className="grid h-14 w-14 place-items-center rounded-2xl text-2xl" style={{ backgroundColor: child.avatarBg || "#e2e8f0" }}>{child.avatarEmoji}</span><span className="min-w-0 flex-1"><span className="block truncate text-base font-black text-slate-900 dark:text-white">{child.name}</span><span className="mt-1 block text-xs font-bold text-slate-400">{child.grade}</span></span><span className={`rounded-full px-2.5 py-1 text-[10px] font-black ${child.plan === "FREE" ? "bg-slate-100 text-slate-500 dark:bg-slate-800" : "bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300"}`}>{child.plan}{child.planDaysLeft ? ` · ${child.planDaysLeft}d` : ""}</span></div><div className="mt-5 flex gap-2"><button onClick={() => switchChild(child.id)} disabled={activeChild?.id === child.id} className="flex-1 rounded-xl bg-slate-100 px-3 py-2.5 text-xs font-black text-slate-600 transition hover:bg-blue-50 hover:text-blue-600 disabled:text-emerald-500 dark:bg-slate-800 dark:text-slate-300">{activeChild?.id === child.id ? text("Đang chọn", "Selected") : text("Chọn hồ sơ", "Select")}</button><button onClick={() => setTarget(child)} className="grid h-10 w-10 place-items-center rounded-xl border border-rose-200 text-rose-500 transition hover:bg-rose-50 dark:border-rose-500/20 dark:hover:bg-rose-500/10"><Trash2 className="h-4 w-4" /></button></div></motion.article>)}</div><AnimatePresence>{target && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] grid place-items-center bg-slate-950/60 p-4 backdrop-blur-sm"><motion.div initial={{ opacity: 0, scale: .95, y: 14 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: .96 }} className="w-full max-w-md rounded-[28px] border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-900"><span className="grid h-12 w-12 place-items-center rounded-2xl bg-rose-50 text-rose-500 dark:bg-rose-500/10"><AlertTriangle className="h-5 w-5" /></span><h3 className="mt-5 text-xl font-black text-slate-900 dark:text-white">{text("Xóa hồ sơ học sinh?", "Delete student profile?")}</h3><p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">{text(`Mọi tiến độ của ${target.name} sẽ bị ẩn và không thể khôi phục. Nhập đúng tên để xác nhận.`, `All progress for ${target.name} will be hidden and cannot be restored. Type the name to confirm.`)}</p><input autoFocus value={confirmName} onChange={(event) => setConfirmName(event.target.value)} placeholder={target.name} className="mt-5 h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold outline-none focus:border-rose-400 dark:border-slate-700 dark:bg-slate-800 dark:text-white" /><div className="mt-5 flex gap-3"><button onClick={() => { setTarget(null); setConfirmName(""); }} className="flex-1 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-black text-slate-600 dark:border-slate-700 dark:text-slate-300">{text("Hủy", "Cancel")}</button><button onClick={() => mutation.mutate(target.id)} disabled={confirmName !== target.name || mutation.isPending} className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-rose-500 px-4 py-3 text-sm font-black text-white disabled:opacity-40">{mutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}{text("Xóa hồ sơ", "Delete profile")}</button></div></motion.div></motion.div>}</AnimatePresence></motion.div>;
+}
 
-    setIsSaving(true);
-    setSaveError(null);
-
-    // Prepare payload
-    const payload: Record<string, string> = { id: parentId };
-    if (form.name) payload.name = form.name.trim();
-    if (form.phone) payload.phone = form.phone.trim();
-    if (form.email !== undefined) payload.email = form.email.trim();
-    if (form.avatarUrl && form.avatarUrl.startsWith("data:")) {
-      // Gửi avatar data URL — backend sẽ lưu vào avatarId
-      payload.avatarId = form.avatarUrl;
-    }
-
-    apiPut<UserInfo>("/parent/profile", payload)
-      .then((updatedProfile) => {
-        // Sync to auth context so other pages see the updated info
-        updateUser({
-          nickname: updatedProfile.name,
-          email: updatedProfile.email || "",
-        });
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2500);
-      })
-      .catch((err) => {
-        console.error("Save profile failed:", err);
-        setSaveError(
-          err?.message || "Lưu thất bại. Vui lòng thử lại."
-        );
-      })
-      .finally(() => setIsSaving(false));
-  }
-
-  const initials = form.name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .substring(0, 2)
-    .toUpperCase();
-
-  if (isLoadingProfile) {
-    return (
-      <div className="max-w-2xl mx-auto flex items-center justify-center py-20">
-        <div className="flex items-center gap-3 text-gray-400">
-          <Loader2 size={20} className="animate-spin" />
-          <span className="text-sm font-medium">Đang tải hồ sơ...</span>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      {/* Page title */}
-      <div>
-        <h1 className="text-xl font-extrabold text-gray-800">Hồ sơ của tôi</h1>
-        <p className="text-sm text-gray-400 mt-0.5">
-          Quản lý thông tin cá nhân và ảnh đại diện
-        </p>
-      </div>
-
-      {/* Load error notice */}
-      {loadError && (
-        <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 text-sm font-medium px-4 py-3 rounded-2xl flex items-center gap-2">
-          <span>⚠️</span> {loadError}
-        </div>
-      )}
-
-      {/* Avatar card */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-        <h2 className="text-sm font-bold text-gray-600 mb-4">Ảnh đại diện</h2>
-
-        <div className="flex items-center gap-6">
-          <AvatarDisplay
-            avatarUrl={form.avatarUrl}
-            initials={initials}
-            onUpload={(url) => update("avatarUrl", url)}
-          />
-
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-gray-700 mb-1">
-              Tải ảnh lên
-            </p>
-            <p className="text-xs text-gray-400 leading-relaxed mb-3">
-              Hỗ trợ JPG, PNG, WEBP. Tối đa 5 MB.
-              <br />
-              Ảnh sẽ được hiển thị trên toàn bộ hệ thống.
-            </p>
-            <button
-              onClick={() =>
-                document
-                  .querySelector<HTMLInputElement>('input[type="file"]')
-                  ?.click()
-              }
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-dashed border-orange-300 text-orange-500 text-sm font-bold hover:bg-orange-50 transition"
-            >
-              <Camera size={15} />
-              Chọn ảnh từ thiết bị
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Info card */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
-        <h2 className="text-sm font-bold text-gray-600">Thông tin cá nhân</h2>
-
-        <EditableField
-          label="Họ và tên"
-          value={form.name}
-          placeholder="Nhập họ và tên..."
-          onChange={(v) => update("name", v)}
-        />
-        <EditableField
-          label="Số điện thoại"
-          value={form.phone}
-          placeholder="VD: 0901 234 567"
-          type="tel"
-          onChange={(v) => update("phone", v)}
-        />
-        <EditableField
-          label="Email"
-          value={form.email}
-          placeholder="VD: email@example.com"
-          type="email"
-          onChange={(v) => update("email", v)}
-        />
-
-        {/* Role badge – read only */}
-        <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-bold text-gray-400 uppercase tracking-wide">
-            Vai trò
-          </label>
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-50 border border-gray-100">
-            <span
-              className="inline-block px-2.5 py-0.5 rounded-full text-xs font-extrabold text-white"
-              style={{ backgroundColor: "var(--brand-primary)" }}
-            >
-              Phụ huynh
-            </span>
-            <span className="text-xs text-gray-400">
-              Tài khoản quản lý học sinh
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Security (Change PIN) card */}
-      <ChangePinCard />
-      
-      {/* Manage Children (Danger Zone) */}
-      <ManageChildrenCard />
-
-      {/* Save error */}
-      {saveError && (
-        <div className="bg-red-50 border border-red-200 text-red-600 text-sm font-medium px-4 py-3 rounded-2xl flex items-center gap-2">
-          <span>❌</span> {saveError}
-        </div>
-      )}
-
-      {/* Save button */}
-      <div className="flex justify-end">
-        <button
-          onClick={handleSave}
-          disabled={isSaving}
-          className="flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-extrabold text-white transition-all duration-200 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
-          style={{
-            background:
-              "linear-gradient(135deg, var(--brand-primary), #fb923c)",
-            boxShadow: "0 4px 14px rgba(249,115,22,0.35)",
-          }}
-        >
-          {isSaving ? (
-            <>
-              <Loader2 size={15} className="animate-spin" />
-              Đang lưu...
-            </>
-          ) : saved ? (
-            <>
-              <Check size={15} strokeWidth={3} />
-              Đã lưu!
-            </>
-          ) : (
-            "Lưu thay đổi"
-          )}
-        </button>
-      </div>
-    </div>
-  );
+export function ProfilePage() {
+  const { lang } = useLang(); const text = (vi: string, en: string) => lang === "vi" ? vi : en; const [tab, setTab] = useState<Tab>("personal"); const parentId = sessionStorage.getItem("vio_parent_id");
+  const profileQuery = useQuery({ queryKey: parentProfileKeys.detail(parentId ?? "anonymous"), queryFn: () => getParentProfile(parentId!), enabled: Boolean(parentId), staleTime: 5 * 60_000, gcTime: 30 * 60_000, refetchOnWindowFocus: false });
+  if (profileQuery.isPending) return <DashboardSkeleton />;
+  if (profileQuery.isError || !profileQuery.data) return <DashboardCard className="grid min-h-72 place-items-center text-center"><div><AlertTriangle className="mx-auto h-10 w-10 text-rose-500" /><h2 className="mt-4 text-lg font-black text-slate-900 dark:text-white">{text("Không thể tải hồ sơ", "Could not load profile")}</h2><button onClick={() => profileQuery.refetch()} className="mt-4 text-sm font-black text-blue-600 dark:text-blue-400">{text("Thử lại", "Try again")}</button></div></DashboardCard>;
+  const tabs = [{ id: "personal" as const, icon: UserRound, vi: "Thông tin cá nhân", en: "Personal" }, { id: "security" as const, icon: KeyRound, vi: "Bảo mật", en: "Security" }, { id: "students" as const, icon: UsersRound, vi: "Hồ sơ học sinh", en: "Students" }];
+  return <motion.div {...pageMotion} className="space-y-6"><PageHeader eyebrow={text("Cài đặt tài khoản", "Account settings")} title={text("Hồ sơ của tôi", "My profile")} description={text("Quản lý thông tin phụ huynh, bảo mật và các hồ sơ học sinh trong một nơi.", "Manage parent details, security and student profiles in one place.")} /><div className="scrollbar-hide flex gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1.5 dark:border-slate-800 dark:bg-slate-900/80">{tabs.map((item) => <button key={item.id} onClick={() => setTab(item.id)} className={`relative flex min-w-max flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-black transition ${tab === item.id ? "text-blue-600 dark:text-blue-300" : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"}`}>{tab === item.id && <motion.span layoutId="profile-tab" className="absolute inset-0 -z-0 rounded-xl bg-blue-50 dark:bg-blue-500/12" transition={{ type: "spring", stiffness: 420, damping: 35 }} />}<item.icon className="relative h-4 w-4" /><span className="relative">{item[lang]}</span></button>)}</div><AnimatePresence mode="wait"><motion.div key={tab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: .2 }}>{tab === "personal" ? <PersonalTab key={`${profileQuery.data.id}-${profileQuery.data.createdAt}`} profile={profileQuery.data} /> : tab === "security" ? <SecurityTab /> : <StudentsTab />}</motion.div></AnimatePresence></motion.div>;
 }

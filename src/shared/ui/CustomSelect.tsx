@@ -24,8 +24,8 @@ interface CustomSelectProps<T extends string> {
 
 export function CustomSelect<T extends string>({ value, onValueChange, options, ariaLabel, placeholder, disabled = false, error = false, className = "", contentClassName = "" }: CustomSelectProps<T>) {
   return <Select.Root value={value} disabled={disabled} onValueChange={(next) => onValueChange(next as T)}>
-    <Select.Trigger aria-label={ariaLabel} aria-invalid={error || undefined} className={`group inline-flex h-10 w-full items-center justify-between gap-3 rounded-xl border bg-background px-3 text-left text-sm font-semibold text-foreground outline-none transition duration-200 hover:border-indigo-400/70 hover:bg-muted/40 focus:ring-4 disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground data-[state=open]:border-indigo-500 data-[state=open]:ring-4 data-[state=open]:ring-indigo-500/10 ${error ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/10" : "border-border focus:border-indigo-500 focus:ring-indigo-500/10"} ${className}`}>
-      <Select.Value placeholder={placeholder} />
+    <Select.Trigger aria-label={ariaLabel} aria-invalid={error || undefined} className={`group inline-flex h-10 min-w-0 w-full items-center justify-between gap-3 rounded-xl border bg-background px-3 text-left text-sm font-semibold text-foreground outline-none transition duration-200 hover:border-indigo-400/70 hover:bg-muted/40 focus:ring-4 disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-muted-foreground data-[state=open]:border-indigo-500 data-[state=open]:ring-4 data-[state=open]:ring-indigo-500/10 ${error ? "border-rose-500 focus:border-rose-500 focus:ring-rose-500/10" : "border-border focus:border-indigo-500 focus:ring-indigo-500/10"} ${className}`}>
+      <Select.Value placeholder={placeholder} className="min-w-0 flex-1 truncate whitespace-nowrap" />
       <Select.Icon asChild><ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" /></Select.Icon>
     </Select.Trigger>
     <Select.Portal>

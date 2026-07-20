@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 import { LoginForm } from "@/features/auth/components/LoginForm";
 import { useLang } from "@/shared/lib/i18n";
 import { useAuth } from "@/features/auth/context/auth";
-import { useActiveChild } from "@/features/dashboard/context/activeChild";
 import * as authService from "@/features/auth/api/authService";
 import { AuthLayout } from "@/features/auth/components/AuthLayout";
 import { useThemeStore } from "@/shared/stores/themeStore";
@@ -14,7 +13,6 @@ export function LoginPage() {
   const { t } = useLang();
   const navigate = useNavigate();
   const { login } = useAuth();
-  const { refreshProfiles } = useActiveChild();
   const [googleLoading, setGoogleLoading] = useState(false);
   const reduceMotion = useReducedMotion();
   const theme = useThemeStore((state) => state.theme);
@@ -23,9 +21,7 @@ export function LoginPage() {
     <AuthLayout className="h-dvh overflow-hidden" contentClassName="h-dvh min-h-0 overflow-hidden pb-4 pt-20">
       {/* Card */}
       <motion.div
-        initial={reduceMotion ? false : { opacity: 0, x: 64, scale: 0.985 }}
-        animate={{ opacity: 1, x: 0, scale: 1 }}
-        transition={{ duration: 0.48, ease: [0.22, 1, 0.36, 1] }}
+        initial={false}
         className="
         auth-surface bg-white/80 dark:bg-slate-900/90 backdrop-blur-md border-4 border-white dark:border-slate-700
         rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.1)]
@@ -108,11 +104,8 @@ export function LoginPage() {
                       tier: "free",
                     });
                     sessionStorage.setItem("vio_parent_id", user.id);
-                    if (refreshProfiles) {
-                      refreshProfiles().then(() => navigate("/profile-picker"));
-                    } else {
-                      navigate("/profile-picker");
-                    }
+                    // Điều hướng ngay; hồ sơ được tải nền tại trang đích.
+                    navigate("/profile-picker");
                   })
                   .catch(() => {
                     alert("Đăng nhập Google thất bại. Vui lòng thử lại.");

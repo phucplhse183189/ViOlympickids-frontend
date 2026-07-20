@@ -1,99 +1,77 @@
-import { useState, useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import { useQueries } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
-  Plus,
-  ShieldCheck,
-  LogOut,
-  Zap,
+  ArrowRight,
+  BarChart3,
+  BookOpen,
+  Clock3,
   Crown,
   Flame,
-  Clock,
-  BarChart3,
+  LogOut,
+  Plus,
+  ShieldCheck,
   Star,
-  TrendingUp,
-  Sparkles,
+  Trophy,
+  UserPlus,
+  Zap,
 } from "lucide-react";
 import { useAuth } from "@/features/auth/context/auth";
+import { childrenQueryKeys, useActiveChild } from "@/features/dashboard/context/activeChild";
 import { ParentGate } from "@/shared/ui/ParentGate";
-import { useActiveChild } from "@/features/dashboard/context/activeChild";
+import { useLang } from "@/shared/lib/i18n";
+import { AppHeader } from "@/shared/ui/AppHeader";
+import { ThemeToggle } from "@/shared/ui/ThemeToggle";
 import * as childrenService from "@/features/dashboard/api/childrenService";
-import type { DashboardData, ChildProfile } from "@/features/dashboard/api/childrenService";
+import type { ChildProfile, DashboardData } from "@/features/dashboard/api/childrenService";
 
-function getTimeGreeting(): string {
-  const h = new Date().getHours();
-  if (h < 12) return "Chào buổi sáng";
-  if (h < 18) return "Chào buổi chiều";
+function getGreeting(lang: "vi" | "en") {
+  const hour = new Date().getHours();
+  if (lang === "en") {
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  }
+  if (hour < 12) return "Chào buổi sáng";
+  if (hour < 18) return "Chào buổi chiều";
   return "Chào buổi tối";
-}
-
-
-function getScoreColor(score: number): string {
-  if (score >= 80) return "#22c55e";
-  if (score >= 50) return "#f59e0b";
-  return "#ef4444";
-}
-
-function getScoreGradient(score: number): string {
-  if (score >= 80) return "linear-gradient(135deg, #22c55e, #4ade80)";
-  if (score >= 50) return "linear-gradient(135deg, #f59e0b, #fbbf24)";
-  return "linear-gradient(135deg, #ef4444, #f87171)";
-}
-
-function getScoreLabel(score: number): string {
-  if (score >= 90) return "Xuất sắc";
-  if (score >= 80) return "Giỏi";
-  if (score >= 65) return "Khá";
-  if (score >= 50) return "Trung bình";
-  return "Cần cố gắng";
 }
 
 export function ProfilePickerPage() {
   const navigate = useNavigate();
+  const reduceMotion = useReducedMotion();
+  const { lang, setLang } = useLang();
   const { user, setActiveRole, logout } = useAuth();
-  const { profiles, isLoading, switchChild, refreshProfiles } = useActiveChild();
+  const { profiles, isLoading, switchChild } = useActiveChild();
   const [showPinGate, setShowPinGate] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const [childStats, setChildStats] = useState<Record<string, DashboardData>>({});
-  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+  const text = (vi: string, en: string) => lang === "vi" ? vi : en;
+  const greeting = useMemo(() => getGreeting(lang), [lang]);
 
-  const greeting = useMemo(() => getTimeGreeting(), []);
+  const dashboardQueries = useQueries({
+    queries: profiles.map((profile) => ({
+      queryKey: childrenQueryKeys.dashboard(profile.id),
+      queryFn: () => childrenService.getDashboard(profile.id),
+      staleTime: 2 * 60_000,
+      gcTime: 30 * 60_000,
+      refetchOnWindowFocus: false,
+    })),
+  });
+  const childStats = useMemo(
+    () => Object.fromEntries(profiles.flatMap((profile, index) => dashboardQueries[index]?.data ? [[profile.id, dashboardQueries[index].data as DashboardData]] : [])),
+    [profiles, dashboardQueries],
+  );
 
-  useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 50);
-    return () => clearTimeout(t);
-  }, []);
-
-  // Fetch quick stats for each child
-  useEffect(() => {
-    async function fetchAllDashboards() {
-      if (!profiles || profiles.length === 0) return;
-      const statsMap: Record<string, DashboardData> = {};
-      await Promise.all(
-        profiles.map(async (p) => {
-          try {
-            const dash = await childrenService.getDashboard(p.id);
-            statsMap[p.id] = dash;
-          } catch (e) {
-            console.error(e);
-          }
-        })
-      );
-      setChildStats(statsMap);
-    }
-    fetchAllDashboards();
-  }, [profiles]);
-
-  // Refresh profiles on focus (after returning from /add-child)
-  useEffect(() => {
-    const onFocus = () => refreshProfiles();
-    window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
-  }, [refreshProfiles]);
-
-  // If not logged in, redirect to login
   useEffect(() => {
     if (!user) navigate("/login", { replace: true });
   }, [user, navigate]);
+
+  if (!user) return null;
+
+  const totalAlerts = Object.values(childStats).reduce(
+    (total, dashboard) => total + (dashboard.alerts?.length ?? 0),
+    0,
+  );
 
   function selectChild(profile: ChildProfile) {
     switchChild(profile.id);
@@ -101,367 +79,181 @@ export function ProfilePickerPage() {
     navigate("/student");
   }
 
-  function handleParentUnlocked() {
+  function openParentDashboard() {
     setShowPinGate(false);
     setActiveRole("parent");
     navigate("/dashboard");
   }
 
-  if (!user) return null;
+  function signOut() {
+    logout();
+    navigate("/", { replace: true });
+  }
 
-  const totalAlerts = Object.values(childStats).reduce((s, c) => s + (c.alerts?.length || 0), 0);
+  const enter = reduceMotion
+    ? {}
+    : { initial: { opacity: 0, y: 14 }, animate: { opacity: 1, y: 0 } };
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden">
-      {/* ── Animated gradient background ── */}
-      <div
-        className="absolute inset-0 animate-gradient-x"
-        style={{
-          background:
-            "linear-gradient(135deg, #ede9fe 0%, #dbeafe 20%, #d1fae5 40%, #fef9c3 60%, #fce7f3 80%, #e0e7ff 100%)",
-          backgroundSize: "400% 400%",
-        }}
-      />
-
-      {/* ── Decorative floating orbs ── */}
-      <div className="absolute top-[8%] left-[5%] w-32 h-32 rounded-full bg-gradient-to-br from-violet-300/20 to-blue-300/20 animate-float-slow blur-xl" />
-      <div
-        className="absolute top-[15%] right-[8%] w-24 h-24 rounded-full bg-gradient-to-br from-pink-300/20 to-rose-300/20 animate-float-slow blur-xl"
-        style={{ animationDelay: "1.5s" }}
-      />
-      <div
-        className="absolute bottom-[20%] left-[10%] w-20 h-20 rounded-full bg-gradient-to-br from-amber-300/20 to-orange-300/20 animate-float-slow blur-xl"
-        style={{ animationDelay: "0.8s" }}
-      />
-      <div
-        className="absolute bottom-[15%] right-[6%] w-28 h-28 rounded-full bg-gradient-to-br from-emerald-300/15 to-teal-300/15 animate-float-slow blur-xl"
-        style={{ animationDelay: "2.2s" }}
-      />
-      {/* Spinning rings */}
-      <div className="absolute -top-28 -left-28 w-72 h-72 border border-dashed border-violet-200/15 rounded-full animate-spin-slow" />
-      <div
-        className="absolute -bottom-24 -right-24 w-56 h-56 border border-dashed border-rose-200/15 rounded-full animate-spin-slow"
-        style={{ animationDirection: "reverse" }}
-      />
-
-      {/* ── Content ── */}
-      <div className="relative z-10 flex flex-col items-center justify-center flex-1 px-4 py-10">
-        {/* Logo */}
-        <div
-          className="flex items-center gap-2.5 mb-6 transition-all duration-700 ease-out"
-          style={{
-            opacity: mounted ? 1 : 0,
-            transform: mounted ? "translateY(0)" : "translateY(-20px)",
-          }}
-        >
-          <div className="w-12 h-12 rounded-2xl bg-white/90 backdrop-blur-sm shadow-lg shadow-blue-500/10 flex items-center justify-center border border-white/80">
-            <img
-              src="/robot-head.png"
-              alt="ViOlympicKids"
-              className="w-9 h-9 object-contain"
-            />
-          </div>
-          <span className="text-2xl font-extrabold tracking-tight">
-            <span className="text-blue-500">ViOlympic</span>
-            <span style={{ color: "var(--brand-primary)" }}>Kids</span>
-          </span>
-        </div>
-
-        {/* Greeting + Title */}
-        <div
-          className="text-center mb-10 transition-all duration-700 ease-out"
-          style={{
-            opacity: mounted ? 1 : 0,
-            transform: mounted ? "translateY(0)" : "translateY(15px)",
-            transitionDelay: "150ms",
-          }}
-        >
-          <div className="inline-flex items-center gap-2 bg-white/70 backdrop-blur-sm px-4 py-1.5 rounded-full shadow-sm border border-white/80 mb-4">
-            <span className="text-sm">👋</span>
-            <span className="text-sm text-gray-500">
-              {greeting},{" "}
-              <span className="font-bold text-gray-700">{user.nickname}</span>
-            </span>
-          </div>
-          <h1 className="text-3xl md:text-4xl font-extrabold text-gray-800 mb-2 leading-tight">
-            Ai sẽ học hôm nay?
-          </h1>
-          <p className="text-gray-400 text-[13px]">
-            Chọn hồ sơ để bắt đầu khám phá thế giới Toán học
-          </p>
-        </div>
-
-        {/* ── Child profile cards ── */}
-        <div className="flex flex-wrap gap-5 justify-center max-w-5xl mb-10">
-          {isLoading ? (
-            <div className="flex items-center gap-3 text-gray-400 py-12">
-              <span className="w-5 h-5 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" />
-              <span className="text-sm font-medium">Đang tải hồ sơ...</span>
-            </div>
-          ) : profiles.map((profile, i) => {
-            const dash = childStats[profile.id];
-            const stats = dash?.stats;
-            const score = stats?.overallScore ?? 0;
-            const isHovered = hoveredCard === profile.id;
-            const hasStats = !!stats;
-
-            return (
-              <button
-                key={profile.id}
-                onClick={() => selectChild(profile)}
-                onMouseEnter={() => setHoveredCard(profile.id)}
-                onMouseLeave={() => setHoveredCard(null)}
-                className="group flex flex-col items-center gap-0 bg-white/90 backdrop-blur-sm rounded-[1.8rem] shadow-lg border-2 border-white/80 hover:border-orange-300 hover:shadow-2xl hover:-translate-y-3 active:translate-y-0 active:shadow-lg transition-all duration-300 w-56 cursor-pointer overflow-hidden"
-                style={{
-                  opacity: mounted ? 1 : 0,
-                  transform: mounted
-                    ? "translateY(0) scale(1)"
-                    : "translateY(30px) scale(0.9)",
-                  transition: `opacity 500ms ease-out ${300 + i * 120}ms, transform 500ms cubic-bezier(0.34, 1.56, 0.64, 1) ${300 + i * 120}ms, border-color 200ms, box-shadow 200ms`,
-                }}
-              >
-                {/* Top colored accent bar */}
-                <div
-                  className="w-full h-1.5 transition-all duration-300"
-                  style={{
-                    background: isHovered
-                      ? "linear-gradient(90deg, #f97316, #fb923c)"
-                      : `linear-gradient(90deg, ${profile.avatarBg || "#e5e7eb"}, ${profile.avatarBg || "#e5e7eb"}88)`,
-                  }}
-                />
-
-                <div className="flex flex-col items-center gap-3 p-5 pb-4 w-full">
-                  {/* Avatar */}
-                  <div className="relative">
-                    <div
-                      className="absolute inset-0 rounded-[1.2rem] opacity-0 group-hover:opacity-50 transition-opacity duration-300 blur-xl scale-125"
-                      style={{ backgroundColor: profile.avatarBg || "#f3f4f6" }}
-                    />
-                    <div
-                      className="relative rounded-[1.2rem] flex items-center justify-center text-5xl shadow-md group-hover:scale-110 group-hover:rotate-3 group-active:scale-95 transition-all duration-300 border-3 border-white/60"
-                      style={{
-                        backgroundColor: profile.avatarBg || "#f3f4f6",
-                        width: "5.5rem",
-                        height: "5.5rem",
-                      }}
-                    >
-                      {profile.avatarEmoji}
-                    </div>
-                    {/* Online-style indicator */}
-                    {profile.lastActive && (
-                      <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-400 rounded-full border-3 border-white shadow-sm flex items-center justify-center">
-                        <Star size={10} className="text-white" fill="white" />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Name */}
-                  <div className="text-center space-y-1.5">
-                    <p className="font-extrabold text-gray-800 text-[15px] group-hover:text-orange-600 transition-colors leading-tight">
-                      {profile.name}
-                    </p>
-                    <div className="flex items-center gap-1.5 justify-center flex-wrap">
-                      {profile.plan === "VIP" && (
-                        <span className="inline-flex items-center gap-0.5 text-[10px] font-extrabold bg-gradient-to-r from-amber-500 to-yellow-400 text-white px-2.5 py-0.5 rounded-full shadow-sm shadow-amber-200">
-                          <Crown size={10} /> VIP
-                        </span>
-                      )}
-                      {profile.plan === "PRO" && (
-                        <span className="inline-flex items-center gap-0.5 text-[10px] font-extrabold bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-2.5 py-0.5 rounded-full shadow-sm shadow-blue-200">
-                          <Zap size={10} /> Pro
-                        </span>
-                      )}
-                      {profile.plan === "FREE" && (
-                        <span className="inline-block text-[10px] font-bold bg-gray-100 text-gray-400 px-2.5 py-0.5 rounded-full">
-                          Miễn phí
-                        </span>
-                      )}
-                    </div>
-                    {profile.plan !== "FREE" && profile.planDaysLeft != null && (
-                      <p className="text-[10px] text-gray-300 font-medium">
-                        Còn {profile.planDaysLeft} ngày
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Quick stats */}
-                  {hasStats ? (
-                    <div className="w-full space-y-2.5 pt-2.5 mt-0.5 border-t border-gray-100/80">
-                      {/* Score circle + bar */}
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="relative w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110"
-                          style={{ background: getScoreGradient(score) }}
-                        >
-                          <span className="text-[13px] font-black text-white leading-none">
-                            {score}
-                          </span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-[10px] font-bold text-gray-500">
-                              {getScoreLabel(score)}
-                            </span>
-                            <TrendingUp
-                              size={11}
-                              style={{ color: getScoreColor(score) }}
-                            />
-                          </div>
-                          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                            <div
-                              className="h-full rounded-full transition-all duration-700 ease-out"
-                              style={{
-                                width: `${Math.min(100, score)}%`,
-                                background: getScoreGradient(score),
-                              }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                      {/* Streak + Time */}
-                      <div className="flex items-center justify-between text-[10px]">
-                        <span
-                          className="flex items-center gap-1 font-semibold px-2 py-1 rounded-lg bg-orange-50 text-orange-500"
-                          title="Chuỗi ngày học liên tục"
-                        >
-                          <Flame size={11} />
-                          {stats.streakDays ?? 0} ngày
-                        </span>
-                        <span
-                          className="flex items-center gap-1 font-semibold px-2 py-1 rounded-lg bg-blue-50 text-blue-500"
-                          title="Thời gian học trong tuần"
-                        >
-                          <Clock size={11} />
-                          {stats.weeklyMinutes ?? 0} ph
-                        </span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="w-full pt-2.5 mt-0.5 border-t border-gray-100/80">
-                      <div className="flex items-center justify-center gap-1.5 py-2">
-                        <Sparkles size={13} className="text-orange-300" />
-                        <span className="text-[11px] text-gray-300 font-medium">
-                          Chưa có dữ liệu học
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Bottom CTA */}
-                <div className="w-full px-5 pb-4">
-                  <div
-                    className="w-full py-2 rounded-xl text-[11px] font-bold text-center transition-all duration-300"
-                    style={{
-                      background: isHovered
-                        ? "linear-gradient(135deg, var(--brand-primary), #f97316)"
-                        : "#f3f4f6",
-                      color: isHovered ? "white" : "#9ca3af",
-                      boxShadow: isHovered ? "0 2px 8px rgba(249,115,22,0.25)" : "none",
-                    }}
-                  >
-                    {isHovered ? "Bắt đầu học! 🚀" : "Nhấn để chọn →"}
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-
-          {/* Add child card - inline with profiles */}
-          <button
-            onClick={() => navigate("/add-child")}
-            className="group flex flex-col items-center justify-center gap-3 p-5 bg-white/50 backdrop-blur-sm rounded-[1.8rem] shadow-md border-2 border-dashed border-gray-200/80 hover:border-orange-300 hover:bg-white/80 hover:shadow-xl hover:-translate-y-3 active:translate-y-0 transition-all duration-300 w-56 cursor-pointer min-h-[280px]"
-            style={{
-              opacity: mounted ? 1 : 0,
-              transform: mounted
-                ? "translateY(0) scale(1)"
-                : "translateY(30px) scale(0.9)",
-              transition: `opacity 500ms ease-out ${300 + profiles.length * 120}ms, transform 500ms cubic-bezier(0.34, 1.56, 0.64, 1) ${300 + profiles.length * 120}ms, border-color 200ms, box-shadow 200ms`,
-            }}
-          >
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-gray-100/80 group-hover:bg-orange-50 group-hover:scale-110 transition-all duration-300">
-              <Plus
-                size={28}
-                strokeWidth={2.5}
-                className="text-gray-300 group-hover:text-orange-400 group-hover:rotate-90 transition-all duration-300"
-              />
-            </div>
-            <div className="text-center">
-              <p className="font-bold text-gray-400 group-hover:text-gray-700 text-sm transition-colors">
-                Thêm bé mới
-              </p>
-              <p className="text-[10px] text-gray-300 group-hover:text-gray-400 transition-colors mt-0.5">
-                Tạo hồ sơ học sinh mới
-              </p>
-            </div>
-          </button>
-        </div>
-
-        {/* ── Parent Dashboard Button ── */}
-        <div
-          className="w-full max-w-lg mb-4 transition-all duration-700 ease-out"
-          style={{
-            opacity: mounted ? 1 : 0,
-            transform: mounted ? "translateY(0)" : "translateY(20px)",
-            transitionDelay: `${300 + (profiles.length + 1) * 120}ms`,
-          }}
-        >
-          <button
-            onClick={() => setShowPinGate(true)}
-            className="group w-full flex items-center gap-4 px-6 py-5 bg-gradient-to-br from-blue-50/90 to-indigo-50/90 backdrop-blur-sm rounded-2xl shadow-md border-2 border-blue-200/60 hover:border-blue-400 hover:shadow-xl hover:-translate-y-1 active:translate-y-0 transition-all duration-300 cursor-pointer"
-          >
-            <div className="relative w-12 h-12 rounded-xl flex items-center justify-center bg-blue-100 group-hover:bg-blue-200 transition-all duration-300 shrink-0">
-              <BarChart3
-                size={24}
-                strokeWidth={1.8}
-                className="text-blue-500 group-hover:text-blue-600 transition-all duration-300"
-              />
-              {totalAlerts > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white border-2 border-white shadow-sm px-1 animate-pulse">
-                  {totalAlerts}
-                </span>
-              )}
-            </div>
-            <div className="text-left flex-1">
-              <p className="font-bold text-blue-600 group-hover:text-blue-700 text-sm transition-colors">
-                Góc Phụ Huynh
-              </p>
-              <p className="text-[11px] text-blue-400 group-hover:text-blue-500 transition-colors leading-snug">
-                Xem tiến độ học, thống kê & quản lý gói
-              </p>
-            </div>
-            <ShieldCheck
-              size={16}
-              className="text-blue-300 group-hover:text-blue-400 shrink-0"
-            />
-          </button>
-        </div>
-
-        {/* Logout */}
-        <button
-          onClick={() => {
-            sessionStorage.removeItem("vio_parent_id");
-            logout();
-            navigate("/");
-          }}
-          className="flex items-center gap-2 mt-4 px-5 py-2.5 rounded-2xl text-sm text-gray-400 hover:text-red-500 hover:bg-red-50/50 transition-all duration-200 font-medium"
-          style={{
-            opacity: mounted ? 1 : 0,
-            transition: `opacity 600ms ease-out ${300 + (profiles.length + 2) * 120 + 200}ms`,
-          }}
-        >
-          <LogOut size={15} />
-          Đăng xuất
-        </button>
+    <main className="profile-picker-page relative min-h-screen overflow-hidden bg-[#f7f9ff] text-slate-800 dark:bg-[#081121] dark:text-slate-100">
+      <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+        <div className="absolute -left-28 -top-28 h-96 w-96 rounded-full bg-blue-300/20 blur-3xl dark:bg-blue-600/10" />
+        <div className="absolute -right-32 top-1/4 h-[28rem] w-[28rem] rounded-full bg-fuchsia-300/15 blur-3xl dark:bg-fuchsia-600/10" />
+        <div className="absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-orange-200/20 blur-3xl dark:bg-orange-500/5" />
+        <div className="absolute inset-0 opacity-[0.035] dark:opacity-[0.055]" style={{ backgroundImage: "radial-gradient(currentColor 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
       </div>
 
-      {/* Parent Gate modal */}
-      {showPinGate && (
-        <ParentGate
-          onSuccess={handleParentUnlocked}
-          onClose={() => setShowPinGate(false)}
-        />
-      )}
+      <AppHeader actions={<>
+          <button onClick={() => setLang(lang === "vi" ? "en" : "vi")} className="grid h-10 min-w-10 place-items-center rounded-xl border border-slate-200 bg-white px-2 text-xs font-black text-slate-500 shadow-sm transition hover:text-blue-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">{lang === "vi" ? "EN" : "VI"}</button>
+          <ThemeToggle />
+          <button onClick={signOut} className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold text-slate-500 transition hover:bg-rose-50 hover:text-rose-500 dark:text-slate-400 dark:hover:bg-rose-500/10 dark:hover:text-rose-300">
+            <LogOut size={17} />
+            <span className="hidden sm:inline">{text("Đăng xuất", "Sign out")}</span>
+          </button>
+        </>} />
+
+      <div className="relative z-10 mx-auto max-w-7xl px-5 py-8 sm:px-8 sm:py-10">
+        <motion.section {...enter} transition={{ duration: 0.4 }} className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3.5 py-1.5 text-sm font-bold text-blue-600 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-300">
+              <span>👋</span>
+              {greeting}, {user.nickname}
+            </div>
+            <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+              {text("Hôm nay ai sẽ học?", "Who is learning today?")}
+            </h1>
+            <p className="mt-2 max-w-xl text-sm font-medium text-slate-500 dark:text-slate-400 sm:text-base">
+              {text("Chọn một hồ sơ để tiếp tục hành trình chinh phục Toán học.", "Choose a profile to continue the Math learning journey.")}
+            </p>
+          </div>
+          {profiles.length > 0 && (
+            <button onClick={() => navigate("/add-child")} className="inline-flex w-fit items-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-extrabold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-blue-600 dark:bg-blue-500 dark:hover:bg-blue-400">
+              <Plus size={18} /> {text("Thêm hồ sơ", "Add profile")}
+            </button>
+          )}
+        </motion.section>
+
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-stretch">
+          <motion.section {...enter} transition={{ duration: 0.4, delay: 0.08 }} className="rounded-[2rem] border border-slate-200/80 bg-white/75 p-4 shadow-xl shadow-slate-200/40 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/65 dark:shadow-black/10 sm:p-6">
+            <div className="mb-5 flex items-center justify-between px-1">
+              <div className="flex items-center gap-3">
+                <span className="grid h-10 w-10 place-items-center rounded-xl bg-orange-100 text-orange-500 dark:bg-orange-500/10 dark:text-orange-300"><BookOpen size={20} /></span>
+                <div>
+                  <h2 className="font-black text-slate-800 dark:text-white">{text("Hồ sơ học tập", "Learning profiles")}</h2>
+                  <p className="text-xs font-medium text-slate-400">{text(`${profiles.length} hồ sơ của gia đình`, `${profiles.length} family profiles`)}</p>
+                </div>
+              </div>
+            </div>
+
+            {isLoading ? (
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {[1, 2, 3].map((item) => <div key={item} className="h-64 animate-pulse rounded-3xl bg-slate-100 dark:bg-slate-800" />)}
+              </div>
+            ) : profiles.length === 0 ? (
+              <EmptyProfiles onAdd={() => navigate("/add-child")} lang={lang} />
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {profiles.map((profile, index) => (
+                  <ChildCard
+                    key={profile.id}
+                    profile={profile}
+                    dashboard={childStats[profile.id]}
+                    index={index}
+                    lang={lang}
+                    reduceMotion={!!reduceMotion}
+                    onSelect={() => selectChild(profile)}
+                  />
+                ))}
+              </div>
+            )}
+          </motion.section>
+
+          <motion.aside {...enter} transition={{ duration: 0.4, delay: 0.16 }} className="lg:h-full">
+            <button onClick={() => setShowPinGate(true)} className="group relative w-full overflow-hidden rounded-[2rem] bg-gradient-to-br from-blue-600 to-indigo-700 p-6 text-left text-white shadow-xl shadow-blue-500/20 transition hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-500/25 lg:h-full">
+              <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-white/10" />
+              <div className="absolute -bottom-16 -left-10 h-36 w-36 rounded-full bg-cyan-300/10" />
+              <div className="relative">
+                <div className="mb-8 flex items-start justify-between">
+                  <span className="grid h-12 w-12 place-items-center rounded-2xl bg-white/15 backdrop-blur"><BarChart3 size={24} /></span>
+                  <span className="relative grid h-9 w-9 place-items-center rounded-xl bg-white/10"><ShieldCheck size={18} />{totalAlerts > 0 && <span className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-rose-500 px-1 text-[10px] font-black ring-2 ring-indigo-700">{totalAlerts}</span>}</span>
+                </div>
+                <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-blue-200">{text("Dành cho ba mẹ", "For parents")}</p>
+                <h2 className="mt-1 text-2xl font-black">{text("Góc Phụ Huynh", "Parent Center")}</h2>
+                <p className="mt-2 text-sm leading-6 text-blue-100">{text("Theo dõi tiến độ, xem báo cáo và quản lý gói học của con.", "Track progress, view reports and manage your child's plan.")}</p>
+                <span className="mt-6 inline-flex items-center gap-2 text-sm font-extrabold">{text("Mở bảng điều khiển", "Open dashboard")} <ArrowRight size={17} className="transition-transform group-hover:translate-x-1" /></span>
+              </div>
+            </button>
+
+          </motion.aside>
+        </div>
+      </div>
+
+      {showPinGate && <ParentGate onSuccess={openParentDashboard} onClose={() => setShowPinGate(false)} />}
+    </main>
+  );
+}
+
+function EmptyProfiles({ onAdd, lang }: { onAdd: () => void; lang: "vi" | "en" }) {
+  return (
+    <div className="relative overflow-hidden rounded-[1.75rem] border-2 border-dashed border-blue-200 bg-gradient-to-br from-blue-50 to-violet-50 px-6 py-12 text-center dark:border-blue-500/20 dark:from-blue-500/10 dark:to-violet-500/10 sm:py-16">
+      <div className="pointer-events-none absolute inset-x-0 top-0 mx-auto h-40 w-40 rounded-full bg-blue-300/20 blur-3xl" />
+      <div className="relative mx-auto grid h-24 w-24 place-items-center rounded-[2rem] bg-white shadow-xl shadow-blue-200/40 dark:bg-slate-800 dark:shadow-black/20">
+        <img src="/robot-head.png" alt="" className="h-16 w-16 object-contain" />
+        <span className="absolute -bottom-2 -right-2 grid h-9 w-9 place-items-center rounded-xl bg-orange-500 text-white ring-4 ring-blue-50 dark:ring-slate-900"><Plus size={19} strokeWidth={3} /></span>
+      </div>
+      <h3 className="mt-6 text-xl font-black text-slate-800 dark:text-white">{lang === "vi" ? "Tạo hồ sơ đầu tiên cho bé" : "Create your child's first profile"}</h3>
+      <p className="mx-auto mt-2 max-w-md text-sm font-medium leading-6 text-slate-500 dark:text-slate-400">{lang === "vi" ? "Mỗi bé sẽ có lộ trình, thành tích và phần thưởng riêng trong suốt quá trình học." : "Each child gets their own learning path, achievements and rewards."}</p>
+      <button onClick={onAdd} className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 to-pink-500 px-6 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-orange-500/20 transition hover:-translate-y-0.5 hover:shadow-xl"><UserPlus size={18} />{lang === "vi" ? "Thêm bé mới" : "Add a child"}<ArrowRight size={17} /></button>
     </div>
   );
+}
+
+function ChildCard({ profile, dashboard, index, lang, reduceMotion, onSelect }: { profile: ChildProfile; dashboard?: DashboardData; index: number; lang: "vi" | "en"; reduceMotion: boolean; onSelect: () => void }) {
+  const stats = dashboard?.stats;
+  const score = Math.round(stats?.overallScore ?? 0);
+  const planStyle = profile.plan === "VIP" ? "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300" : profile.plan === "PRO" ? "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300" : "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300";
+  const scoreColor = score >= 80 ? "text-emerald-500 dark:text-emerald-300" : score >= 50 ? "text-amber-500 dark:text-amber-300" : "text-rose-500 dark:text-rose-300";
+
+  return (
+    <motion.button
+      initial={reduceMotion ? false : { opacity: 0, y: 18, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.35, delay: Math.min(index * 0.06, 0.24) }}
+      onClick={onSelect}
+      className="group relative overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white text-left shadow-[0_8px_24px_rgba(15,23,42,0.06)] transition duration-300 hover:-translate-y-1.5 hover:border-blue-300 hover:shadow-[0_18px_40px_rgba(59,130,246,0.14)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800/80 dark:shadow-black/10 dark:hover:border-blue-500"
+    >
+      <div className="absolute inset-x-0 top-0 h-20 opacity-10 transition-opacity group-hover:opacity-15" style={{ background: `linear-gradient(135deg, ${profile.avatarBg || "#60a5fa"}, transparent)` }} />
+      <div className="relative p-5">
+        <div className="flex items-center gap-4">
+          <div className="relative grid h-[4.5rem] w-[4.5rem] shrink-0 place-items-center rounded-[1.4rem] text-4xl shadow-md ring-4 ring-white transition duration-300 group-hover:scale-105 group-hover:-rotate-2 dark:ring-slate-700" style={{ backgroundColor: profile.avatarBg || "#dbeafe" }}>
+            {profile.avatarEmoji || "🚀"}
+            {profile.lastActive && <span className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-[3px] border-white bg-emerald-400 dark:border-slate-800" />}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-lg font-black text-slate-900 transition group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-300">{profile.name}</p>
+            <div className="mt-1 flex items-center gap-2">
+              <span className="text-xs font-bold text-slate-400">{profile.grade || (lang === "vi" ? "Lớp 2" : "Grade 2")}</span>
+              <span className="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-600" />
+              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-black ${planStyle}`}>
+                {profile.plan === "VIP" ? <Crown size={10} /> : profile.plan === "PRO" ? <Zap size={10} /> : <Star size={10} />}
+                {profile.plan === "FREE" ? (lang === "vi" ? "Miễn phí" : "Free") : profile.plan}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-5 grid grid-cols-3 divide-x divide-slate-200 rounded-2xl border border-slate-100 bg-slate-50/80 px-2 py-3 dark:divide-slate-700 dark:border-slate-700 dark:bg-slate-900/50">
+          <Stat icon={<Trophy size={14} />} value={stats ? `${score}` : "—"} label={lang === "vi" ? "Điểm" : "Score"} tone={stats ? scoreColor : "text-slate-400"} />
+          <Stat icon={<Flame size={14} />} value={`${stats?.streakDays ?? 0}`} label={lang === "vi" ? "Ngày" : "Days"} tone="text-orange-500 dark:text-orange-300" />
+          <Stat icon={<Clock3 size={14} />} value={`${stats?.weeklyMinutes ?? 0}`} label={lang === "vi" ? "Phút" : "Mins"} tone="text-blue-500 dark:text-blue-300" />
+        </div>
+
+        <div className="mt-4 flex items-center justify-between rounded-2xl bg-blue-50 px-4 py-3 text-sm font-extrabold text-blue-600 transition group-hover:bg-blue-600 group-hover:text-white dark:bg-blue-500/10 dark:text-blue-300 dark:group-hover:bg-blue-500 dark:group-hover:text-white"><span>{lang === "vi" ? "Vào học ngay" : "Start learning"}</span><span className="grid h-7 w-7 place-items-center rounded-lg bg-white/70 transition-transform group-hover:translate-x-1 group-hover:bg-white/15"><ArrowRight size={16} /></span></div>
+      </div>
+    </motion.button>
+  );
+}
+
+function Stat({ icon, value, label, tone }: { icon: React.ReactNode; value: string; label: string; tone: string }) {
+  return <div className="flex flex-col items-center px-1"><span className={`flex items-center gap-1 text-sm font-black ${tone}`}>{icon}{value}</span><span className="mt-1 text-[9px] font-extrabold uppercase tracking-[0.08em] text-slate-400">{label}</span></div>;
 }

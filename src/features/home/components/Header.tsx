@@ -4,6 +4,7 @@ import { useAuth } from "@/features/auth/context/auth";
 import { AVATARS } from "@/features/auth/context/auth";
 import { SettingsDropdown } from "@/shared/ui/SettingsDropdown";
 import { Link } from "react-router-dom";
+import { BrandMark } from "@/shared/ui/BrandMark";
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -41,22 +42,9 @@ export function Header() {
             : "border-transparent bg-transparent dark:bg-slate-900"
         }`}
       >
-        <div className="mx-auto flex h-16 w-full max-w-[1320px] items-center justify-between gap-3 px-4 sm:px-6 lg:h-[72px] lg:gap-5 lg:px-8">
+        <div className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between gap-3 px-5 sm:px-8 lg:gap-5">
           {/* ── Logo (trái) ── */}
-          <Link
-            to="/"
-            className="group flex shrink-0 items-center gap-2.5 select-none lg:gap-3"
-          >
-            <img
-              src="/robot-head.png"
-              alt="ViOlympicKids"
-              className="h-15 w-15 object-contain drop-shadow-md transition-transform duration-300 group-hover:scale-110 lg:h-12 lg:w-12"
-            />
-            <span className="whitespace-nowrap text-[1.05rem] font-extrabold leading-none tracking-tight lg:text-xl">
-              <span className="text-blue-500">ViOlympic</span>
-              <span style={{ color: "var(--brand-primary)" }}>Kids</span>
-            </span>
-          </Link>
+          <BrandMark />
 
           {/* ── Nav Pill (giữa) ── */}
           <nav
@@ -79,7 +67,11 @@ export function Header() {
           <div className="flex shrink-0 items-center gap-2 lg:gap-2.5">
             {user ? (
               /* Avatar button (logged in) */
-              <div className="hidden md:flex items-center gap-2.5">
+              <Link
+                to="/profile-picker"
+                title={lang === "vi" ? "Quay lại trang chọn hồ sơ" : "Return to profile selection"}
+                className="hidden items-center gap-2.5 rounded-xl px-2 py-1.5 transition hover:bg-white/70 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/15 dark:hover:bg-slate-800 md:flex"
+              >
                 <span className="text-sm font-semibold text-gray-600 hidden lg:block">
                   {user.nickname}
                 </span>
@@ -89,7 +81,7 @@ export function Header() {
                 >
                   {userAvatar}
                 </div>
-              </div>
+              </Link>
             ) : (
               <>
                 {/* Login */}
@@ -194,7 +186,7 @@ export function Header() {
             <div className="p-3 flex flex-col gap-2">
               {user ? (
                 /* Logged in: show avatar + nickname */
-                <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-blue-50">
+                <Link to="/profile-picker" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 rounded-xl bg-blue-50 px-3 py-2.5 transition hover:bg-blue-100">
                   <div className="w-10 h-10 rounded-full bg-white border-2 border-blue-200 flex items-center justify-center text-2xl shrink-0">
                     {userAvatar}
                   </div>
@@ -204,7 +196,7 @@ export function Header() {
                     </p>
                     <p className="text-xs text-gray-400">{user.email}</p>
                   </div>
-                </div>
+                </Link>
               ) : (
                 <>
                   <Link

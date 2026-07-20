@@ -57,6 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setActiveRole(null);
     sessionStorage.removeItem("vio_auth_user");
     sessionStorage.removeItem("vio_parent_id");
+    localStorage.removeItem("vio_active_child_id");
   };
   const updateUser = (patch: Partial<User>) =>
     setUser((prev) => {

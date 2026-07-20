@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { ArrowLeft } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
+import { flushSync } from "react-dom";
 import { useLang } from "@/shared/lib/i18n";
 
 interface AuthLayoutProps {
@@ -68,6 +69,24 @@ const BUBBLES: { x: string; y: string; w: number; bg: string; darkBg: string; du
 export function AuthLayout({ children, className = "", contentClassName = "" }: AuthLayoutProps) {
   const { lang } = useLang();
   const reduceMotion = useReducedMotion();
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const showAuthToggle = pathname === "/login" || pathname === "/register";
+
+  const switchAuthPage = (to: string) => {
+    if (to === pathname) return;
+    const startViewTransition = (document as Document & {
+      startViewTransition?: (callback: () => void) => void;
+    }).startViewTransition;
+
+    if (startViewTransition && !reduceMotion) {
+      startViewTransition.call(document, () => {
+        flushSync(() => navigate(to));
+      });
+    } else {
+      navigate(to);
+    }
+  };
 
   return (
     <main className={`auth-page relative min-h-screen overflow-hidden bg-[#f4f8ff] text-slate-700 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-200 ${className}`}>
@@ -75,13 +94,8 @@ export function AuthLayout({ children, className = "", contentClassName = "" }: 
       <div className="pointer-events-none absolute inset-0" aria-hidden="true">
         {/* Gradient blobs */}
         {BUBBLES.map((b, i) => (
-          <motion.div
+          <div
             key={`bubble-${i}`}
-            animate={reduceMotion ? undefined : {
-              scale: [1, 1.15, 1],
-              opacity: [0.7, 1, 0.7],
-            }}
-            transition={{ duration: b.dur, repeat: Infinity, delay: b.delay, ease: "easeInOut" }}
             className="absolute rounded-full blur-3xl"
             style={{
               left: b.x,
@@ -95,11 +109,11 @@ export function AuthLayout({ children, className = "", contentClassName = "" }: 
               :root { --bubble-bg-${i}: ${b.bg}; }
               .dark { --bubble-bg-${i}: ${b.darkBg}; }
             `}</style>
-          </motion.div>
+          </div>
         ))}
 
         {/* Floating items: animals, numbers, letters, symbols */}
-        {FLOAT_ITEMS.map((item, i) => {
+        {FLOAT_ITEMS.filter((_, index) => index % 2 === 0).map((item, i) => {
           const isEmoji = /\p{Emoji}/u.test(item.content);
           return (
             <motion.span
@@ -139,8 +153,38 @@ export function AuthLayout({ children, className = "", contentClassName = "" }: 
       <motion.header initial={reduceMotion ? false : { opacity: 0, y: -14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="absolute inset-x-0 top-0 z-40 flex items-center justify-between px-4 py-4 sm:px-7">
         <Link to="/" className="group inline-flex items-center gap-2.5 rounded-xl outline-none focus-visible:ring-4 focus-visible:ring-blue-500/20">
           <img src="/robot-head.png" alt="" className="h-11 w-11 object-contain drop-shadow-sm transition-transform group-hover:-rotate-6 group-hover:scale-105" />
-          <span className="text-lg font-black tracking-tight sm:text-xl"><span className="text-blue-500">ViOlympic</span><span className="text-[#ff6f61]">Kids</span></span>
+          <span className="hidden text-lg font-black tracking-tight sm:inline sm:text-xl"><span className="text-blue-500">ViOlympic</span><span className="text-[#ff6f61]">Kids</span></span>
         </Link>
+
+        {showAuthToggle && (
+          <nav
+            aria-label={lang === "vi" ? "Chuyển trang xác thực" : "Switch authentication page"}
+            className="auth-toggle absolute left-1/2 flex -translate-x-1/2 items-center rounded-2xl border border-slate-200/90 bg-white/80 p-1 shadow-sm backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/80"
+          >
+            {[
+              { to: "/login", vi: "Đăng nhập", en: "Log in" },
+              { to: "/register", vi: "Đăng ký", en: "Sign up" },
+            ].map((item) => (
+              <button
+                key={item.to}
+                type="button"
+                onClick={() => switchAuthPage(item.to)}
+                aria-current={pathname === item.to ? "page" : undefined}
+                className={`relative whitespace-nowrap rounded-xl px-3 py-2 text-xs font-extrabold outline-none transition-colors duration-300 sm:px-5 sm:text-sm ${pathname === item.to ? "text-white" : "text-slate-500 hover:text-blue-600 focus-visible:ring-2 focus-visible:ring-blue-400 dark:text-slate-300 dark:hover:text-blue-300"}`}
+              >
+                {pathname === item.to && (
+                  <motion.span
+                    layoutId="auth-toggle-active"
+                    className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 shadow-md shadow-blue-500/20"
+                    transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                  />
+                )}
+                <span className="relative z-10">{lang === "vi" ? item.vi : item.en}</span>
+              </button>
+            ))}
+          </nav>
+        )}
+
         <Link to="/" className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white/80 px-3.5 text-sm font-bold text-slate-600 shadow-sm backdrop-blur transition hover:border-blue-200 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-300 dark:hover:border-blue-700 dark:hover:text-blue-300">
           <ArrowLeft className="h-4 w-4" />
           <span className="hidden sm:inline">{lang === "vi" ? "Về trang chủ" : "Back to home"}</span>

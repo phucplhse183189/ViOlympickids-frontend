@@ -1,128 +1,32 @@
+import { Plus, Rocket } from "lucide-react";
+import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Plus, Crown, Zap } from "lucide-react";
 import { useActiveChild } from "@/features/dashboard/context/activeChild";
-import type { PlanType } from "@/features/dashboard/types/dashboard";
-
-const PLAN_BADGE: Record<
-  PlanType,
-  { label: string; color: string; icon?: React.ReactNode } | null
-> = {
-  FREE: null,
-  PRO: { label: "PRO", color: "bg-orange-500", icon: <Zap size={8} /> },
-  VIP: {
-    label: "VIP",
-    color: "bg-gradient-to-r from-yellow-400 to-yellow-600",
-    icon: <Crown size={8} />,
-  },
-};
+import { useLang } from "@/shared/lib/i18n";
 
 export function ChildAvatarBar() {
   const { profiles, activeChild, switchChild } = useActiveChild();
+  const { lang } = useLang();
   const navigate = useNavigate();
+  const text = (vi: string, en: string) => lang === "vi" ? vi : en;
 
-  if (!profiles.length) {
-    return (
-      <div className="flex items-center gap-3 bg-white/80 backdrop-blur-sm border border-dashed border-orange-200 rounded-2xl px-4 py-2.5 shadow-sm">
-        <span className="text-xs text-gray-400 font-medium whitespace-nowrap">
-          🐣 Chưa có hồ sơ bé
-        </span>
-        <button
-          onClick={() => navigate("/add-child")}
-          className="flex items-center gap-1.5 bg-gradient-to-r from-orange-400 to-orange-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold shadow hover:shadow-md hover:-translate-y-0.5 transition-all shrink-0"
-        >
-          <Plus size={14} />
-          <span>Thêm bé</span>
-        </button>
-      </div>
-    );
-  }
-
-  if (!activeChild) return null;
+  if (!profiles.length || !activeChild) return null;
 
   return (
-    <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-gray-100 rounded-2xl px-4 py-2 shadow-sm">
-      <span className="text-xs text-gray-400 font-semibold mr-1 hidden sm:inline whitespace-nowrap">
-        Đang xem:
-      </span>
-      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+    <div className="flex items-center gap-3 overflow-hidden rounded-[22px] border border-slate-200/80 bg-white/90 p-2 shadow-sm backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/85">
+      <div className="scrollbar-hide flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto">
         {profiles.map((profile) => {
-          const isActive = profile.id === activeChild.id;
-          const badge = PLAN_BADGE[profile.plan as PlanType];
+          const selected = profile.id === activeChild.id;
           return (
-            <button
-              key={profile.id}
-              onClick={() => switchChild(profile.id)}
-              title={`${profile.name} — ${profile.grade} (${profile.plan})`}
-              className={`relative group flex items-center gap-2 rounded-xl px-2.5 py-1.5 transition-all duration-200 shrink-0 ${
-                isActive
-                  ? "bg-blue-50 border-2 border-blue-400 shadow-sm"
-                  : "border-2 border-transparent hover:bg-gray-50 hover:border-gray-200"
-              }`}
-            >
-              {/* Avatar circle */}
-              <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-lg shrink-0 transition-transform duration-200 ${
-                  isActive
-                    ? "scale-110 ring-2 ring-blue-300 ring-offset-1"
-                    : "group-hover:scale-105"
-                }`}
-                style={{ backgroundColor: profile.avatarBg || "#f3f4f6" }}
-              >
-                {profile.avatarEmoji}
-              </div>
-
-              {/* Name (shown for active) */}
-              <div
-                className={`text-left ${isActive ? "block" : "hidden sm:block"}`}
-              >
-                <p
-                  className={`text-xs font-bold leading-tight ${isActive ? "text-blue-700" : "text-gray-600"}`}
-                >
-                  {profile.name}
-                </p>
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-gray-400">
-                    {profile.grade}
-                  </span>
-                  {badge && (
-                    <span
-                      className={`inline-flex items-center gap-0.5 text-[8px] font-extrabold text-white px-1.5 py-0.5 rounded-full ${badge.color}`}
-                    >
-                      {badge.icon} {badge.label}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Active indicator dot */}
-              {isActive && (
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white" />
-              )}
-            </button>
+            <motion.button layout key={profile.id} onClick={() => switchChild(profile.id)} className={`flex shrink-0 items-center gap-2 rounded-2xl px-2.5 py-2 transition ${selected ? "bg-blue-50 ring-1 ring-blue-200 dark:bg-blue-500/15 dark:ring-blue-500/30" : "hover:bg-slate-50 dark:hover:bg-slate-800"}`}>
+              <span className="grid h-9 w-9 place-items-center rounded-xl text-lg" style={{ backgroundColor: profile.avatarBg || "#e2e8f0" }}>{profile.avatarEmoji}</span>
+              {selected && <span className="pr-1 text-left"><span className="block max-w-36 truncate text-xs font-black text-slate-900 dark:text-white">{profile.name}</span><span className="text-[10px] font-bold text-slate-400">{profile.grade} · {profile.plan}</span></span>}
+            </motion.button>
           );
         })}
-
-        {/* Play active child button */}
-        <button
-          onClick={() => navigate("/student")}
-          title="Vào học ngay"
-          className="ml-2 flex items-center gap-2 bg-gradient-to-r from-emerald-400 to-teal-500 text-white px-4 py-2 rounded-xl font-bold shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all text-sm shrink-0"
-        >
-          <span>Vào học</span>
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-        </button>
-
-        <div className="w-px h-6 bg-gray-200 mx-1 shrink-0" />
-
-        {/* Add child mini button */}
-        <button
-          onClick={() => navigate("/add-child")}
-          title="Thêm hồ sơ bé"
-          className="w-8 h-8 rounded-full border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-300 hover:text-orange-400 hover:border-orange-300 transition-all duration-200 shrink-0"
-        >
-          <Plus size={14} />
-        </button>
+        <button onClick={() => navigate("/add-child")} aria-label={text("Thêm hồ sơ", "Add profile")} className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-dashed border-slate-300 text-slate-400 transition hover:border-blue-400 hover:text-blue-500 dark:border-slate-700"><Plus className="h-4 w-4" /></button>
       </div>
+      <button onClick={() => navigate("/student")} className="flex shrink-0 items-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-xs font-black text-white shadow-lg shadow-blue-500/20 transition hover:-translate-y-0.5 hover:shadow-blue-500/30 sm:text-sm"><Rocket className="h-4 w-4" /><span className="hidden sm:inline">{text("Vào học", "Start learning")}</span></button>
     </div>
   );
 }

@@ -16,6 +16,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(400).json({ error: "Thiếu id" });
       }
 
+      const requestUserId = req.headers["x-user-id"] as string | undefined;
+      if (!requestUserId) return res.status(401).json({ error: "Vui lòng đăng nhập" });
+      if (requestUserId !== id) return res.status(403).json({ error: "Không có quyền truy cập hồ sơ này" });
+
       const [user] = await db
         .select()
         .from(schema.users)
@@ -26,7 +30,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(404).json({ error: "Không tìm thấy tài khoản" });
       }
 
-      const { passwordHash: _, ...userInfo } = user;
+      const { passwordHash: passwordHashToOmit, ...userInfo } = user;
+      void passwordHashToOmit;
+      res.setHeader("Cache-Control", "private, max-age=30, stale-while-revalidate=60");
       return res.status(200).json(userInfo);
     } catch (err) {
       console.error("Get profile error:", err);
@@ -47,6 +53,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       if (!id) {
         return res.status(400).json({ error: "Thiếu id" });
+      }
+
+      const requestUserId = req.headers["x-user-id"] as string | undefined;
+      if (!requestUserId) return res.status(401).json({ error: "Vui lòng đăng nhập" });
+      if (requestUserId !== id) return res.status(403).json({ error: "Không có quyền cập nhật hồ sơ này" });
+
+      if (name !== undefined && (name.trim().length < 2 || name.trim().length > 100)) {
+        return res.status(400).json({ error: "Họ tên phải có từ 2 đến 100 ký tự" });
+      }
+      if (email !== undefined && email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+        return res.status(400).json({ error: "Email không đúng định dạng" });
+      }
+      if (avatarId !== undefined && avatarId && avatarId.length > 3_000_000) {
+        return res.status(400).json({ error: "Ảnh đại diện quá lớn" });
       }
 
       // Chỉ cập nhật các trường được gửi lên
@@ -79,7 +99,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(404).json({ error: "Không tìm thấy tài khoản" });
       }
 
-      const { passwordHash: _, ...userInfo } = updated;
+      const { passwordHash: passwordHashToOmit, ...userInfo } = updated;
+      void passwordHashToOmit;
       return res.status(200).json(userInfo);
     } catch (err) {
       console.error("Update profile error:", err);

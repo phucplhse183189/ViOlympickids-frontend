@@ -3,8 +3,10 @@ import { Settings, Check, LogOut, Pencil, X, Sun, Moon, Monitor } from "lucide-r
 import { useLang, type Language } from "@/shared/lib/i18n";
 import { useAuth, AVATARS } from "@/features/auth/context/auth";
 import { useThemeStore, type ThemeMode } from "@/shared/stores/themeStore";
+import { useNavigate } from "react-router-dom";
 
 export function SettingsDropdown() {
+  const navigate = useNavigate();
   const { lang, t, setLang } = useLang();
   const { user, logout, updateUser } = useAuth();
   const theme = useThemeStore((state) => state.theme);
@@ -225,6 +227,7 @@ export function SettingsDropdown() {
                 onClick={() => {
                   logout();
                   setOpen(false);
+                  navigate("/", { replace: true });
                 }}
                 className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold
                   text-red-400 transition-all duration-150 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-500/10 dark:hover:text-red-300"

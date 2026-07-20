@@ -11,6 +11,7 @@ import { OverviewPage } from "@/features/dashboard/pages/OverviewPage";
 import { ProgressPage } from "@/features/dashboard/pages/ProgressPage";
 import { HistoryPage } from "@/features/dashboard/pages/HistoryPage";
 import { SubscriptionPage } from "@/features/dashboard/pages/SubscriptionPage";
+import { FeedbackPage } from "@/features/dashboard/pages/FeedbackPage";
 import { PaymentPage } from "@/features/dashboard/pages/PaymentPage";
 import { ProfilePage } from "@/features/dashboard/pages/ProfilePage";
 import { PaymentResultPage } from "@/features/dashboard/pages/PaymentResultPage";
@@ -66,6 +67,7 @@ export function RouterProvider() {
         <Route path="progress" element={<ProgressPage />} />
         <Route path="history" element={<HistoryPage />} />
         <Route path="subscription" element={<SubscriptionPage />} />
+        <Route path="feedback" element={<FeedbackPage />} />
         <Route path="payment" element={<PaymentPage />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="payment-result" element={<PaymentResultPage />} />

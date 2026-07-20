@@ -110,7 +110,7 @@ export async function getProfiles(parentId: string): Promise<ChildProfile[]> {
  * Lấy toàn bộ dữ liệu dashboard của bé
  */
 export async function getDashboard(childId: string): Promise<DashboardData> {
-  return apiGet<DashboardData>(`/children/${childId}/dashboard`);
+  return apiGet<DashboardData>(`/children/${childId}/dashboard?view=core`);
 }
 
 /**

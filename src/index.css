@@ -719,6 +719,16 @@
   display: none;
 }
 
+/* Dashboard remains fully scrollable while keeping the chrome visually quiet. */
+.dashboard-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.dashboard-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 .animate-kids-bounce-in {
   animation: kids-bounce-in 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
@@ -1006,22 +1016,72 @@
 }
 
 .register-form-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(148, 163, 184, 0.45) transparent;
+  scrollbar-width: none;
   overscroll-behavior: contain;
 }
 
+.register-auth-surface {
+  height: min(600px, calc(100dvh - 6rem));
+}
+
 .register-form-scroll::-webkit-scrollbar {
-  width: 6px;
+  display: none;
 }
 
-.register-form-scroll::-webkit-scrollbar-track {
-  background: transparent;
+.add-child-page {
+  scrollbar-width: none;
 }
 
-.register-form-scroll::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.45);
-  border-radius: 999px;
+.add-child-page::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide only the visual scrollbar on the landing page; scrolling stays enabled. */
+html:has(.home-page),
+body:has(.home-page) {
+  scrollbar-width: none;
+}
+
+html:has(.home-page)::-webkit-scrollbar,
+body:has(.home-page)::-webkit-scrollbar {
+  display: none;
+}
+
+.auth-toggle {
+  view-transition-name: auth-toggle;
+}
+
+.auth-surface {
+  view-transition-name: auth-surface;
+}
+
+::view-transition-group(auth-toggle),
+::view-transition-group(auth-surface) {
+  animation-duration: 320ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+::view-transition-old(auth-surface) {
+  animation: 160ms ease-in both auth-surface-out;
+}
+
+::view-transition-new(auth-surface) {
+  animation: 320ms cubic-bezier(0.22, 1, 0.36, 1) both auth-surface-in;
+}
+
+@keyframes auth-surface-out {
+  to { opacity: 0; transform: scale(0.99); }
+}
+
+@keyframes auth-surface-in {
+  from { opacity: 0; transform: scale(0.99); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(auth-toggle),
+  ::view-transition-group(auth-surface) {
+    animation-duration: 1ms;
+  }
 }
 
 @media (max-width: 767px) {

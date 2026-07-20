@@ -1,14 +1,17 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  type ReactNode,
-} from "react";
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/features/auth/context/auth";
 import * as childrenService from "@/features/dashboard/api/childrenService";
 import type { ChildProfile, DashboardData } from "@/features/dashboard/api/childrenService";
 
 const ACTIVE_CHILD_ID_KEY = "vio_active_child_id";
+
+export const childrenQueryKeys = {
+  all: ["children"] as const,
+  profiles: (parentId: string) => ["children", "profiles", parentId] as const,
+  dashboard: (childId: string) => ["children", "dashboard", childId] as const,
+};
 
 interface ActiveChildContextValue {
   profiles: ChildProfile[];
@@ -23,104 +26,71 @@ interface ActiveChildContextValue {
 const ActiveChildContext = createContext<ActiveChildContextValue | null>(null);
 
 export function ActiveChildProvider({ children }: { children: ReactNode }) {
-  const [profiles, setProfiles] = useState<ChildProfile[]>([]);
-  const [activeChild, setActiveChild] = useState<ChildProfile | null>(null);
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const parentId = user ? sessionStorage.getItem("vio_parent_id") : null;
+  const [activeChildId, setActiveChildId] = useState<string | null>(() => localStorage.getItem(ACTIVE_CHILD_ID_KEY));
 
-  // Lấy parentId từ sessionStorage (đã lưu khi login)
-  const parentId = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("vio_parent_id") : null;
+  const profilesQuery = useQuery({
+    queryKey: childrenQueryKeys.profiles(parentId ?? "anonymous"),
+    queryFn: () => childrenService.getProfiles(parentId!),
+    enabled: Boolean(parentId),
+    staleTime: 5 * 60_000,
+    gcTime: 30 * 60_000,
+    refetchOnWindowFocus: false,
+  });
+  const profiles = useMemo(() => profilesQuery.data ?? [], [profilesQuery.data]);
 
-  async function loadData() {
-    const currentParentId = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("vio_parent_id") : null;
-    
-    if (!currentParentId) {
-      setIsLoading(false);
-      return;
-    }
-    
-    setIsLoading(true);
-    try {
-      const data = await childrenService.getProfiles(currentParentId);
-      setProfiles(data);
-      
-      if (data.length > 0) {
-        // Lấy childId đã chọn từ localStorage hoặc chọn bé đầu tiên
-        const savedId = localStorage.getItem(ACTIVE_CHILD_ID_KEY);
-        const selected = data.find((p: ChildProfile) => p.id === savedId) || data[0];
-        setActiveChild(selected);
-        
-        // Fetch dashboard data cho bé này
-        const dashData = await childrenService.getDashboard(selected.id);
-        setDashboardData(dashData);
-      }
-    } catch (error) {
-      console.error("Failed to load children profiles", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }
+  const activeChild = useMemo(
+    () => profiles.find((profile) => profile.id === activeChildId) ?? profiles[0] ?? null,
+    [profiles, activeChildId],
+  );
 
-  useEffect(() => {
-    loadData();
-  }, [parentId]);
+  const dashboardQuery = useQuery({
+    queryKey: childrenQueryKeys.dashboard(activeChild?.id ?? "none"),
+    queryFn: () => childrenService.getDashboard(activeChild!.id),
+    enabled: Boolean(activeChild),
+    staleTime: 5 * 60_000,
+    gcTime: 30 * 60_000,
+    refetchOnWindowFocus: false,
+  });
 
-  async function switchChild(childId: string) {
-    const selected = profiles.find(p => p.id === childId);
-    if (!selected) return;
-    
+  function switchChild(childId: string) {
+    if (!profiles.some((profile) => profile.id === childId)) return;
+    setActiveChildId(childId);
     localStorage.setItem(ACTIVE_CHILD_ID_KEY, childId);
-    setActiveChild(selected);
-    setDashboardData(null); // Reset while loading
-    
-    try {
-      const dashData = await childrenService.getDashboard(childId);
-      setDashboardData(dashData);
-    } catch (error) {
-      console.error("Failed to load dashboard data", error);
-    }
   }
 
   async function refreshProfiles() {
-    await loadData();
+    if (!parentId) return;
+    await queryClient.invalidateQueries({ queryKey: childrenQueryKeys.profiles(parentId) });
   }
 
   async function updateChildPlan(childId: string, plan: "FREE" | "PRO" | "VIP", daysLeft?: number) {
-    try {
-      await childrenService.updatePlan(childId, plan, daysLeft);
-      await loadData();
-    } catch (error) {
-      console.error("Failed to update plan", error);
-    }
+    await childrenService.updatePlan(childId, plan, daysLeft);
+    await Promise.all([
+      parentId ? queryClient.invalidateQueries({ queryKey: childrenQueryKeys.profiles(parentId) }) : Promise.resolve(),
+      queryClient.invalidateQueries({ queryKey: childrenQueryKeys.dashboard(childId) }),
+    ]);
   }
 
-  // Refresh profiles on window focus (after returning from /add-child)
-  useEffect(() => {
-    const onFocus = () => loadData();
-    window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
-  }, [parentId]);
-
   return (
-    <ActiveChildContext.Provider
-      value={{
-        profiles,
-        activeChild,
-        dashboardData,
-        isLoading,
-        switchChild,
-        refreshProfiles,
-        updateChildPlan,
-      }}
-    >
+    <ActiveChildContext.Provider value={{
+      profiles,
+      activeChild,
+      dashboardData: dashboardQuery.data ?? null,
+      isLoading: Boolean(parentId) && profilesQuery.isPending,
+      switchChild,
+      refreshProfiles,
+      updateChildPlan,
+    }}>
       {children}
     </ActiveChildContext.Provider>
   );
 }
 
 export function useActiveChild() {
-  const ctx = useContext(ActiveChildContext);
-  if (!ctx)
-    throw new Error("useActiveChild must be used inside ActiveChildProvider");
-  return ctx;
+  const context = useContext(ActiveChildContext);
+  if (!context) throw new Error("useActiveChild must be used inside ActiveChildProvider");
+  return context;
 }

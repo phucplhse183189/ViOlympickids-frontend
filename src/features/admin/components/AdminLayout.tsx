@@ -244,28 +244,14 @@ export function AdminLayout() {
         transition={{ type: "spring", stiffness: 360, damping: 34 }}
         className="sticky top-0 hidden h-screen shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90 lg:flex"
       >
-        <div className="h-16 flex items-center gap-3 px-5 border-b border-slate-200">
-          <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
-            <svg
-              className="w-5 h-5 text-white"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-              />
-            </svg>
-          </div>
+        <div className="flex h-16 items-center gap-3 border-b border-slate-200 px-[18px] dark:border-slate-800">
+          <Link to="/admin" aria-label="ViOlympicKids Admin" className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-slate-200/80 bg-white shadow-sm transition hover:border-blue-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-800">
+            <img src="/robot-head.png" alt="" className="h-8 w-8 object-contain" />
+          </Link>
           {!sidebarCollapsed && (
             <div className="overflow-hidden">
-              <h2 className="text-slate-900 font-extrabold text-sm truncate">
-                ViOlympicKids
-              </h2>
-              <p className="text-indigo-500 text-xs">Admin Panel</p>
+              <Link to="/admin" className="block truncate text-lg font-black tracking-tight"><span className="text-blue-500">ViOlympic</span><span className="text-orange-500">Kids</span></Link>
+              <p className="text-xs font-semibold text-slate-400">Admin Panel</p>
             </div>
           )}
         </div>
@@ -406,27 +392,13 @@ export function AdminLayout() {
               onClick={() => setMobileMenuOpen(false)}
             />
             <div className="relative w-72 bg-white border-r border-slate-200 p-4 space-y-2">
-              <div className="flex items-center gap-3 px-2 pb-4 mb-4 border-b border-slate-200">
-                <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-violet-500 rounded-xl flex items-center justify-center">
-                  <svg
-                    className="w-5 h-5 text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <h2 className="text-slate-900 font-bold text-sm">
-                    ViOlympicKids
-                  </h2>
-                  <p className="text-indigo-500 text-xs">Admin Panel</p>
+              <div className="mb-4 flex items-center gap-3 border-b border-slate-200 px-2 pb-4">
+                <Link to="/admin" onClick={() => setMobileMenuOpen(false)} aria-label="ViOlympicKids Admin" className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+                  <img src="/robot-head.png" alt="" className="h-8 w-8 object-contain" />
+                </Link>
+                <div className="min-w-0">
+                  <Link to="/admin" onClick={() => setMobileMenuOpen(false)} className="block truncate text-lg font-black tracking-tight"><span className="text-blue-500">ViOlympic</span><span className="text-orange-500">Kids</span></Link>
+                  <p className="text-xs font-semibold text-slate-400">Admin Panel</p>
                 </div>
               </div>
               {NAV_SECTIONS.map((section) => (

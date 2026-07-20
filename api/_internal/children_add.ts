@@ -12,14 +12,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { parentId, name, grade, avatarEmoji, avatarBg, plan, gender } =
+    const { parentId, name, grade, avatarEmoji, avatarBg, gender } =
       req.body as {
         parentId: string;
         name: string;
         grade: string;
         avatarEmoji: string;
         avatarBg?: string;
-        plan?: "FREE" | "PRO" | "VIP";
         gender?: "boy" | "girl";
       };
 
@@ -27,8 +26,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: "Thiếu thông tin bắt buộc" });
     }
 
-    const finalPlan = plan ?? "PRO";
-    const finalPlanDaysLeft = finalPlan === "PRO" ? 3 : null;
+    const requestUserId = req.headers["x-user-id"] as string | undefined;
+    if (!requestUserId) {
+      return res.status(401).json({ error: "Vui lòng đăng nhập" });
+    }
+    if (requestUserId !== parentId) {
+      return res.status(403).json({ error: "Không có quyền tạo hồ sơ cho tài khoản này" });
+    }
 
     const [child] = await db
       .insert(schema.children)
@@ -38,8 +42,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         grade,
         avatarEmoji,
         avatarBg: avatarBg ?? "bg-blue-100",
-        plan: finalPlan,
-        planDaysLeft: finalPlanDaysLeft,
+        // Every newly-created student receives the same server-controlled
+        // three-day Pro trial. Client payloads cannot override this benefit.
+        plan: "PRO",
+        planDaysLeft: 3,
         gender,
         status: "active",
       })
