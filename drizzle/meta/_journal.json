@@ -8,6 +8,13 @@
       "when": 1783751255999,
       "tag": "0000_nappy_kree",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1784446242469,
+      "tag": "0001_nice_scream",
+      "breakpoints": true
     }
   ]
 }

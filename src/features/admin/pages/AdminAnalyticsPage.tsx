@@ -1,504 +1,111 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import { AdminPageLoading } from "@/features/admin/components/ui";
 import {
-  getAnalyticsStats,
-  type AnalyticsStats,
-} from "@/features/admin/api/adminAnalytics";
+  Activity,
+  CalendarDays,
+  Eye,
+  Globe2,
+  Link2,
+  MonitorSmartphone,
+  MousePointerClick,
+  RefreshCw,
+  Route,
+  Users,
+} from "lucide-react";
 import {
-  AreaChart,
   Area,
-  BarChart,
+  AreaChart,
   Bar,
-  XAxis,
-  YAxis,
+  BarChart,
   CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
   Cell,
   Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from "recharts";
+import { useAdminAnalyticsQuery } from "@/features/admin/api/adminQueries";
 
-/* ── Helpers ────────────────────────────────────────────────────────────── */
-
-const RANGE_OPTIONS = [
-  { label: "7 ngày", value: 7 },
-  { label: "30 ngày", value: 30 },
-  { label: "90 ngày", value: 90 },
-];
-
-/** Chu kỳ tự động làm mới (near real-time) */
-const REFRESH_MS = 30_000;
-
-const DEVICE_META: Record<string, { label: string; color: string; icon: string }> = {
+const ranges = [{ label: "7 ngày", value: 7 }, { label: "30 ngày", value: 30 }, { label: "90 ngày", value: 90 }];
+const refreshMs = 30_000;
+const sectionMotion = { hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0 } };
+const tooltipStyle = { borderRadius: 14, border: "1px solid var(--border)", background: "var(--card)", color: "var(--card-foreground)", boxShadow: "0 12px 30px rgb(0 0 0 / .12)" };
+const devices: Record<string, { label: string; color: string; icon: string }> = {
   desktop: { label: "Máy tính", color: "#6366f1", icon: "🖥️" },
-  mobile: { label: "Điện thoại", color: "#22c55e", icon: "📱" },
+  mobile: { label: "Điện thoại", color: "#10b981", icon: "📱" },
   tablet: { label: "Máy tính bảng", color: "#f59e0b", icon: "📲" },
 };
-
-function formatCompact(value: number): string {
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
-  return `${value}`;
-}
-
-function formatDayLabel(date: string): string {
-  const [, m, d] = date.split("-");
-  return `${d}/${m}`;
-}
-
-/* ── Main Component ─────────────────────────────────────────────────────── */
+const compact = new Intl.NumberFormat("vi-VN", { notation: "compact", maximumFractionDigits: 1 });
 
 export function AdminAnalyticsPage() {
-  const [data, setData] = useState<AnalyticsStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [days, setDays] = useState(30);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const reduceMotion = useReducedMotion();
+  const query = useAdminAnalyticsQuery(days);
+  const { data, isPending, isFetching, refetch, dataUpdatedAt } = query;
+  const transition = reduceMotion ? { duration: 0 } : { duration: .42, ease: [0.22, 1, 0.36, 1] as const };
 
-  const load = useCallback(
-    async (silent = false) => {
-      if (silent) setRefreshing(true);
-      else setLoading(true);
-      try {
-        const d = await getAnalyticsStats(days);
-        setData(d);
-        setLastUpdated(new Date());
-        setError(null);
-      } catch (err) {
-        console.error("Failed to load analytics stats:", err);
-        // Khi đang polling ngầm, giữ nguyên dữ liệu cũ và không phá UI bằng lỗi
-        if (!silent)
-          setError("Không thể tải dữ liệu truy cập. Vui lòng thử lại sau.");
-      } finally {
-        if (silent) setRefreshing(false);
-        else setLoading(false);
-      }
-    },
-    [days],
-  );
-
-  // Tải đầy đủ khi mở trang và mỗi khi đổi khoảng thời gian
-  useEffect(() => {
-    load(false);
-  }, [load]);
-
-  // Tự động làm mới ngầm (near real-time), tạm dừng khi tab không hiển thị
   useEffect(() => {
     if (!autoRefresh) return;
-    const id = setInterval(() => {
-      if (document.visibilityState === "visible") load(true);
-    }, REFRESH_MS);
-    return () => clearInterval(id);
-  }, [autoRefresh, load]);
+    const timer = window.setInterval(() => { if (document.visibilityState === "visible") void refetch(); }, refreshMs);
+    return () => window.clearInterval(timer);
+  }, [autoRefresh, refetch]);
 
-  const avgPerVisitor = useMemo(() => {
-    if (!data || data.uniqueVisitors === 0) return 0;
-    return Math.round((data.totalViews / data.uniqueVisitors) * 10) / 10;
-  }, [data]);
+  const dailyData = useMemo(() => (data?.dailyViews || []).map((item) => ({ ...item, label: formatDate(item.date) })), [data]);
+  const deviceData = useMemo(() => (data?.deviceBreakdown || []).map((item) => ({ ...item, name: devices[item.device]?.label || item.device, value: item.count })), [data]);
+  const pagesPerVisitor = data?.uniqueVisitors ? Math.round((data.totalViews / data.uniqueVisitors) * 10) / 10 : 0;
+  const lastUpdated = dataUpdatedAt ? new Date(dataUpdatedAt) : null;
 
-  const dailyChart = useMemo(
-    () =>
-      (data?.dailyViews ?? []).map((d) => ({
-        ...d,
-        label: formatDayLabel(d.date),
-      })),
-    [data],
-  );
+  if (isPending) return <AnalyticsSkeleton />;
+  if (query.error || !data) return <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-6 text-center font-semibold text-rose-500">Không thể tải dữ liệu truy cập. Vui lòng thử lại.</div>;
 
-  const deviceChart = useMemo(
-    () =>
-      (data?.deviceBreakdown ?? []).map((d) => ({
-        name: DEVICE_META[d.device]?.label || d.device,
-        value: d.count,
-        device: d.device,
-      })),
-    [data],
-  );
-
-  /* ── Loading / Error ────────────────────────────────────────────────── */
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64 text-slate-400 font-semibold">
-        <svg className="animate-spin h-6 w-6 mr-3 text-indigo-500" viewBox="0 0 24 24">
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-            fill="none"
-          />
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-          />
-        </svg>
-        Đang tải dữ liệu truy cập...
-      </div>
-    );
-  }
-
-  if (error || !data) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64 gap-3">
-        <p className="text-rose-500 font-semibold">{error || "Lỗi không xác định"}</p>
-        <button
-          onClick={() => window.location.reload()}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-bold"
-        >
-          Thử lại
-        </button>
-      </div>
-    );
-  }
-
-  const isEmpty = data.totalViews === 0;
-
-  const statCards = [
-    {
-      label: "Lượt xem trang",
-      value: formatCompact(data.totalViews),
-      sub: `${data.viewsToday} lượt hôm nay`,
-      icon: "👁️",
-      color: "border-indigo-200",
-    },
-    {
-      label: "Khách duy nhất",
-      value: formatCompact(data.uniqueVisitors),
-      sub: `${avgPerVisitor} trang / khách`,
-      icon: "🧑",
-      color: "border-emerald-200",
-    },
-    {
-      label: "Phiên truy cập",
-      value: formatCompact(data.totalSessions),
-      sub: `Trong ${data.rangeDays} ngày`,
-      icon: "🔁",
-      color: "border-amber-200",
-    },
-    {
-      label: "Lượt xem hôm nay",
-      value: formatCompact(data.viewsToday),
-      sub: "Tính từ 00:00",
-      icon: "📅",
-      color: "border-sky-200",
-    },
+  const kpis = [
+    { label: "Lượt xem trang", value: compact.format(data.totalViews), note: `${data.viewsToday} lượt hôm nay`, icon: Eye, style: "bg-indigo-500/10 text-indigo-500" },
+    { label: "Khách duy nhất", value: compact.format(data.uniqueVisitors), note: `${pagesPerVisitor} trang / khách`, icon: Users, style: "bg-emerald-500/10 text-emerald-500" },
+    { label: "Phiên truy cập", value: compact.format(data.totalSessions), note: `Trong ${data.rangeDays} ngày`, icon: Route, style: "bg-violet-500/10 text-violet-500" },
+    { label: "Lượt xem hôm nay", value: compact.format(data.viewsToday), note: "Tính từ 00:00", icon: CalendarDays, style: "bg-cyan-500/10 text-cyan-500" },
   ];
 
   return (
-    <div className="space-y-6">
-      {/* ── Header ────────────────────────────────────────────────────── */}
-      <div className="bg-gradient-to-r from-cyan-600 to-indigo-600 rounded-2xl p-6 text-white shadow-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-cyan-100">
-            Web Analytics
-          </p>
-          <h2 className="text-2xl font-extrabold mt-1">Lượt truy cập website</h2>
-          <p className="text-sm text-cyan-100 mt-1">
-            Dữ liệu thu thập trực tiếp từ người dùng (không tính khu vực admin)
-          </p>
-        </div>
-        <div className="flex flex-col items-start sm:items-end gap-2">
-          <div className="flex gap-1 bg-white/15 rounded-xl p-1">
-            {RANGE_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setDays(opt.value)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-                  days === opt.value
-                    ? "bg-white text-indigo-700"
-                    : "text-white hover:bg-white/15"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Trạng thái cập nhật */}
-            <span className="inline-flex items-center gap-1.5 text-[11px] text-cyan-100">
-              <span className="relative flex h-2 w-2">
-                {autoRefresh && (
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
-                )}
-                <span
-                  className={`relative inline-flex rounded-full h-2 w-2 ${
-                    autoRefresh ? "bg-emerald-300" : "bg-slate-300"
-                  }`}
-                />
-              </span>
-              {lastUpdated
-                ? `Cập nhật ${lastUpdated.toLocaleTimeString("vi-VN")}`
-                : "Đang chờ..."}
-            </span>
-
-            {/* Bật/tắt tự động làm mới */}
-            <button
-              onClick={() => setAutoRefresh((v) => !v)}
-              className="px-2.5 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-[11px] font-semibold transition-colors"
-              title="Bật/tắt tự động cập nhật mỗi 30 giây"
-            >
-              {autoRefresh ? "Tự động: BẬT" : "Tự động: TẮT"}
-            </button>
-
-            {/* Làm mới thủ công */}
-            <button
-              onClick={() => load(true)}
-              disabled={refreshing}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white text-indigo-700 hover:bg-cyan-50 text-[11px] font-bold transition-colors disabled:opacity-60"
-              title="Làm mới ngay"
-            >
-              <svg
-                className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`}
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M16.023 9.348h4.992V4.356M3.04 14.652H8.03v4.992M3.182 9.348a8.25 8.25 0 0113.803-3.04L20.5 9.348M20.818 14.652a8.25 8.25 0 01-13.803 3.04L3.5 14.652"
-                />
-              </svg>
-              {refreshing ? "Đang..." : "Làm mới"}
-            </button>
+    <motion.div initial="hidden" animate="show" transition={{ staggerChildren: reduceMotion ? 0 : .065 }} className="space-y-6 pb-8">
+      <motion.section variants={sectionMotion} transition={transition} className="relative isolate overflow-hidden rounded-[28px] border border-sky-400/20 bg-slate-950 px-6 py-7 text-white shadow-xl shadow-sky-950/10 md:px-8 md:py-9">
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_12%_20%,rgba(14,165,233,.34),transparent_35%),radial-gradient(circle_at_88%_80%,rgba(99,102,241,.34),transparent_32%)]" />
+        <motion.div aria-hidden className="absolute -right-16 -top-20 -z-10 h-64 w-64 rounded-full border border-white/10" animate={reduceMotion ? undefined : { rotate: 360 }} transition={{ duration: 32, repeat: Infinity, ease: "linear" }} />
+        <div className="flex flex-col gap-7 xl:flex-row xl:items-end xl:justify-between">
+          <div className="max-w-2xl"><div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs font-semibold text-sky-100"><Globe2 className="h-3.5 w-3.5" /> Traffic intelligence</div><h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Biết người dùng đến từ đâu.<br className="hidden sm:block" /> Hiểu họ quan tâm điều gì.</h2><p className="mt-3 max-w-xl text-sm leading-6 text-slate-300">Phân tích hành vi truy cập công khai theo thời gian thực, không bao gồm lưu lượng khu vực quản trị.</p></div>
+          <div className="space-y-3 xl:min-w-[400px]">
+            <div className="flex rounded-2xl border border-white/10 bg-white/10 p-1.5 backdrop-blur">{ranges.map((range) => <button key={range.value} onClick={() => setDays(range.value)} className={`flex-1 rounded-xl px-3 py-2 text-xs font-bold transition-all ${days === range.value ? "bg-white text-slate-900 shadow-sm" : "text-slate-300 hover:bg-white/10 hover:text-white"}`}>{range.label}</button>)}</div>
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-white/10 bg-white/[.07] p-2.5 pl-3"><span className="flex items-center gap-2 text-xs text-slate-300"><span className={`h-2 w-2 rounded-full ${autoRefresh ? "animate-pulse bg-emerald-300" : "bg-slate-500"}`} />{lastUpdated ? `Cập nhật ${lastUpdated.toLocaleTimeString("vi-VN")}` : "Đang chờ dữ liệu"}</span><div className="flex gap-2"><button onClick={() => setAutoRefresh((value) => !value)} className="rounded-lg bg-white/10 px-2.5 py-1.5 text-[11px] font-semibold hover:bg-white/15">Tự động: {autoRefresh ? "BẬT" : "TẮT"}</button><button onClick={() => void refetch()} disabled={isFetching} className="inline-flex items-center gap-1.5 rounded-lg bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-900 disabled:opacity-60"><RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />Làm mới</button></div></div>
           </div>
         </div>
+      </motion.section>
+
+      {data.totalViews === 0 && <motion.div variants={sectionMotion} className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-700 dark:text-amber-300">Chưa ghi nhận lượt truy cập công khai trong khoảng thời gian này.</motion.div>}
+
+      <motion.section variants={sectionMotion} transition={transition}>
+        <div className="mb-3"><p className="text-xs font-bold uppercase tracking-[.14em] text-muted-foreground">Tổng quan nhanh</p><h3 className="mt-1 text-xl font-bold text-foreground">Sức khỏe lưu lượng</h3></div>
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,230px),1fr))] gap-4">{kpis.map((item, index) => <motion.article key={item.label} initial={reduceMotion ? false : { opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ ...transition, delay: index * .05 }} whileHover={reduceMotion ? undefined : { y: -4 }} className="rounded-2xl border border-border bg-card p-5 text-card-foreground shadow-sm"><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[.1em] text-muted-foreground">{item.label}</p><p className="mt-3 text-3xl font-extrabold tracking-tight">{item.value}</p></div><span className={`grid h-11 w-11 place-items-center rounded-2xl ${item.style}`}><item.icon className="h-5 w-5" /></span></div><p className="mt-4 text-xs font-medium text-muted-foreground">{item.note}</p></motion.article>)}</div>
+      </motion.section>
+
+      <div className="grid gap-5 xl:grid-cols-[1.65fr_1fr]">
+        <Panel title="Lưu lượng theo ngày" subtitle="Lượt xem và khách duy nhất" icon={Activity} transition={transition}><div className="h-[330px]">{dailyData.length ? <ResponsiveContainer width="100%" height="100%"><AreaChart data={dailyData} margin={{ top: 14, right: 8, left: 0, bottom: 0 }}><defs><linearGradient id="analyticsViews" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#6366f1" stopOpacity={.38} /><stop offset="100%" stopColor="#6366f1" stopOpacity={0} /></linearGradient><linearGradient id="analyticsVisitors" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#10b981" stopOpacity={.22} /><stop offset="100%" stopColor="#10b981" stopOpacity={0} /></linearGradient></defs><CartesianGrid stroke="var(--border)" strokeDasharray="4 6" vertical={false} /><XAxis dataKey="label" tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} axisLine={false} tickLine={false} /><YAxis allowDecimals={false} tickFormatter={(value) => compact.format(value)} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} axisLine={false} tickLine={false} width={46} /><Tooltip formatter={(value, name) => [value, name === "views" ? "Lượt xem" : "Khách"]} contentStyle={tooltipStyle} /><Legend formatter={(value) => value === "views" ? "Lượt xem" : "Khách duy nhất"} wrapperStyle={{ fontSize: 12 }} /><Area type="monotone" dataKey="views" stroke="#6366f1" strokeWidth={3} fill="url(#analyticsViews)" /><Area type="monotone" dataKey="visitors" stroke="#10b981" strokeWidth={2.5} fill="url(#analyticsVisitors)" /></AreaChart></ResponsiveContainer> : <EmptyState />}</div></Panel>
+        <Panel title="Thiết bị" subtitle="Phân bổ lượt xem theo nền tảng" icon={MonitorSmartphone} transition={transition}><div className="relative h-[240px]">{deviceData.length ? <><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={deviceData} dataKey="value" innerRadius={66} outerRadius={92} paddingAngle={4} stroke="none">{deviceData.map((item) => <Cell key={item.device} fill={devices[item.device]?.color || "#94a3b8"} />)}</Pie><Tooltip formatter={(value) => [`${value} lượt`, "Lượt xem"]} contentStyle={tooltipStyle} /></PieChart></ResponsiveContainer><div className="pointer-events-none absolute inset-0 grid place-items-center text-center"><div><p className="text-xs text-muted-foreground">Tổng lượt</p><p className="text-xl font-extrabold text-foreground">{compact.format(data.totalViews)}</p></div></div></> : <EmptyState />}</div><div className="space-y-2">{deviceData.map((item) => <div key={item.device} className="flex items-center justify-between rounded-xl bg-muted/60 px-3 py-2 text-xs"><span className="font-bold text-foreground">{devices[item.device]?.icon} {item.name}</span><span className="text-muted-foreground">{item.count} · {Math.round(item.count / Math.max(data.totalViews, 1) * 100)}%</span></div>)}</div></Panel>
       </div>
 
-      {isEmpty && (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800">
-          Chưa có lượt truy cập nào được ghi nhận. Hãy đảm bảo đã chạy{" "}
-          <code className="font-mono bg-amber-100 px-1.5 py-0.5 rounded">/api/admin/init-db</code>{" "}
-          để tạo bảng, sau đó truy cập vài trang công khai (trang chủ, đăng nhập...) để có dữ liệu.
-        </div>
-      )}
-
-      {/* ── Stat Cards ────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        {statCards.map((card) => (
-          <div
-            key={card.label}
-            className={`bg-white border rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow ${card.color}`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                {card.label}
-              </p>
-              <span className="text-2xl">{card.icon}</span>
-            </div>
-            <p className="text-2xl font-extrabold text-slate-900">{card.value}</p>
-            <p className="text-xs text-slate-500 mt-1">{card.sub}</p>
-          </div>
-        ))}
+      <div className="grid gap-5 xl:grid-cols-2">
+        <Panel title="Trang được quan tâm nhất" subtitle="Xếp hạng theo số lượt xem" icon={MousePointerClick} transition={transition}><div className="space-y-4">{data.topPages.map((page, index) => { const percent = Math.round(page.views / Math.max(data.topPages[0]?.views || 1, 1) * 100); return <motion.div key={page.path} initial={reduceMotion ? false : { opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * .045 }}><div className="mb-1.5 flex items-center justify-between gap-3 text-xs"><span className="min-w-0 truncate font-semibold text-foreground"><span className="mr-2 text-muted-foreground">{String(index + 1).padStart(2, "0")}</span>{page.path}</span><strong>{page.views}</strong></div><div className="h-2 overflow-hidden rounded-full bg-muted"><motion.div initial={{ width: 0 }} animate={{ width: `${percent}%` }} transition={{ duration: reduceMotion ? 0 : .7, delay: .2 + index * .05 }} className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500" /></div></motion.div>})}{!data.topPages.length && <EmptyState />}</div></Panel>
+        <Panel title="Nguồn truy cập" subtitle="Các kênh đưa người dùng đến website" icon={Link2} transition={transition}><div style={{ height: Math.max(280, data.topReferrers.length * 38) }}>{data.topReferrers.length ? <ResponsiveContainer width="100%" height="100%"><BarChart data={data.topReferrers} layout="vertical" margin={{ top: 8, right: 18, left: 10, bottom: 0 }}><CartesianGrid stroke="var(--border)" strokeDasharray="4 6" horizontal={false} /><XAxis type="number" allowDecimals={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} axisLine={false} tickLine={false} /><YAxis type="category" dataKey="referrer" width={125} tick={{ fill: "var(--muted-foreground)", fontSize: 10 }} axisLine={false} tickLine={false} /><Tooltip formatter={(value) => [`${value} lượt`, "Truy cập"]} contentStyle={tooltipStyle} /><Bar dataKey="count" fill="#06b6d4" radius={[0, 8, 8, 0]} barSize={18} /></BarChart></ResponsiveContainer> : <EmptyState />}</div></Panel>
       </div>
-
-      {/* ── Daily traffic + Devices ───────────────────────────────────── */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <div className="xl:col-span-2 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-          <h3 className="text-sm font-bold text-slate-900 mb-4">
-            📈 Lượt truy cập theo ngày
-          </h3>
-          {dailyChart.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={dailyChart}>
-                <defs>
-                  <linearGradient id="viewsGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="visitorsGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748b" }} />
-                <YAxis
-                  tick={{ fontSize: 11, fill: "#64748b" }}
-                  tickFormatter={(v) => formatCompact(v)}
-                  allowDecimals={false}
-                />
-                <Tooltip
-                  labelStyle={{ fontWeight: 700 }}
-                  contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0" }}
-                  formatter={(value: number | undefined, name) => [
-                    value ?? 0,
-                    name === "views" ? "Lượt xem" : "Khách",
-                  ]}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="views"
-                  name="views"
-                  stroke="#6366f1"
-                  strokeWidth={2.5}
-                  fill="url(#viewsGradient)"
-                />
-                <Area
-                  type="monotone"
-                  dataKey="visitors"
-                  name="visitors"
-                  stroke="#22c55e"
-                  strokeWidth={2.5}
-                  fill="url(#visitorsGradient)"
-                />
-                <Legend
-                  wrapperStyle={{ fontSize: 12 }}
-                  formatter={(value) => (
-                    <span className="text-slate-600 font-medium">
-                      {value === "views" ? "Lượt xem" : "Khách duy nhất"}
-                    </span>
-                  )}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex items-center justify-center h-[300px] text-slate-400 text-sm">
-              Chưa có dữ liệu
-            </div>
-          )}
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-          <h3 className="text-sm font-bold text-slate-900 mb-4">📱 Thiết bị</h3>
-          {deviceChart.length > 0 ? (
-            <>
-              <ResponsiveContainer width="100%" height={240}>
-                <PieChart>
-                  <Pie
-                    data={deviceChart}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={90}
-                    paddingAngle={3}
-                    dataKey="value"
-                  >
-                    {deviceChart.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={DEVICE_META[entry.device]?.color || "#94a3b8"}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0" }}
-                    formatter={(value: number | undefined) => [value ?? 0, "Lượt xem"]}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="space-y-2 mt-2">
-                {data.deviceBreakdown.map((d) => (
-                  <div
-                    key={d.device}
-                    className="flex items-center justify-between text-xs"
-                  >
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{
-                          backgroundColor: DEVICE_META[d.device]?.color || "#94a3b8",
-                        }}
-                      />
-                      <span className="font-bold text-slate-700">
-                        {DEVICE_META[d.device]?.icon} {DEVICE_META[d.device]?.label || d.device}
-                      </span>
-                    </div>
-                    <span className="text-slate-500">
-                      {d.count} lượt ·{" "}
-                      {Math.round((d.count / Math.max(data.totalViews, 1)) * 100)}%
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            <div className="flex items-center justify-center h-[240px] text-slate-400 text-sm">
-              Chưa có dữ liệu
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── Top pages + Referrers ─────────────────────────────────────── */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-          <h3 className="text-sm font-bold text-slate-900 mb-4">
-            🏆 Trang được xem nhiều nhất
-          </h3>
-          {data.topPages.length > 0 ? (
-            <div className="space-y-2.5">
-              {data.topPages.map((p, i) => {
-                const pct = Math.round(
-                  (p.views / Math.max(data.topPages[0].views, 1)) * 100,
-                );
-                return (
-                  <div key={p.path}>
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="font-semibold text-slate-700 truncate max-w-[70%]">
-                        <span className="text-slate-400 mr-1.5">{i + 1}.</span>
-                        {p.path}
-                      </span>
-                      <span className="text-slate-500 font-bold">{p.views}</span>
-                    </div>
-                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-indigo-500 rounded-full"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="flex items-center justify-center h-32 text-slate-400 text-sm">
-              Chưa có dữ liệu
-            </div>
-          )}
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-          <h3 className="text-sm font-bold text-slate-900 mb-4">
-            🔗 Nguồn truy cập
-          </h3>
-          {data.topReferrers.length > 0 ? (
-            <ResponsiveContainer width="100%" height={Math.max(data.topReferrers.length * 38, 160)}>
-              <BarChart
-                data={data.topReferrers}
-                layout="vertical"
-                margin={{ left: 8, right: 16 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 11, fill: "#64748b" }} allowDecimals={false} />
-                <YAxis
-                  type="category"
-                  dataKey="referrer"
-                  width={120}
-                  tick={{ fontSize: 11, fill: "#64748b" }}
-                />
-                <Tooltip
-                  contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0" }}
-                  formatter={(value: number | undefined) => [value ?? 0, "Lượt"]}
-                />
-                <Bar dataKey="count" fill="#06b6d4" radius={[0, 6, 6, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex items-center justify-center h-32 text-slate-400 text-sm">
-              Chưa có dữ liệu
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+    </motion.div>
   );
 }
+
+function formatDate(date: string) { const [, month, day] = date.split("-"); return `${day}/${month}`; }
+function Panel({ title, subtitle, icon: Icon, transition, children }: { title: string; subtitle: string; icon: typeof Eye; transition: object; children: ReactNode }) { return <motion.section variants={sectionMotion} transition={transition} className="rounded-[24px] border border-border bg-card p-5 text-card-foreground shadow-sm sm:p-6"><div className="mb-5 flex items-start justify-between"><div><h3 className="font-bold">{title}</h3><p className="mt-1 text-xs text-muted-foreground">{subtitle}</p></div><span className="grid h-9 w-9 place-items-center rounded-xl bg-sky-500/10 text-sky-500"><Icon className="h-4 w-4" /></span></div>{children}</motion.section>; }
+function EmptyState() { return <div className="grid h-full min-h-32 place-items-center text-sm text-muted-foreground">Chưa có dữ liệu để hiển thị.</div>; }
+function AnalyticsSkeleton() { return <AdminPageLoading title="Đang tải dữ liệu truy cập" description="Đang phân tích lượt xem, thiết bị và nguồn truy cập website." />; }

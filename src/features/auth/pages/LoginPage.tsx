@@ -1,11 +1,14 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { motion, useReducedMotion } from "framer-motion";
+import { Link, useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 import { LoginForm } from "@/features/auth/components/LoginForm";
 import { useLang } from "@/shared/lib/i18n";
 import { useAuth } from "@/features/auth/context/auth";
 import { useActiveChild } from "@/features/dashboard/context/activeChild";
 import * as authService from "@/features/auth/api/authService";
+import { AuthLayout } from "@/features/auth/components/AuthLayout";
+import { useThemeStore } from "@/shared/stores/themeStore";
 
 export function LoginPage() {
   const { t } = useLang();
@@ -13,43 +16,25 @@ export function LoginPage() {
   const { login } = useAuth();
   const { refreshProfiles } = useActiveChild();
   const [googleLoading, setGoogleLoading] = useState(false);
+  const reduceMotion = useReducedMotion();
+  const theme = useThemeStore((state) => state.theme);
+  const darkGoogleButton = theme === "dark" || (theme === "system" && typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches);
   return (
-    <div className="bg-gradient-to-br from-blue-100 via-pink-50 to-yellow-100 min-h-screen w-full overflow-y-auto relative flex items-center justify-center py-8">
-      {/* Decorative background elements */}
-      <div className="absolute top-10 left-10 text-6xl text-blue-300 opacity-50 animate-[float_6s_ease-in-out_infinite] font-bold select-none">
-        +
-      </div>
-      <div className="absolute bottom-20 right-20 text-6xl text-pink-300 opacity-50 animate-[float_7s_ease-in-out_2s_infinite] font-bold select-none">
-        ÷
-      </div>
-      <div className="absolute top-16 right-1/3 text-5xl text-yellow-300 opacity-40 animate-[float_8s_ease-in-out_1s_infinite] font-bold select-none">
-        ×
-      </div>
-      <div className="absolute bottom-1/3 left-12 text-5xl text-green-300 opacity-40 animate-[float_6.5s_ease-in-out_3s_infinite] font-bold select-none">
-        −
-      </div>
-      <div className="absolute top-1/4 right-1/4 w-24 h-24 bg-yellow-200 rounded-full blur-xl opacity-60 pointer-events-none" />
-      <div className="absolute bottom-1/4 left-1/4 w-32 h-32 bg-green-200 rounded-full blur-xl opacity-60 pointer-events-none" />
-
+    <AuthLayout className="h-dvh overflow-hidden" contentClassName="h-dvh min-h-0 overflow-hidden pb-4 pt-20">
       {/* Card */}
-      <div
+      <motion.div
+        initial={reduceMotion ? false : { opacity: 0, x: 64, scale: 0.985 }}
+        animate={{ opacity: 1, x: 0, scale: 1 }}
+        transition={{ duration: 0.48, ease: [0.22, 1, 0.36, 1] }}
         className="
-        bg-white/80 backdrop-blur-md border-4 border-white
+        auth-surface bg-white/80 dark:bg-slate-900/90 backdrop-blur-md border-4 border-white dark:border-slate-700
         rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.1)]
-        p-8 md:p-12 w-full max-w-6xl
+        max-h-[calc(100dvh-6rem)] p-6 md:p-8 w-full max-w-6xl
         flex flex-col md:flex-row items-center gap-10
         relative z-10 mx-4
         transition-shadow duration-300 hover:shadow-[0_30px_60px_rgba(0,0,0,0.15)]
       "
       >
-        {/* Close button */}
-        <button
-          onClick={() => navigate("/")}
-          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-100 hover:bg-red-100 hover:text-red-400 text-gray-400 flex items-center justify-center text-lg font-bold transition-colors"
-          aria-label="Close"
-        >
-          ×
-        </button>
         {/* Left — Logo + Branding */}
         <div className="w-full md:w-2/5 flex flex-col items-center justify-center text-center gap-5 shrink-0">
           {/* Logo area */}
@@ -62,13 +47,13 @@ export function LoginPage() {
             />
 
             {/* Speech bubble */}
-            <div className="absolute -top-3 -right-6 bg-white px-4 py-2 rounded-2xl shadow-lg border-2 border-blue-200 rotate-6 animate-bounce z-10">
+            <motion.div animate={reduceMotion ? undefined : { y: [0, -5, 0] }} transition={{ duration: 3, repeat: Infinity }} className="absolute -right-6 -top-3 z-10 rotate-6 rounded-2xl border-2 border-blue-200 bg-white px-4 py-2 shadow-lg dark:border-blue-800 dark:bg-slate-800">
               <p className="text-blue-500 font-bold text-sm whitespace-nowrap">
                 {t.loginPage.speechBubble}
               </p>
               {/* Bubble tail */}
-              <div className="absolute -bottom-2 left-4 w-3 h-3 bg-white border-r-2 border-b-2 border-blue-200 rotate-45" />
-            </div>
+              <div className="absolute -bottom-2 left-4 h-3 w-3 rotate-45 border-b-2 border-r-2 border-blue-200 bg-white dark:border-blue-800 dark:bg-slate-800" />
+            </motion.div>
 
             {/* Floating star badges */}
             <div className="absolute -bottom-2 -left-5 bg-yellow-400 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md animate-[float_5s_ease-in-out_infinite] flex items-center gap-1 cursor-pointer hover:bg-yellow-500 hover:scale-110 transition-all duration-200">
@@ -92,7 +77,7 @@ export function LoginPage() {
 
         {/* Right — Login Form */}
         <div className="w-full md:w-3/5">
-          <h2 className="text-2xl font-bold text-gray-700 mb-6 text-center">
+          <h2 className="mb-6 text-center text-2xl font-bold text-gray-700 dark:text-slate-100">
             {t.loginPage.welcomeBack}
           </h2>
 
@@ -108,7 +93,7 @@ export function LoginPage() {
           </div>
 
           {/* Google login */}
-          <div className="flex justify-center">
+          <div className="google-auth-shell google-auth-icon mx-auto leading-none">
             <GoogleLogin
               onSuccess={(credentialResponse) => {
                 if (!credentialResponse.credential) return;
@@ -137,11 +122,21 @@ export function LoginPage() {
               onError={() => {
                 alert("Đăng nhập Google thất bại.");
               }}
-              text="continue_with"
+              type="standard"
+              theme={darkGoogleButton ? "filled_black" : "outline"}
               shape="pill"
               size="large"
-              width="320"
+              width="220"
             />
+            <span className="google-auth-visible-icon" aria-hidden="true">
+              <svg viewBox="0 0 48 48" focusable="false">
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+                <path fill="#FBBC05" d="M10.53 28.59A14.2 14.2 0 0 1 9.77 24c0-1.6.27-3.14.76-4.59l-7.98-6.19A24 24 0 0 0 0 24c0 3.88.92 7.54 2.56 10.78z" />
+                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+              </svg>
+              <span>Đăng nhập với Google</span>
+            </span>
           </div>
           {googleLoading && (
             <div className="flex justify-center mt-2">
@@ -149,19 +144,8 @@ export function LoginPage() {
             </div>
           )}
 
-          <div className="mt-5 text-center">
-            <span className="text-gray-400 font-semibold text-sm">
-              {t.loginPage.noAccount}{" "}
-            </span>
-            <a
-              href="/register"
-              className="text-pink-400 hover:text-pink-600 font-bold text-sm transition-colors border-b-2 border-transparent hover:border-pink-400"
-            >
-              {t.loginPage.signupNow}
-            </a>
-          </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Footer */}
       <div className="absolute bottom-4 w-full text-center text-gray-400 text-xs">
@@ -173,6 +157,6 @@ export function LoginPage() {
           {t.loginPage.termsOfUse}
         </span>
       </div>
-    </div>
+    </AuthLayout>
   );
 }

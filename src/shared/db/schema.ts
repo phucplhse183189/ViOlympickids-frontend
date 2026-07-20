@@ -314,6 +314,7 @@ export const feedbackPosts = pgTable("feedback_posts", {
     .references(() => users.id)
     .notNull(),
   rating: integer("rating").notNull(),
+  category: varchar("category", { length: 32 }).default("general").notNull(),
   content: text("content").notNull(),
   likesCount: integer("likes_count").default(0),
   status: feedbackStatusEnum("status").default("pending").notNull(),

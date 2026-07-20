@@ -1,5 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Outlet, useNavigate, useLocation, Link } from "react-router-dom";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { queryClient } from "@/shared/lib/queryClient";
+import { adminQueryOptions } from "@/features/admin/api/adminQueries";
+import { useAdminUiStore } from "@/features/admin/stores/adminUiStore";
+import { ThemeToggle } from "@/shared/ui/ThemeToggle";
 
 const ADMIN_SESSION_KEY = "vio_admin_session";
 
@@ -179,8 +184,29 @@ export function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [adminName, setAdminName] = useState("Admin");
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mainRef = useRef<HTMLElement>(null);
+  const reduceMotion = useReducedMotion();
+  const { sidebarCollapsed, mobileMenuOpen, toggleSidebar, setMobileMenuOpen } =
+    useAdminUiStore();
+
+  const prefetchRoute = (path: string) => {
+    if (path === "/admin") {
+      void queryClient.prefetchQuery(adminQueryOptions.stats());
+      void queryClient.prefetchQuery(adminQueryOptions.parents());
+    } else if (path === "/admin/performance" || path === "/admin/users") {
+      void queryClient.prefetchQuery(adminQueryOptions.parents());
+    } else if (path === "/admin/finance") {
+      void queryClient.prefetchQuery(adminQueryOptions.finance());
+    } else if (path === "/admin/analytics") {
+      void queryClient.prefetchQuery(adminQueryOptions.analytics(30));
+    } else if (path === "/admin/lessons") {
+      void queryClient.prefetchQuery(adminQueryOptions.lessons());
+    } else if (path === "/admin/feedback") {
+      void queryClient.prefetchQuery(adminQueryOptions.feedback());
+    } else if (path === "/admin/leaderboard") {
+      void queryClient.prefetchQuery(adminQueryOptions.leaderboard());
+    }
+  };
 
   useEffect(() => {
     const session = sessionStorage.getItem(ADMIN_SESSION_KEY);
@@ -196,6 +222,10 @@ export function AdminLayout() {
     }
   }, [navigate]);
 
+  useEffect(() => {
+    mainRef.current?.scrollTo({ top: 0, behavior: "instant" });
+  }, [location.pathname]);
+
   const handleLogout = () => {
     sessionStorage.removeItem(ADMIN_SESSION_KEY);
     navigate("/login", { replace: true });
@@ -207,10 +237,12 @@ export function AdminLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex">
-      <aside
-        className={`hidden lg:flex flex-col bg-white/90 backdrop-blur border-r border-slate-200 transition-all duration-300 ${sidebarCollapsed ? "w-20" : "w-72"
-          }`}
+    <div className="admin-shell flex h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950">
+      <motion.aside
+        initial={false}
+        animate={{ width: sidebarCollapsed ? 80 : 288 }}
+        transition={{ type: "spring", stiffness: 360, damping: 34 }}
+        className="sticky top-0 hidden h-screen shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90 lg:flex"
       >
         <div className="h-16 flex items-center gap-3 px-5 border-b border-slate-200">
           <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
@@ -238,7 +270,7 @@ export function AdminLayout() {
           )}
         </div>
 
-        <nav className="flex-1 py-4 px-3 space-y-4 overflow-y-auto">
+        <nav className="admin-sidebar-nav flex-1 space-y-5 overflow-y-auto px-3 py-4">
           {NAV_SECTIONS.map((section) => (
             <div key={section.title}>
               {!sidebarCollapsed && (
@@ -251,16 +283,20 @@ export function AdminLayout() {
                   <Link
                     key={item.path}
                     to={item.path}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group ${isActive(item.path)
-                      ? "bg-indigo-50 text-indigo-700"
-                      : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
-                      }`}
+                    onMouseEnter={() => prefetchRoute(item.path)}
+                    onFocus={() => prefetchRoute(item.path)}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group ${
+                      isActive(item.path)
+                        ? "bg-indigo-50 text-indigo-700"
+                        : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+                    }`}
                   >
                     <div
-                      className={`shrink-0 ${isActive(item.path)
-                        ? "text-indigo-500"
-                        : "text-slate-400 group-hover:text-slate-600"
-                        }`}
+                      className={`shrink-0 ${
+                        isActive(item.path)
+                          ? "text-indigo-500"
+                          : "text-slate-400 group-hover:text-slate-600"
+                      }`}
                     >
                       {item.icon}
                     </div>
@@ -281,7 +317,7 @@ export function AdminLayout() {
 
         <div className="p-3 border-t border-slate-200">
           <button
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            onClick={toggleSidebar}
             className="w-full flex items-center justify-center gap-2 px-3 py-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all duration-200"
           >
             <svg
@@ -299,10 +335,10 @@ export function AdminLayout() {
             </svg>
           </button>
         </div>
-      </aside>
+      </motion.aside>
 
-      <div className="flex-1 flex flex-col min-h-screen">
-        <header className="h-16 bg-white/80 backdrop-blur border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 shrink-0">
+      <div className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="h-16 bg-white/80 backdrop-blur border-b border-slate-200 dark:border-slate-800 dark:bg-slate-950/80 flex items-center justify-between px-4 lg:px-8 shrink-0">
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="lg:hidden text-slate-500 hover:text-slate-900 p-2 rounded-lg hover:bg-slate-100 transition-colors"
@@ -329,8 +365,7 @@ export function AdminLayout() {
           </div>
 
           <div className="flex items-center gap-3">
-
-
+            <ThemeToggle />
             <div className="flex items-center gap-3 pl-3 border-l border-slate-200">
               <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-violet-500 rounded-lg flex items-center justify-center">
                 <span className="text-white text-xs font-bold">AD</span>
@@ -403,11 +438,13 @@ export function AdminLayout() {
                     <Link
                       key={item.path}
                       to={item.path}
+                      onTouchStart={() => prefetchRoute(item.path)}
                       onClick={() => setMobileMenuOpen(false)}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${isActive(item.path)
-                        ? "bg-indigo-50 text-indigo-700"
-                        : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
-                        }`}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
+                        isActive(item.path)
+                          ? "bg-indigo-50 text-indigo-700"
+                          : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+                      }`}
                     >
                       {item.icon}
                       <span className="text-sm font-semibold">
@@ -421,8 +458,21 @@ export function AdminLayout() {
           </div>
         )}
 
-        <main className="flex-1 overflow-y-auto p-4 lg:p-8">
-          <Outlet />
+        <main ref={mainRef} className="flex-1 overflow-y-auto p-4 lg:p-8">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={location.pathname}
+              initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={reduceMotion ? { opacity: 1 } : { opacity: 0, y: -8 }}
+              transition={{
+                duration: reduceMotion ? 0 : 0.22,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+            >
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
     </div>

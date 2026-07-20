@@ -11,8 +11,7 @@
   "rewrites": [
     { "source": "/api/payos-webhook", "destination": "/api/payos-webhook" },
     { "source": "/api/(auth|children|admin|lessons|parent|transactions|leaderboard|payos|analytics|feedback)(.*)", "destination": "/api/router" },
-    { "source": "/api/cron-daily", "destination": "/api/router" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/api/cron-daily", "destination": "/api/router" }
   ],
   "crons": [
     {

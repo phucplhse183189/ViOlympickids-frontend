@@ -137,7 +137,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           parentPhone: schema.users.phone,
           childName: schema.children.name,
           childEmoji: schema.children.avatarEmoji,
-          planDaysLeft: schema.children.planDaysLeft,
         })
         .from(schema.paymentOrders)
         .leftJoin(schema.users, eq(schema.paymentOrders.parentId, schema.users.id))
@@ -189,7 +188,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }));
 
     // PayOS recent orders (kèm thông tin phụ huynh + bé)
-    const recentPaymentOrders = (recentPaymentOrdersResult || []).map((o) => ({
+    const recentPaymentOrders = (recentPaymentOrdersResult || []).map((o) => {
+      // Thời hạn của dòng lịch sử phải thuộc về chính đơn hàng, không lấy
+      // children.planDaysLeft (số dư gói hiện tại có thể gồm gia hạn/trial).
+      const entitlementDays = o.cycle === "year" ? 365 : 30;
+      const paidAtMs = o.paidAt ? new Date(o.paidAt).getTime() : NaN;
+      const expiresAtMs = paidAtMs + entitlementDays * 24 * 60 * 60 * 1000;
+      const orderDaysRemaining = Number.isFinite(expiresAtMs)
+        ? Math.max(0, Math.ceil((expiresAtMs - Date.now()) / (24 * 60 * 60 * 1000)))
+        : null;
+
+      return ({
       id: o.id,
       orderCode: o.orderCode,
       plan: o.plan,
@@ -202,8 +211,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       parentPhone: o.parentPhone || null,
       childName: o.childName || "Không rõ",
       childEmoji: o.childEmoji || "👶",
-      planDaysLeft: o.planDaysLeft,
-    }));
+        planDaysLeft: o.status === "PAID" ? orderDaysRemaining : null,
+      });
+    });
 
     return res.status(200).json({
       // Tổng quan

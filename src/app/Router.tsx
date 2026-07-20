@@ -39,6 +39,7 @@ import { AdminOverviewPage } from "@/features/admin/pages/AdminOverviewPage";
 import { AdminPerformancePage } from "@/features/admin/pages/AdminPerformancePage";
 import { AdminFinancePage } from "@/features/admin/pages/AdminFinancePage";
 import { AdminUsersPage } from "@/features/admin/pages/AdminUsersPage";
+import { AdminUserDetailPage } from "@/features/admin/pages/AdminUserDetailPage";
 import { AdminLessonsPage } from "@/features/admin/pages/AdminLessonsPage";
 import { AdminAnalyticsPage } from "@/features/admin/pages/AdminAnalyticsPage";
 import { AdminFeedbackPage } from "@/features/admin/pages/AdminFeedbackPage";
@@ -116,6 +117,8 @@ export function RouterProvider() {
         <Route path="performance" element={<AdminPerformancePage />} />
         <Route path="finance" element={<AdminFinancePage />} />
         <Route path="users" element={<AdminUsersPage />} />
+        <Route path="users/parents/:id" element={<AdminUserDetailPage type="parent" />} />
+        <Route path="users/students/:id" element={<AdminUserDetailPage type="student" />} />
         <Route path="lessons" element={<AdminLessonsPage />} />
         <Route path="analytics" element={<AdminAnalyticsPage />} />
         <Route path="feedback" element={<AdminFeedbackPage />} />

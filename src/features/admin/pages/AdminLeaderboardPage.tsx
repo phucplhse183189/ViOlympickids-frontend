@@ -1,164 +1,26 @@
-import { useState, useEffect } from "react";
-import * as adminService from "@/features/admin/api/adminService";
+import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { motion } from "framer-motion";
+import { Award, RefreshCw, SearchX, Trash2, Trophy, Users } from "lucide-react";
+import * as service from "@/features/admin/api/adminService";
+import { adminQueryKeys, useAdminLeaderboardQuery } from "@/features/admin/api/adminQueries";
+import { AdminDatePicker, AdminFilterSelect, AdminPageHero, AdminPageLoading, AdminPagination, AdminSearch } from "@/features/admin/components/ui";
 
+const PAGE_SIZE = 10;
 export function AdminLeaderboardPage() {
-  const [attempts, setAttempts] = useState<adminService.AdminQuizAttempt[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await adminService.getLeaderboardAttempts();
-      setAttempts(data);
-    } catch (err: any) {
-      setError(err.message || "Không thể tải danh sách bảng xếp hạng");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xoá lượt chơi này? Hệ thống sẽ tự cập nhật lại bảng xếp hạng.")) {
-      return;
-    }
-    
-    try {
-      setDeletingId(id);
-      await adminService.deleteLeaderboardAttempt(id);
-      setAttempts(attempts.filter(a => a.id !== id));
-    } catch (err: any) {
-      alert("Lỗi khi xoá: " + err.message);
-    } finally {
-      setDeletingId(null);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64 text-slate-500 font-medium">
-        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-        Đang tải dữ liệu Bảng Xếp Hạng...
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-rose-50 border border-rose-200 rounded-xl p-6 text-center">
-        <p className="text-rose-600 font-semibold mb-3">{error}</p>
-        <button 
-          onClick={loadData}
-          className="px-4 py-2 bg-white text-rose-600 border border-rose-200 rounded-lg hover:bg-rose-50 transition-colors font-medium text-sm"
-        >
-          Thử lại
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-extrabold text-slate-900 flex items-center gap-2">
-            🏆 Quản lý Bảng Xếp Hạng
-          </h2>
-          <p className="text-sm text-slate-500 mt-1">
-            Xem lịch sử làm bài và xoá các lượt chơi không hợp lệ. Bảng xếp hạng sẽ tự động đồng bộ sau khi bạn thao tác.
-          </p>
-        </div>
-        <button
-          onClick={loadData}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl hover:bg-indigo-100 transition-colors font-semibold text-sm"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          Làm mới
-        </button>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider">
-                <th className="px-6 py-4">Thời gian nộp</th>
-                <th className="px-6 py-4">Học sinh</th>
-                <th className="px-6 py-4">Bài học</th>
-                <th className="px-6 py-4 text-center">Lượt thi</th>
-                <th className="px-6 py-4 text-center">Kết quả</th>
-                <th className="px-6 py-4 text-right">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {attempts.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
-                    Chưa có lượt thi nào trên hệ thống.
-                  </td>
-                </tr>
-              ) : (
-                attempts.map((attempt) => (
-                  <tr key={attempt.id} className="hover:bg-slate-50 transition-colors group">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                      {new Date(attempt.completedAt).toLocaleString("vi-VN", {
-                        day: "2-digit", month: "2-digit", year: "numeric",
-                        hour: "2-digit", minute: "2-digit"
-                      })}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="font-bold text-slate-800">{attempt.childName}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-slate-700 max-w-[200px] truncate" title={attempt.lessonTitle}>
-                        {attempt.lessonTitle}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
-                        {attempt.attemptNumber}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <div className="flex flex-col items-center">
-                        <span className="text-base font-extrabold text-indigo-600">
-                          {attempt.score} <span className="text-xs text-slate-400 font-medium">/ {attempt.totalQuestions}</span>
-                        </span>
-                        <div className="w-16 h-1.5 bg-slate-100 rounded-full mt-1 overflow-hidden">
-                          <div 
-                            className="h-full bg-indigo-500 rounded-full" 
-                            style={{ width: `${(attempt.score / attempt.totalQuestions) * 100}%` }}
-                          />
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                      <button
-                        onClick={() => handleDelete(attempt.id)}
-                        disabled={deletingId === attempt.id}
-                        className="text-rose-500 hover:text-rose-700 font-medium transition-colors px-3 py-1.5 rounded-lg hover:bg-rose-50 disabled:opacity-50"
-                      >
-                        {deletingId === attempt.id ? "Đang xóa..." : "Xóa"}
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
+  const queryClient = useQueryClient();
+  const { data: attempts = [], isPending, isFetching, error, refetch } = useAdminLeaderboardQuery();
+  const [search, setSearch] = useState(""); const [score, setScore] = useState<"all" | "high" | "medium" | "low">("all"); const [date, setDate] = useState(""); const [page, setPage] = useState(1); const [deletingId, setDeletingId] = useState<string | null>(null);
+  const filtered = useMemo(() => { const q = search.trim().toLocaleLowerCase("vi"); const after = date ? new Date(`${date}T00:00:00`).getTime() : null; return attempts.filter((item) => { const percent = item.totalQuestions ? item.score / item.totalQuestions * 100 : 0; const scoreMatch = score === "all" || (score === "high" && percent >= 80) || (score === "medium" && percent >= 50 && percent < 80) || (score === "low" && percent < 50); return (!q || [item.childName, item.lessonTitle].some((value) => value.toLocaleLowerCase("vi").includes(q))) && scoreMatch && (after == null || new Date(item.completedAt).getTime() >= after); }); }, [attempts, search, score, date]);
+  useEffect(() => setPage(1), [search, score, date]); const rows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  async function remove(item: service.AdminQuizAttempt) { if (!window.confirm(`Xóa lượt thi của ${item.childName}? Thao tác này sẽ cập nhật lại bảng xếp hạng.`)) return; const previous = queryClient.getQueryData<service.AdminQuizAttempt[]>(adminQueryKeys.leaderboard); queryClient.setQueryData<service.AdminQuizAttempt[]>(adminQueryKeys.leaderboard, (current = []) => current.filter((row) => row.id !== item.id)); setDeletingId(item.id); try { await service.deleteLeaderboardAttempt(item.id); } catch (err) { queryClient.setQueryData(adminQueryKeys.leaderboard, previous); console.error(err); } finally { setDeletingId(null); } }
+  if (isPending) return <AdminPageLoading title="Đang tải lịch sử xếp hạng" description="Đang đồng bộ lượt thi và kết quả mới nhất của học sinh." metricCount={3} />;
+  if (error) return <ErrorState retry={() => void refetch()} busy={isFetching} />;
+  const average = attempts.length ? Math.round(attempts.reduce((sum, item) => sum + (item.totalQuestions ? item.score / item.totalQuestions * 100 : 0), 0) / attempts.length) : 0;
+  return <div className="space-y-5 pb-8"><AdminPageHero eyebrow="Leaderboard operations" title="Lịch sử thi minh bạch" description="Tra cứu kết quả, phát hiện lượt thi không hợp lệ và đồng bộ bảng xếp hạng an toàn." icon={Trophy} tone="amber" metrics={[{ label: "Lượt thi", value: attempts.length, icon: Award }, { label: "Điểm TB", value: `${average}%`, icon: Trophy }]} />
+    <section className="rounded-[22px] border border-border bg-card p-3 shadow-sm"><div className="grid gap-2 lg:grid-cols-[minmax(280px,1fr)_190px_190px_auto]"><AdminSearch value={search} onChange={setSearch} placeholder="Học sinh hoặc bài học…" /><AdminFilterSelect label="Mức điểm" value={score} onChange={setScore} options={[{ value: "all", label: "Tất cả kết quả" }, { value: "high", label: "Tốt · từ 80%" }, { value: "medium", label: "Đạt · 50–79%" }, { value: "low", label: "Cần chú ý · dưới 50%" }]} /><AdminDatePicker label="Thi từ ngày" value={date} onChange={setDate} /><button onClick={() => void refetch()} disabled={isFetching} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-indigo-500/10 px-4 text-xs font-bold text-indigo-500 transition hover:bg-indigo-500 hover:text-white"><RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />Làm mới</button></div></section>
+    <section className="overflow-hidden rounded-[24px] border border-border bg-card shadow-sm"><div className="overflow-x-auto"><table className="w-full min-w-[900px] text-sm"><thead><tr className="bg-muted/40 text-left text-[11px] font-bold uppercase tracking-[.1em] text-muted-foreground"><th className="px-5 py-3.5">Thời gian</th><th className="px-4 py-3.5">Học sinh</th><th className="px-4 py-3.5">Bài học</th><th className="px-4 py-3.5 text-center">Lượt thi</th><th className="px-4 py-3.5 text-center">Kết quả</th><th className="px-5 py-3.5 text-right">Thao tác</th></tr></thead><tbody>{rows.map((item, index) => <AttemptRow key={item.id} item={item} index={index} deleting={deletingId === item.id} onDelete={() => void remove(item)} />)}</tbody></table>{!rows.length && <div className="py-16 text-center"><SearchX className="mx-auto h-8 w-8 text-muted-foreground" /><p className="mt-3 text-sm text-muted-foreground">Không tìm thấy lượt thi phù hợp.</p></div>}</div><AdminPagination page={page} pageSize={PAGE_SIZE} total={filtered.length} onChange={setPage} /></section>
+  </div>;
 }
+function AttemptRow({ item, index, deleting, onDelete }: { item: service.AdminQuizAttempt; index: number; deleting: boolean; onDelete: () => void }) { const percent = item.totalQuestions ? Math.round(item.score / item.totalQuestions * 100) : 0; const color = percent >= 80 ? "bg-emerald-500" : percent >= 50 ? "bg-indigo-500" : "bg-rose-500"; return <motion.tr initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * .025 }} className="border-t border-border hover:bg-muted/30"><td className="px-5 py-4 text-xs text-muted-foreground">{new Date(item.completedAt).toLocaleString("vi-VN")}</td><td className="px-4 py-4 font-bold">{item.childName}</td><td className="max-w-[280px] truncate px-4 py-4 text-muted-foreground" title={item.lessonTitle}>{item.lessonTitle}</td><td className="px-4 py-4 text-center"><span className="rounded-full bg-muted px-2.5 py-1 text-xs font-bold">{item.attemptNumber}</span></td><td className="px-4 py-4"><div className="mx-auto w-28"><div className="flex justify-between text-xs"><strong>{item.score}/{item.totalQuestions}</strong><span className="text-muted-foreground">{percent}%</span></div><div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted"><div className={`h-full rounded-full ${color}`} style={{ width: `${percent}%` }} /></div></div></td><td className="px-5 py-4 text-right"><button disabled={deleting} onClick={onDelete} className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-rose-500/10 px-3 text-xs font-bold text-rose-500 transition hover:bg-rose-500 hover:text-white disabled:opacity-50"><Trash2 className="h-3.5 w-3.5" />{deleting ? "Đang xóa…" : "Xóa"}</button></td></motion.tr>; }
+function ErrorState({ retry, busy }: { retry: () => void; busy: boolean }) { return <div className="rounded-[24px] border border-rose-500/20 bg-card p-10 text-center"><Users className="mx-auto h-8 w-8 text-rose-500" /><h2 className="mt-3 font-extrabold">Chưa thể tải bảng xếp hạng</h2><button onClick={retry} className="mt-4 rounded-xl bg-indigo-500 px-4 py-2 text-sm font-bold text-white">{busy ? "Đang thử lại…" : "Thử lại"}</button></div>; }

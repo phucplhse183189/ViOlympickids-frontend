@@ -20,6 +20,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         SELECT 
           p.id, 
           p.rating, 
+          p.category,
           p.content, 
           p.likes_count as "likesCount",
           p.created_at as "createdAt",
@@ -61,15 +62,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const userId = req.headers["x-user-id"] as string;
       if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
-      const { rating, content } = req.body;
-      if (!rating || !content) {
+      const { rating, content, category = "general" } = req.body;
+      const categories = ["interface", "feature", "content", "performance", "support", "general"];
+      if (!rating || !content || !categories.includes(category)) {
         return res.status(400).json({ error: "Missing required fields" });
       }
 
+      const { rows: duplicates } = await sql`
+        SELECT id FROM feedback_posts
+        WHERE user_id = ${userId} AND category = ${category}
+          AND lower(trim(content)) = lower(trim(${content}))
+          AND created_at >= NOW() - INTERVAL '10 minutes'
+        LIMIT 1
+      `;
+      if (duplicates.length) return res.status(409).json({ error: "Feedback này vừa được gửi. Vui lòng không gửi lại nội dung trùng." });
+
       const { rows } = await sql`
-        INSERT INTO feedback_posts (user_id, rating, content)
-        VALUES (${userId}, ${rating}, ${content})
-        RETURNING id, rating, content, likes_count as "likesCount", created_at as "createdAt"
+        INSERT INTO feedback_posts (user_id, rating, category, content)
+        VALUES (${userId}, ${rating}, ${category}, ${content})
+        RETURNING id, rating, category, content, likes_count as "likesCount", created_at as "createdAt"
       `;
 
       const { rows: userRows } = await sql`

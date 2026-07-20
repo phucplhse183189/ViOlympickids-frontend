@@ -1,12 +1,12 @@
 import { apiGet, apiPost } from "@/shared/api/client";
-import type { FeedbackPost, FeedbackReply } from "../types";
+import type { FeedbackCategory, FeedbackPost, FeedbackReply } from "../types";
 
 export async function getFeedbacks(): Promise<FeedbackPost[]> {
   return apiGet<FeedbackPost[]>("/feedback/public");
 }
 
-export async function submitFeedback(rating: number, content: string): Promise<FeedbackPost> {
-  return apiPost<FeedbackPost>("/feedback", { rating, content });
+export async function submitFeedback(rating: number, category: FeedbackCategory, content: string): Promise<FeedbackPost> {
+  return apiPost<FeedbackPost>("/feedback", { rating, category, content });
 }
 
 export async function replyToFeedback(postId: string, content: string): Promise<FeedbackReply> {

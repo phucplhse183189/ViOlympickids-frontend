@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Volume2, VolumeX } from "lucide-react";
+import { Play, Volume2, VolumeX } from "lucide-react";
 import { useLang } from "@/shared/lib/i18n";
 import { useInView } from "@/shared/hooks/useInView";
 import { useNavigate } from "react-router-dom";
@@ -23,11 +23,19 @@ export function HeroSection() {
   return (
     <section
       ref={ref}
-      className="relative pt-24 pb-32 overflow-hidden"
-      style={{
-        background: "linear-gradient(to bottom, var(--pastel-blue), white)",
-      }}
+      className="relative overflow-hidden bg-gradient-to-b from-[var(--pastel-blue)] to-white pb-32 pt-24 transition-colors duration-300 dark:from-slate-900 dark:via-slate-950 dark:to-slate-950"
     >
+      <div className="learning-sky pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+        <span className="learning-object left-[7%] top-[22%] text-3xl" style={{ animationDelay: "-2s" }}>➗</span>
+        <span className="learning-object left-[18%] top-[72%] text-4xl" style={{ animationDelay: "-7s" }}>3</span>
+        <span className="learning-object left-[43%] top-[13%] text-3xl" style={{ animationDelay: "-4s" }}>🧩</span>
+        <span className="learning-object left-[57%] top-[76%] text-4xl" style={{ animationDelay: "-9s" }}>7</span>
+        <span className="learning-object left-[78%] top-[18%] text-3xl" style={{ animationDelay: "-6s" }}>✏️</span>
+        <span className="learning-object left-[91%] top-[62%] text-4xl" style={{ animationDelay: "-11s" }}>＋</span>
+        <span className="learning-bubble left-[11%] top-[45%] h-10 w-10" />
+        <span className="learning-bubble left-[67%] top-[28%] h-7 w-7" style={{ animationDelay: "-5s" }} />
+        <span className="learning-bubble left-[86%] top-[78%] h-12 w-12" style={{ animationDelay: "-8s" }} />
+      </div>
       {/* Decorative floating shapes */}
       <div className="absolute top-16 left-[5%] w-14 h-14 rounded-full bg-yellow-200/60 animate-float-slow" />
       <div
@@ -48,7 +56,7 @@ export function HeroSection() {
       <div className="absolute -top-20 -right-20 w-64 h-64 border-[3px] border-dashed border-blue-200/40 rounded-full animate-spin-slow" />
 
       {/* Main Container - Narrowed down to max-w-5xl (~1024px) to make room for banners on 1366px laptops */}
-      <div className="container mx-auto max-w-5xl px-6 grid grid-cols-1 md:grid-cols-2 items-center gap-8">
+      <div className="container relative mx-auto max-w-5xl px-6 grid grid-cols-1 md:grid-cols-2 items-center gap-8">
         {/* Left content – 6 cols */}
         <div className="text-center md:text-left z-10">
           <span
@@ -61,7 +69,7 @@ export function HeroSection() {
             {t.hero.badge}
           </span>
           <h1
-            className={`reveal from-left delay-100 ${inView ? "visible" : ""} text-4xl lg:text-5xl font-extrabold leading-[1.15] mb-6 text-gray-800 tracking-tight`}
+            className={`reveal from-left delay-100 ${inView ? "visible" : ""} text-4xl lg:text-5xl font-extrabold leading-[1.15] mb-6 text-gray-800 dark:text-slate-100 tracking-tight`}
           >
             {t.hero.titleLine1}{" "}
             <span className="block mt-1">
@@ -72,7 +80,7 @@ export function HeroSection() {
             </span>
           </h1>
           <p
-            className={`reveal from-left delay-200 ${inView ? "visible" : ""} text-lg md:text-xl text-gray-500 mb-8 leading-relaxed`}
+            className={`reveal from-left delay-200 ${inView ? "visible" : ""} text-lg md:text-xl text-gray-500 dark:text-slate-400 mb-8 leading-relaxed`}
           >
             {t.hero.subtitle}
           </p>
@@ -89,9 +97,9 @@ export function HeroSection() {
             >
               {t.hero.ctaPrimary}
             </button>
-            <button className="px-6 py-3 bg-white border-2 border-gray-200 text-gray-600 text-lg font-bold rounded-2xl hover:border-[var(--brand-secondary)] hover:text-[var(--brand-secondary)] hover:-translate-y-1 transition-all flex items-center justify-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center text-xs">
-                ▶
+            <button className="flex items-center justify-center gap-2 rounded-2xl border-2 border-gray-200 bg-white px-6 py-3 text-lg font-bold text-gray-600 transition-all hover:-translate-y-1 hover:border-[var(--brand-secondary)] hover:text-[var(--brand-secondary)] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-white shadow-sm dark:bg-blue-500">
+                <Play className="ml-0.5 h-3.5 w-3.5 fill-current" />
               </span>
               {t.hero.ctaSecondary}
             </button>

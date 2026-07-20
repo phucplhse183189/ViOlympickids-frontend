@@ -1,147 +1,53 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { ArrowLeft, Heart, MessageSquarePlus, SearchX, Sparkles, Star, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { getFeedbacks } from "@/features/feedback/api/feedbackService";
-import type { FeedbackPost } from "@/features/feedback/types";
+import type { FeedbackCategory, FeedbackPost } from "@/features/feedback/types";
 import { FeedbackCard } from "@/features/feedback/components/FeedbackCard";
-import { MessageSquarePlus, ChevronLeft, Sparkles, Heart } from "lucide-react";
-import { useAuth } from "@/features/auth/context/auth";
 import { FeedbackForm } from "@/features/feedback/components/FeedbackForm";
+import { useAuth } from "@/features/auth/context/auth";
+import { ThemeToggle } from "@/shared/ui/ThemeToggle";
+import { CustomSelect } from "@/shared/ui/CustomSelect";
+
+const PAGE_SIZE = 9;
+const categories: { value: "all" | FeedbackCategory; label: string }[] = [{ value: "all", label: "Tất cả" }, { value: "interface", label: "Giao diện" }, { value: "feature", label: "Tính năng" }, { value: "content", label: "Nội dung" }, { value: "performance", label: "Hiệu năng" }, { value: "support", label: "Hỗ trợ" }, { value: "general", label: "Khác" }];
 
 export function CommunityPage() {
   const { user } = useAuth();
+  const reduceMotion = useReducedMotion();
   const [posts, setPosts] = useState<FeedbackPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [category, setCategory] = useState<"all" | FeedbackCategory>("all");
+  const [rating, setRating] = useState<"all" | "5" | "4" | "3" | "2" | "1">("all");
+  const [page, setPage] = useState(1);
+  async function load() { setError(false); try { setPosts(await getFeedbacks()); } catch (err) { console.error(err); setError(true); } finally { setLoading(false); } }
+  useEffect(() => { void load(); window.scrollTo(0, 0); }, []);
+  useEffect(() => setPage(1), [category, rating]);
+  const filtered = useMemo(() => posts.filter((post) => (category === "all" || (post.category || "general") === category) && (rating === "all" || post.rating === Number(rating))), [posts, category, rating]);
+  const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const visible = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const average = posts.length ? (posts.reduce((sum, post) => sum + post.rating, 0) / posts.length).toFixed(1) : "0";
 
-  const loadFeedbacks = async () => {
-    try {
-      const data = await getFeedbacks();
-      setPosts(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  return <div className="min-h-screen bg-background text-foreground">
+    <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-xl"><div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between gap-3 px-4 sm:px-6"><Link to="/" aria-label="ViOlympicKids - Trang chủ" className="group flex shrink-0 items-center gap-2.5 rounded-xl outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/15"><img src="/robot-head.png" alt="" className="h-9 w-9 object-contain drop-shadow-sm transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110" /><span className="text-lg font-black tracking-tight sm:text-xl"><span className="text-blue-500">ViOlympic</span><span className="text-rose-400">Kids</span></span></Link><div className="hidden items-center gap-2 rounded-full border border-border bg-muted/50 px-4 py-2 text-sm font-extrabold text-foreground md:flex"><Sparkles className="h-4 w-4 text-indigo-500" />Cộng đồng</div><div className="flex items-center gap-1.5"><ThemeToggle /><Link to="/" className="inline-flex h-10 items-center gap-2 rounded-xl px-2.5 text-sm font-bold text-muted-foreground transition hover:bg-muted hover:text-foreground sm:px-3"><ArrowLeft className="h-4 w-4" /><span className="hidden sm:inline">Trang chủ</span></Link></div></div></header>
 
-  useEffect(() => {
-    loadFeedbacks();
-    window.scrollTo(0, 0);
-  }, []);
+    <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 sm:py-8">
+      <motion.section initial={reduceMotion ? false : { opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="relative isolate overflow-hidden rounded-[30px] border border-indigo-400/20 bg-slate-950 p-6 text-white shadow-2xl shadow-indigo-950/10 sm:p-10 lg:p-12"><div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_15%_15%,rgba(99,102,241,.38),transparent_35%),radial-gradient(circle_at_85%_85%,rgba(236,72,153,.25),transparent_35%)]" /><div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-end"><div className="max-w-3xl"><span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs font-bold text-indigo-100"><Heart className="h-3.5 w-3.5 fill-pink-400 text-pink-400" />Lắng nghe từ cộng đồng</span><h1 className="mt-5 text-4xl font-black tracking-tight sm:text-5xl">Mỗi chia sẻ,<br /><span className="bg-gradient-to-r from-indigo-300 via-violet-300 to-pink-300 bg-clip-text text-transparent">một bước tiến tốt hơn.</span></h1><p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">Đánh giá trải nghiệm, đề xuất tính năng và cùng chúng tôi xây dựng môi trường học tập tốt hơn cho các bé.</p><button onClick={() => setShowForm(true)} className="mt-7 inline-flex h-12 items-center gap-2 rounded-2xl bg-white px-5 text-sm font-extrabold text-slate-950 shadow-xl transition hover:-translate-y-0.5 hover:bg-indigo-50 active:scale-95"><MessageSquarePlus className="h-5 w-5" />Gửi góp ý</button></div><div className="grid grid-cols-2 gap-3"><HeroStat icon={Users} value={posts.length} label="Chia sẻ" /><HeroStat icon={Star} value={average} label="Điểm đánh giá" /></div></div></motion.section>
 
-  return (
-    <div className="min-h-screen bg-slate-50 relative overflow-hidden font-sans">
-      {/* Premium Glassmorphism Background */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-        <div className="absolute -top-40 -left-40 w-96 h-96 bg-indigo-400/20 rounded-full blur-[100px]" />
-        <div className="absolute top-20 right-0 w-[500px] h-[500px] bg-pink-400/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 left-1/3 w-[600px] h-[600px] bg-emerald-300/10 rounded-full blur-[150px]" />
-      </div>
+      <AnimatePresence>{showForm && <motion.section initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden"><div className="mx-auto max-w-3xl rounded-[28px] border border-border bg-card p-2 shadow-xl">{user ? <FeedbackForm onSuccess={() => { setShowForm(false); void load(); }} onCancel={() => setShowForm(false)} /> : <LoginPrompt close={() => setShowForm(false)} />}</div></motion.section>}</AnimatePresence>
 
-      {/* Header */}
-      <header className="relative z-10 bg-white/70 backdrop-blur-xl border-b border-white/50 sticky top-0 shadow-sm">
-        <div className="container mx-auto px-6 h-20 flex items-center justify-between max-w-6xl">
-          <Link to="/" className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-semibold transition-colors">
-            <ChevronLeft size={20} />
-            Về trang chủ
-          </Link>
-          <div className="font-bold text-xl bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-pink-500 flex items-center gap-2">
-            <Sparkles size={24} className="text-pink-500" />
-            Cộng Đồng ViOlympicKids
-          </div>
-          <div className="w-24"></div> {/* Spacer to center title */}
-        </div>
-      </header>
+      <section aria-label="Bộ lọc chia sẻ" className="rounded-[22px] border border-border bg-card p-3 shadow-sm"><div className="flex flex-col gap-3 sm:flex-row sm:items-center"><div className="min-w-0 flex-1"><p className="px-1 text-xs font-bold uppercase tracking-wider text-muted-foreground">Khám phá chia sẻ</p><p className="mt-1 px-1 text-sm text-muted-foreground">{filtered.length} bài viết phù hợp với bộ lọc</p></div><div className="grid w-full grid-cols-1 gap-2 sm:w-auto sm:grid-cols-2"><div className="w-full sm:w-48"><CustomSelect value={category} onValueChange={setCategory} ariaLabel="Lọc theo chủ đề" options={categories} /></div><div className="w-full sm:w-44"><CustomSelect value={rating} onValueChange={setRating} ariaLabel="Lọc theo số sao" options={[{ value: "all", label: "Tất cả số sao" }, ...([5, 4, 3, 2, 1] as const).map((value) => ({ value: String(value) as "5" | "4" | "3" | "2" | "1", label: `${value} sao` }))]} /></div></div></div></section>
 
-      <main className="relative z-10 container mx-auto px-6 py-12 max-w-6xl min-h-[calc(100vh-80px)] flex flex-col">
-        {/* Hero Section */}
-        <div className="text-center max-w-3xl mx-auto mb-16 animate-in slide-in-from-bottom-5 duration-700 fade-in">
-          <div className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-white/60 border border-indigo-100 shadow-sm text-indigo-600 font-semibold text-sm mb-6 backdrop-blur-md">
-            <Heart size={16} className="text-pink-500 fill-pink-500" /> Hàng ngàn phụ huynh tin tưởng
-          </div>
-          <h1 className="text-5xl md:text-6xl font-black text-slate-800 mb-6 leading-tight tracking-tight">
-            Nơi hội tụ những <br className="hidden md:block"/>
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500">
-              giá trị tuyệt vời
-            </span>
-          </h1>
-          <p className="text-lg md:text-xl text-slate-500 mb-10 leading-relaxed font-medium">
-            Mỗi góp ý, chia sẻ của bạn đều là viên gạch xây dựng nên một môi trường học tập tốt nhất cho các bé. Hãy cùng xem các phụ huynh khác nói gì nhé!
-          </p>
-          
-          {!showForm && (
-            <button
-              onClick={() => setShowForm(true)}
-              className="inline-flex items-center gap-3 px-8 py-4 bg-slate-900 text-white rounded-2xl font-bold text-lg hover:scale-105 hover:bg-indigo-600 transition-all duration-300 shadow-[0_10px_40px_-10px_rgba(79,70,229,0.5)]"
-            >
-              <MessageSquarePlus size={24} />
-              Gửi chia sẻ của bạn
-            </button>
-          )}
-        </div>
-
-        {/* Feedback Form Modal Area */}
-        {showForm && (
-          <div className="mb-16 animate-in zoom-in-95 duration-300">
-            <div className="bg-white/80 backdrop-blur-2xl rounded-[32px] p-2 border border-white shadow-2xl max-w-3xl mx-auto">
-              {user ? (
-                <FeedbackForm 
-                  onSuccess={() => {
-                    setShowForm(false);
-                    loadFeedbacks();
-                  }} 
-                  onCancel={() => setShowForm(false)} 
-                />
-              ) : (
-                <div className="p-12 text-center">
-                  <h3 className="text-2xl font-bold text-slate-800 mb-4">Vui lòng đăng nhập</h3>
-                  <p className="text-slate-500 mb-8 font-medium">Bạn cần đăng nhập để có thể gửi đánh giá cho hệ thống.</p>
-                  <div className="flex gap-4 justify-center">
-                    <button onClick={() => setShowForm(false)} className="px-6 py-3 rounded-xl font-bold bg-slate-100 text-slate-600 hover:bg-slate-200">
-                      Hủy bỏ
-                    </button>
-                    <Link to="/login" className="px-6 py-3 rounded-xl font-bold bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200">
-                      Đăng nhập ngay
-                    </Link>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Grid Section */}
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 flex-1">
-            <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4" />
-            <p className="text-slate-400 font-medium text-lg animate-pulse">Đang tải đánh giá từ phụ huynh...</p>
-          </div>
-        ) : (
-          <div className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6 flex-1 pb-20">
-            {posts.map((post, index) => (
-              <div 
-                key={post.id} 
-                className="break-inside-avoid animate-in slide-in-from-bottom-10 fade-in duration-700"
-                style={{ animationDelay: `${index * 100}ms`, animationFillMode: 'both' }}
-              >
-                <div className="bg-white/60 backdrop-blur-lg border border-white/80 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-[24px]">
-                  <FeedbackCard post={post} onRefresh={loadFeedbacks} />
-                </div>
-              </div>
-            ))}
-            
-            {posts.length === 0 && (
-              <div className="col-span-full py-20 text-center">
-                <div className="w-24 h-24 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <MessageSquarePlus className="w-10 h-10 text-indigo-300" />
-                </div>
-                <h3 className="text-xl font-bold text-slate-700 mb-2">Chưa có chia sẻ nào</h3>
-                <p className="text-slate-500 font-medium">Hãy là người đầu tiên để lại đánh giá nhé!</p>
-              </div>
-            )}
-          </div>
-        )}
-      </main>
-    </div>
-  );
+      {loading ? <CommunitySkeleton /> : error ? <ErrorState retry={() => void load()} /> : <><motion.section layout className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{visible.map((post, index) => <motion.div layout key={post.id} initial={reduceMotion ? false : { opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * .045 }}><FeedbackCard post={post} onRefresh={load} /></motion.div>)}</motion.section>{!visible.length && <div className="rounded-[24px] border border-dashed border-border bg-card py-16 text-center"><SearchX className="mx-auto h-8 w-8 text-muted-foreground" /><p className="mt-3 font-bold">Không có chia sẻ phù hợp</p><p className="mt-1 text-sm text-muted-foreground">Hãy thử thay đổi bộ lọc.</p></div>}<Pagination page={page} pages={pages} onChange={setPage} /></>}
+    </main>
+  </div>;
 }
+
+function HeroStat({ icon: Icon, value, label }: { icon: typeof Users; value: string | number; label: string }) { return <div className="min-w-32 rounded-2xl border border-white/10 bg-white/[.08] p-4 backdrop-blur"><Icon className="h-4 w-4 text-indigo-300" /><strong className="mt-2 block text-2xl">{value}</strong><span className="text-[10px] uppercase tracking-wide text-slate-300">{label}</span></div>; }
+function Pagination({ page, pages, onChange }: { page: number; pages: number; onChange: (page: number) => void }) { if (pages <= 1) return null; return <nav className="flex justify-center gap-1 py-3">{Array.from({ length: pages }, (_, i) => i + 1).map((value) => <button key={value} onClick={() => { onChange(value); window.scrollTo({ top: 620, behavior: "smooth" }); }} className={`h-9 min-w-9 rounded-xl px-2 text-xs font-bold ${value === page ? "bg-indigo-500 text-white" : "bg-card text-muted-foreground hover:bg-muted"}`}>{value}</button>)}</nav>; }
+function LoginPrompt({ close }: { close: () => void }) { return <div className="p-10 text-center"><h3 className="text-xl font-extrabold">Đăng nhập để gửi góp ý</h3><p className="mt-2 text-sm text-muted-foreground">Tài khoản giúp chúng tôi phản hồi và ngăn nội dung gửi trùng.</p><div className="mt-6 flex justify-center gap-2"><button onClick={close} className="rounded-xl bg-muted px-4 py-2 text-sm font-bold">Đóng</button><Link to="/login" className="rounded-xl bg-indigo-500 px-4 py-2 text-sm font-bold text-white">Đăng nhập</Link></div></div>; }
+function CommunitySkeleton() { return <div className="grid animate-pulse gap-4 md:grid-cols-2 xl:grid-cols-3">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-72 rounded-[24px] border border-border bg-card p-5"><div className="h-10 w-2/3 rounded-xl bg-muted" /><div className="mt-6 h-28 rounded-2xl bg-muted" /><div className="mt-5 h-4 w-1/2 rounded bg-muted" /></div>)}</div>; }
+function ErrorState({ retry }: { retry: () => void }) { return <div role="alert" className="rounded-[24px] border border-rose-500/20 bg-card py-16 text-center"><p className="font-extrabold">Chưa thể tải chia sẻ cộng đồng</p><button onClick={retry} className="mt-4 rounded-xl bg-indigo-500 px-4 py-2 text-sm font-bold text-white">Thử lại</button></div>; }

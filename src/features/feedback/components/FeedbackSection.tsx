@@ -5,7 +5,7 @@ import { useInView } from "@/shared/hooks/useInView";
 import { getFeedbacks } from "../api/feedbackService";
 import type { FeedbackPost } from "../types";
 import { FeedbackCard } from "./FeedbackCard";
-import { Sparkles, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 export function FeedbackSection() {
   const { t } = useLang();
@@ -30,23 +30,16 @@ export function FeedbackSection() {
   }, []);
 
   return (
-    <section id="reviews" ref={ref} className="py-24 relative overflow-hidden font-sans bg-slate-50">
-      {/* Decorative background elements */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-10 left-10 w-96 h-96 bg-indigo-400/10 rounded-full blur-[80px]" />
-        <div className="absolute bottom-10 right-10 w-[500px] h-[500px] bg-pink-400/10 rounded-full blur-[100px]" />
-      </div>
-
-      <div className="container mx-auto px-6 max-w-6xl relative z-10">
-        <div className={`reveal ${inView ? "visible" : ""} text-center mb-16 flex flex-col items-center`}>
-          <div className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-indigo-100 text-indigo-700 font-bold text-sm mb-6">
-            <Sparkles size={16} /> Phụ huynh nói gì về chúng tôi
+    <section id="reviews" ref={ref} className="relative overflow-hidden bg-slate-50 pb-20 pt-10 font-sans transition-colors duration-300 dark:bg-slate-950 sm:pb-24 sm:pt-12">
+      <div className="container relative z-10 mx-auto max-w-6xl px-4 sm:px-6">
+        <div className={`reveal ${inView ? "visible" : ""} mx-auto mb-12 flex max-w-3xl flex-col items-center text-center sm:mb-14`}>
+          <div className="mb-4 flex items-center gap-3 text-xs font-extrabold uppercase tracking-[0.14em] text-blue-600 dark:text-blue-400 sm:text-sm">
+            <span className="h-px w-8 bg-blue-500" /> {t.feedback.eyebrow} <span className="h-px w-8 bg-blue-500" />
           </div>
-          <h2 className="text-4xl md:text-5xl font-black mb-6 text-slate-800 leading-tight">
-            Hàng ngàn gia đình <br className="hidden md:block" />
-            đã tin tưởng <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-pink-500">ViOlympicKids</span>
+          <h2 className="mb-5 text-3xl font-black leading-[1.15] tracking-tight text-slate-900 dark:text-slate-100 sm:text-4xl md:text-5xl">
+            {t.feedback.headline} <span className="text-[#ff6f61]">ViOlympicKids</span>
           </h2>
-          <p className="text-slate-500 text-lg md:text-xl font-medium max-w-2xl mx-auto">
+          <p className="mx-auto max-w-2xl text-base font-medium leading-7 text-slate-500 dark:text-slate-400 sm:text-lg">
             {t.feedback.contentPlaceholder || "Những chia sẻ chân thực nhất từ trải nghiệm học tập của các bé trên hệ thống."}
           </p>
         </div>
@@ -57,16 +50,14 @@ export function FeedbackSection() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+            <div className="mb-12 grid grid-cols-1 items-stretch gap-5 md:grid-cols-2 lg:grid-cols-3 lg:gap-6">
               {posts.map((post, index) => (
                 <div 
                   key={post.id} 
                   className={`reveal slide-up ${inView ? "visible" : ""} h-full`}
                   style={{ transitionDelay: `${index * 100}ms` }}
                 >
-                  <div className="h-full bg-white/70 backdrop-blur-md border border-white shadow-sm hover:shadow-xl hover:-translate-y-2 transition-all duration-300 rounded-[24px]">
-                    <FeedbackCard post={post} onRefresh={loadFeedbacks} />
-                  </div>
+                  <FeedbackCard post={post} onRefresh={loadFeedbacks} />
                 </div>
               ))}
               
@@ -80,9 +71,9 @@ export function FeedbackSection() {
             <div className={`reveal scale-up ${inView ? "visible" : ""} flex justify-center`}>
               <Link
                 to="/community"
-                className="group flex items-center gap-3 px-8 py-4 bg-white border-2 border-slate-200 text-slate-700 rounded-2xl font-bold text-lg hover:border-indigo-500 hover:text-indigo-600 transition-all duration-300 hover:shadow-[0_10px_40px_-10px_rgba(79,70,229,0.3)]"
+                className="group inline-flex h-12 items-center gap-2.5 rounded-xl border border-blue-200 bg-white px-6 text-sm font-extrabold text-blue-600 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 hover:shadow-lg dark:border-slate-700 dark:bg-slate-900 dark:text-blue-300 sm:h-13 sm:px-7 sm:text-base"
               >
-                Xem tất cả đánh giá
+                {t.feedback.viewAll}
                 <ArrowRight className="group-hover:translate-x-1 transition-transform" size={20} />
               </Link>
             </div>

@@ -1,9 +1,26 @@
+import { useState, type FormEvent } from "react";
+import { CheckCircle2 } from "lucide-react";
 import { useLang } from "@/shared/lib/i18n";
 import { useInView } from "@/shared/hooks/useInView";
 
 export function CtaSection() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const { ref, inView } = useInView<HTMLElement>();
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const value = email.trim();
+    if (!/^\S+@\S+\.\S+$/.test(value)) {
+      setError(lang === "vi" ? "Vui lòng nhập địa chỉ email hợp lệ." : "Please enter a valid email address.");
+      return;
+    }
+    localStorage.setItem("vio-offer-email", value);
+    setError("");
+    setSubmitted(true);
+  };
   return (
     <section
       ref={ref}
@@ -38,24 +55,35 @@ export function CtaSection() {
         </p>
 
         {/* Email capture */}
-        <div
+        <form
+          onSubmit={handleSubmit}
           className={`reveal scale-up delay-200 ${inView ? "visible" : ""} flex flex-col sm:flex-row gap-3 justify-center max-w-lg mx-auto`}
         >
           <input
             type="email"
+            value={email}
+            onChange={(event) => { setEmail(event.target.value); setError(""); setSubmitted(false); }}
             placeholder={t.cta.emailPlaceholder}
+            aria-invalid={Boolean(error)}
+            aria-describedby="offer-status"
             className="flex-1 px-6 py-4 rounded-full bg-white text-gray-800 text-base outline-none shadow-lg placeholder:text-gray-400 focus:ring-2 focus:ring-white"
           />
           <button
-            className="px-8 py-4 bg-white font-bold text-base rounded-full shadow-2xl hover:scale-105 hover:shadow-3xl active:scale-95 transition-all duration-200 whitespace-nowrap"
-            style={{ color: "var(--brand-primary)" }}
+            type="submit"
+            disabled={submitted}
+            className="whitespace-nowrap rounded-full border-2 border-white bg-white px-8 py-4 text-base font-bold text-[#e75348] shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:bg-transparent hover:text-white active:translate-y-0 disabled:cursor-default disabled:opacity-90"
           >
             {t.cta.button}
           </button>
+        </form>
+
+        <div id="offer-status" aria-live="polite" className="mx-auto mt-3 min-h-6 max-w-lg text-sm font-semibold text-white">
+          {error && <span>{error}</span>}
+          {submitted && <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4" />{lang === "vi" ? "Đã ghi nhận! Ưu đãi sẽ được gửi đến email của bạn." : "You're on the list! We'll send the offer to your email."}</span>}
         </div>
 
         <p
-          className={`reveal delay-300 ${inView ? "visible" : ""} mt-4 text-white/70 text-sm`}
+          className={`reveal delay-300 ${inView ? "visible" : ""} mt-2 text-white/80 text-sm`}
         >
           {t.cta.footnote}
         </p>

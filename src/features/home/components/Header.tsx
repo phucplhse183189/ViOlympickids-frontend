@@ -3,6 +3,7 @@ import { useLang } from "@/shared/lib/i18n";
 import { useAuth } from "@/features/auth/context/auth";
 import { AVATARS } from "@/features/auth/context/auth";
 import { SettingsDropdown } from "@/shared/ui/SettingsDropdown";
+import { Link } from "react-router-dom";
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -17,7 +18,7 @@ export function Header() {
     { href: "#about", label: t.nav.about },
     { href: "#courses", label: t.nav.courses },
     { href: "#reviews", label: t.nav.reviews },
-    { href: "/community", label: "Cộng Đồng" },
+    { href: "/community", label: t.nav.community },
     { href: "#contact", label: t.nav.contact },
   ];
 
@@ -34,37 +35,39 @@ export function Header() {
     <>
       {/* Main Header */}
       <header
-        className={`sticky top-0 z-50 transition-all duration-500 ${
+        className={`fixed inset-x-0 top-0 z-50 border-b transition-all duration-500 ${
           scrolled
-            ? "bg-white/80 backdrop-blur-xl shadow-[0_2px_32px_rgba(0,0,0,0.10)] border-b border-white/60"
-            : "bg-white/60 backdrop-blur-md border-b border-white/40"
+            ? "border-white/60 bg-white/82 shadow-[0_8px_32px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/95 dark:shadow-none"
+            : "border-transparent bg-transparent dark:bg-slate-900"
         }`}
       >
-        <div className="w-full max-w-[1280px] mx-auto px-3 sm:px-4 lg:px-6 h-16 flex items-center justify-between gap-3 sm:gap-4">
+        <div className="mx-auto flex h-16 w-full max-w-[1320px] items-center justify-between gap-3 px-4 sm:px-6 lg:h-[72px] lg:gap-5 lg:px-8">
           {/* ── Logo (trái) ── */}
-          <a
-            href="/"
-            className="flex items-center gap-2 sm:gap-2.5 shrink-0 group select-none"
+          <Link
+            to="/"
+            className="group flex shrink-0 items-center gap-2.5 select-none lg:gap-3"
           >
             <img
               src="/robot-head.png"
               alt="ViOlympicKids"
-              className="w-9 h-9 object-contain drop-shadow-md group-hover:scale-110 transition-transform duration-300"
+              className="h-15 w-15 object-contain drop-shadow-md transition-transform duration-300 group-hover:scale-110 lg:h-12 lg:w-12"
             />
-            <span className="text-[1.05rem] font-extrabold tracking-tight whitespace-nowrap leading-none">
+            <span className="whitespace-nowrap text-[1.05rem] font-extrabold leading-none tracking-tight lg:text-xl">
               <span className="text-blue-500">ViOlympic</span>
               <span style={{ color: "var(--brand-primary)" }}>Kids</span>
             </span>
-          </a>
+          </Link>
 
           {/* ── Nav Pill (giữa) ── */}
-          <nav className="hidden lg:flex items-center justify-center p-1 rounded-xl bg-gray-100/70 backdrop-blur-sm border border-gray-200/60 gap-0.5 flex-1 max-w-max mx-4 xl:mx-6">
+          <nav
+            className={`mx-3 hidden max-w-max flex-1 items-center justify-center gap-1 rounded-2xl border p-1.5 backdrop-blur-md transition-all duration-300 lg:flex xl:mx-6 ${scrolled ? "border-gray-200/70 bg-gray-100/75 shadow-sm dark:border-slate-700 dark:bg-slate-900/90" : "border-white/60 bg-white/40 shadow-[0_8px_30px_rgba(30,64,175,0.06)] dark:border-slate-700 dark:bg-slate-900/70"}`}
+          >
             {navLinks.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
-                className="px-3.5 xl:px-4 py-1.5 text-sm font-semibold text-gray-500 rounded-lg
-                  hover:text-gray-900 hover:bg-white hover:shadow-sm
+                className="rounded-xl px-3.5 py-2 text-[15px] font-semibold leading-5 text-slate-600 dark:text-slate-300 xl:px-4.5 xl:py-2.5
+                  hover:text-slate-950 hover:bg-white/90 dark:hover:bg-slate-800 dark:hover:text-white hover:shadow-sm focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/15
                   transition-all duration-200 whitespace-nowrap"
               >
                 {link.label}
@@ -73,7 +76,7 @@ export function Header() {
           </nav>
 
           {/* ── Actions (phải) ── */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <div className="flex shrink-0 items-center gap-2 lg:gap-2.5">
             {user ? (
               /* Avatar button (logged in) */
               <div className="hidden md:flex items-center gap-2.5">
@@ -90,19 +93,19 @@ export function Header() {
             ) : (
               <>
                 {/* Login */}
-                <a
-                  href="/login"
-                  className="hidden md:inline-flex items-center h-10 px-4 rounded-lg text-sm font-semibold
+                <Link
+                  to="/login"
+                  className="hidden h-10 items-center rounded-xl px-4 text-sm font-semibold md:inline-flex lg:h-11 lg:px-5
                     text-gray-600 hover:text-gray-900 border border-gray-200 hover:border-gray-300
-                    bg-white/80 hover:bg-white hover:shadow-sm transition-all duration-200"
+                    bg-white/80 hover:bg-white hover:shadow-sm transition-all duration-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
                 >
                   {t.login}
-                </a>
+                </Link>
 
                 {/* Register CTA */}
-                <a
-                  href="/register"
-                  className="hidden md:inline-flex items-center gap-1.5 h-10 px-4.5 rounded-lg text-sm font-bold text-white
+                <Link
+                  to="/register"
+                  className="hidden h-10 items-center gap-2 rounded-xl px-4.5 text-sm font-bold text-white md:inline-flex lg:h-11 lg:px-5
                     transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
                   style={{
                     background:
@@ -121,7 +124,7 @@ export function Header() {
                 >
                   <span>{t.register}</span>
                   <span className="text-base leading-none">🚀</span>
-                </a>
+                </Link>
               </>
             )}
 
@@ -130,7 +133,7 @@ export function Header() {
 
             {/* Mobile hamburger */}
             <button
-              className="lg:hidden flex flex-col justify-center items-center w-8 h-8 rounded-lg
+              className="flex h-9 w-9 flex-col items-center justify-center rounded-lg lg:hidden
                 text-gray-600 hover:bg-gray-100 transition-all duration-200 gap-1"
               onClick={() => setMenuOpen(!menuOpen)}
               aria-label="Toggle menu"
@@ -165,7 +168,7 @@ export function Header() {
           ${menuOpen ? "max-h-[420px] opacity-100" : "max-h-0 opacity-0"}`}
         >
           <div
-            className="mx-3 mb-4 rounded-2xl overflow-hidden border border-gray-100
+            className="mx-4 mb-4 overflow-hidden rounded-2xl border border-gray-100 sm:mx-6
             shadow-[0_8px_32px_rgba(0,0,0,0.12)] bg-white"
           >
             {/* Nav items */}
@@ -204,17 +207,17 @@ export function Header() {
                 </div>
               ) : (
                 <>
-                  <a
-                    href="/login"
+                  <Link
+                    to="/login"
                     onClick={() => setMenuOpen(false)}
                     className="w-full text-center py-3 rounded-xl font-bold text-gray-700
                       border-2 border-gray-200 hover:border-gray-300 bg-white
                       hover:bg-gray-50 transition-all duration-200 text-sm"
                   >
                     {t.login}
-                  </a>
-                  <a
-                    href="/register"
+                  </Link>
+                  <Link
+                    to="/register"
                     onClick={() => setMenuOpen(false)}
                     className="w-full text-center py-3 rounded-xl font-bold text-white text-sm
                       transition-all duration-200"
@@ -225,7 +228,7 @@ export function Header() {
                     }}
                   >
                     {t.register} 🚀
-                  </a>
+                  </Link>
                 </>
               )}
               {/* Mobile Language Toggle */}

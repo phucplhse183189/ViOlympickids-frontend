@@ -1,11 +1,13 @@
 import { apiGet, apiPut } from "@/shared/api/client";
 
 export type FeedbackStatus = "pending" | "public" | "hidden" | "resolved";
+export type FeedbackCategory = "interface" | "feature" | "content" | "performance" | "support" | "general";
 
 export interface AdminFeedback {
   id: string;
   content: string;
   rating: number;
+  category: FeedbackCategory;
   status: FeedbackStatus;
   createdAt: string;
   userId: string;

@@ -30,7 +30,7 @@ export function AboutSection() {
     <section
       id="about"
       ref={ref}
-      className="relative overflow-hidden py-20 sm:py-24 bg-white"
+      className="relative overflow-hidden bg-white py-20 transition-colors duration-300 dark:bg-slate-950 sm:py-24"
     >
       <div
         className="pointer-events-none absolute inset-0 opacity-60"
@@ -44,7 +44,7 @@ export function AboutSection() {
         <div
           className={`reveal ${inView ? "visible" : ""} text-center max-w-3xl mx-auto mb-12 sm:mb-16`}
         >
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 leading-snug">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800 dark:text-slate-100 leading-snug">
             {t.about.title}{" "}
             <span style={{ color: "var(--brand-primary)" }}>
               {t.about.titleAccent}
@@ -59,7 +59,7 @@ export function AboutSection() {
             return (
               <div
                 key={item.title}
-                className={`reveal scale-up ${delays[i]} ${inView ? "visible" : ""} group bg-white/85 backdrop-blur border border-gray-100 rounded-3xl p-6 sm:p-7 md:p-8 shadow-lg hover:-translate-y-1.5 hover:shadow-2xl transition-all duration-300 flex flex-col min-h-[220px]`}
+                className={`reveal scale-up ${delays[i]} ${inView ? "visible" : ""} group bg-white/85 dark:bg-slate-900/90 backdrop-blur border border-gray-100 dark:border-slate-800 rounded-3xl p-6 sm:p-7 md:p-8 shadow-lg hover:-translate-y-1.5 hover:shadow-2xl transition-all duration-300 flex flex-col min-h-[220px]`}
               >
                 <div
                   className={`w-12 h-12 sm:w-14 sm:h-14 ${s.iconBg} rounded-2xl flex items-center justify-center text-3xl mb-4 sm:mb-6 group-hover:scale-110 transition-transform duration-300`}
@@ -67,10 +67,10 @@ export function AboutSection() {
                 >
                   <span className={s.iconColor}>{item.icon}</span>
                 </div>
-                <h3 className="text-base sm:text-lg md:text-xl font-bold mb-2 sm:mb-3 text-gray-800">
+                <h3 className="text-base sm:text-lg md:text-xl font-bold mb-2 sm:mb-3 text-gray-800 dark:text-slate-100">
                   {item.title}
                 </h3>
-                <p className="text-gray-600 text-sm sm:text-[14px] leading-relaxed flex-1">
+                <p className="text-gray-600 dark:text-slate-400 text-sm sm:text-[14px] leading-relaxed flex-1">
                   {item.desc}
                 </p>
                 <div className={`mt-5 sm:mt-6 h-1.5 w-14 rounded-full ${s.accent}`} />

@@ -12,6 +12,7 @@ export default async function (req: VercelRequest, res: VercelResponse) {
         id: feedbackPosts.id,
         content: feedbackPosts.content,
         rating: feedbackPosts.rating,
+        category: feedbackPosts.category,
         likesCount: feedbackPosts.likesCount,
         createdAt: feedbackPosts.createdAt,
         authorName: users.name,

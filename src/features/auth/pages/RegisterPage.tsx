@@ -1,830 +1,211 @@
-import { useState, useMemo } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import {
-  Phone,
-  Lock,
-  Eye,
-  EyeOff,
-  ArrowRight,
-  ArrowLeft,
-  Check,
-  Sparkles,
-  User,
-  ShieldCheck,
-} from "lucide-react";
+import { useMemo, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft, ArrowRight, Check, Eye, EyeOff, Lock, Phone, Sparkles, User } from "lucide-react";
 import { GoogleLogin } from "@react-oauth/google";
+import { AuthLayout } from "@/features/auth/components/AuthLayout";
 import { useAuth } from "@/features/auth/context/auth";
 import * as authService from "@/features/auth/api/authService";
 import * as childrenService from "@/features/dashboard/api/childrenService";
+import { useThemeStore } from "@/shared/stores/themeStore";
 
-// ── Avatar options (kid-friendly) ──────────────────────────────
-const AVATAR_OPTIONS = [
+const AVATARS = [
   { emoji: "🚀", bg: "#6366f1", label: "Phi hành gia" },
-  { emoji: "🤖", bg: "#3b82f6", label: "Rô bốt AI" },
+  { emoji: "🤖", bg: "#3b82f6", label: "Rô-bốt AI" },
   { emoji: "🦊", bg: "#f97316", label: "Cáo thông minh" },
-  { emoji: "🐼", bg: "#6b7280", label: "Gấu trúc" },
-  { emoji: "🦁", bg: "#eab308", label: "Sư tử dũng cảm" },
+  { emoji: "🐼", bg: "#64748b", label: "Gấu trúc" },
+  { emoji: "🦁", bg: "#eab308", label: "Sư tử" },
   { emoji: "🐸", bg: "#22c55e", label: "Ếch xanh" },
   { emoji: "🦄", bg: "#d946ef", label: "Kỳ lân" },
   { emoji: "🐲", bg: "#ef4444", label: "Rồng lửa" },
-  { emoji: "🐬", bg: "#06b6d4", label: "Cá heo" },
-  { emoji: "🦋", bg: "#ec4899", label: "Bướm xinh" },
-  { emoji: "🐻", bg: "#a78bfa", label: "Gấu tím" },
-  { emoji: "🐧", bg: "#0ea5e9", label: "Chim cánh cụt" },
 ];
 
-
-
-const SURVEY_OPTIONS = [
-  { id: "focus", label: "Bé hay mất tập trung khi học", emoji: "😵‍💫" },
-  { id: "time", label: "Ba mẹ không có thời gian kèm con", emoji: "⏰" },
-  { id: "progress", label: "Khó đánh giá sự tiến bộ của con", emoji: "📊" },
-  { id: "boring", label: "Con thấy sách giáo khoa nhàm chán", emoji: "📖" },
+const SURVEYS = [
+  { id: "focus", emoji: "🧠", label: "Bé hay mất tập trung khi học" },
+  { id: "time", emoji: "⏰", label: "Ba mẹ không có nhiều thời gian kèm con" },
+  { id: "progress", emoji: "📊", label: "Khó đánh giá sự tiến bộ của con" },
+  { id: "boring", emoji: "📚", label: "Con thấy cách học hiện tại nhàm chán" },
 ];
 
-// ── Main page ──────────────────────────────────────────────────
+type Errors = Record<string, string>;
+
 export function RegisterPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [step, setStep] = useState(1);
+  const reduceMotion = useReducedMotion();
+  const theme = useThemeStore((state) => state.theme);
+  const darkGoogleButton = theme === "dark" || (theme === "system" && typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches);
 
-  // Step 1 state
+  const [step, setStep] = useState(1);
   const [parentName, setParentName] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [agreed, setAgreed] = useState(false);
-  const [step1Errors, setStep1Errors] = useState<Record<string, string>>({});
-  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<Errors>({});
+  const [loading, setLoading] = useState(false);
   const [registeredUser, setRegisteredUser] = useState<authService.UserInfo | null>(null);
-
-  // Step 2 state
   const [childName, setChildName] = useState("");
-  const [selectedAvatar, setSelectedAvatar] = useState(0);
-  const grade = "Lớp 2";
+  const [avatarIndex, setAvatarIndex] = useState(0);
+  const [survey, setSurvey] = useState<string[]>([]);
 
-  // Step 3 state
-  const [selectedSurvey, setSelectedSurvey] = useState<string[]>([]);
-
-  // ── Password strength ────────────────────────────
-  const passwordStrength = useMemo(() => {
-    if (!password) return { level: 0, label: "", color: "" };
-    let score = 0;
-    if (password.length >= 6) score++;
-    if (password.length >= 8) score++;
-    if (/[A-Z]/.test(password)) score++;
-    if (/[0-9]/.test(password)) score++;
-    if (/[^A-Za-z0-9]/.test(password)) score++;
-    if (score <= 1) return { level: 1, label: "Yếu", color: "#ef4444" };
-    if (score <= 2) return { level: 2, label: "Trung bình", color: "#f97316" };
-    if (score <= 3) return { level: 3, label: "Khá", color: "#eab308" };
-    return { level: 4, label: "Mạnh", color: "#22c55e" };
+  const strength = useMemo(() => {
+    let value = 0;
+    if (password.length >= 6) value++;
+    if (password.length >= 8) value++;
+    if (/[A-Z0-9]/.test(password)) value++;
+    if (/[^A-Za-z0-9]/.test(password)) value++;
+    return value;
   }, [password]);
 
-  // ── Step 1 validation ───────────────────────────
-  function validateStep1(): boolean {
-    const errs: Record<string, string> = {};
-    if (!parentName.trim()) errs.parentName = "Vui lòng nhập họ và tên";
-    if (!phone.trim()) errs.phone = "Vui lòng nhập số điện thoại";
-    else if (!/^(0[3|5|7|8|9])[0-9]{8}$/.test(phone.trim()))
-      errs.phone = "Số điện thoại không đúng định dạng";
-    if (!password) errs.password = "Vui lòng nhập mật khẩu";
-    else if (password.length < 6) errs.password = "Mật khẩu ít nhất 6 ký tự";
-    if (!confirmPassword) errs.confirmPassword = "Vui lòng xác nhận mật khẩu";
-    else if (confirmPassword !== password)
-      errs.confirmPassword = "Mật khẩu xác nhận không khớp";
-    if (!agreed) errs.agreed = "Vui lòng đồng ý điều khoản";
-    setStep1Errors(errs);
-    return Object.keys(errs).length === 0;
+  function validateAccount() {
+    const next: Errors = {};
+    if (!parentName.trim()) next.parentName = "Vui lòng nhập họ và tên";
+    if (!phone.trim()) next.phone = "Vui lòng nhập số điện thoại";
+    else if (!/^(0[35789])[0-9]{8}$/.test(phone)) next.phone = "Số điện thoại không đúng định dạng";
+    if (password.length < 6) next.password = "Mật khẩu cần ít nhất 6 ký tự";
+    if (confirmPassword !== password) next.confirmPassword = "Mật khẩu xác nhận không khớp";
+    if (!agreed) next.agreed = "Vui lòng đồng ý điều khoản";
+    setErrors(next);
+    return Object.keys(next).length === 0;
   }
 
-  function handleStep1Submit() {
-    if (!validateStep1()) return;
-    setIsLoading(true);
-    setStep1Errors({});
-
-    authService
-      .register({
-        phone: phone.trim(),
-        password,
-        name: parentName.trim(),
-      })
+  function createAccount() {
+    if (!validateAccount() || loading) return;
+    setLoading(true);
+    authService.register({ name: parentName.trim(), phone, password })
       .then((user) => {
         setRegisteredUser(user);
         sessionStorage.setItem("vio_parent_id", user.id);
         setStep(2);
       })
-      .catch((err: any) => {
-        const msg = err?.message || "";
-        if (msg.includes("already") || msg.includes("exists") || msg.includes("duplicate")) {
-          setStep1Errors({ phone: "Số điện thoại này đã được đăng ký." });
-        } else {
-          setStep1Errors({ phone: msg || "Đăng ký thất bại. Vui lòng thử lại." });
-        }
-      })
-      .finally(() => setIsLoading(false));
+      .catch((error: any) => setErrors({ phone: error?.message || "Đăng ký thất bại. Vui lòng thử lại." }))
+      .finally(() => setLoading(false));
   }
 
-  function handleGoogleSuccess(credential: string) {
-    setIsLoading(true);
-    authService
-      .googleLogin(credential)
+  function googleLogin(credential: string) {
+    setLoading(true);
+    authService.googleLogin(credential)
       .then((user: any) => {
-        login({
-          nickname: user.name,
-          phone: user.phone,
-          email: user.email || "",
-          avatarId: user.avatarInitials || "fox",
-        });
+        login({ nickname: user.name, phone: user.phone, email: user.email || "", avatarId: user.avatarInitials || "fox" });
         sessionStorage.setItem("vio_parent_id", user.id);
         navigate("/profile-picker");
       })
-      .catch(() => {
-        alert("Đăng nhập Google thất bại. Vui lòng thử lại.");
-      })
-      .finally(() => setIsLoading(false));
+      .catch(() => alert("Đăng nhập Google thất bại. Vui lòng thử lại."))
+      .finally(() => setLoading(false));
   }
 
-  // ── Step 2 ──────────────────────────────────────
-  function handleStep2Submit() {
-    if (!childName.trim()) return;
-    setStep(3);
+  function finish() {
+    if (!registeredUser || loading) return;
+    const avatar = AVATARS[avatarIndex];
+    setLoading(true);
+    childrenService.addChild(registeredUser.id, {
+      name: childName.trim(), grade: "Lớp 2", avatarEmoji: avatar.emoji,
+      avatarBg: avatar.bg, plan: "FREE", gender: "boy",
+    }).then(() => {
+      login({ nickname: registeredUser.name || parentName, phone: registeredUser.phone, email: registeredUser.email || "", avatarId: registeredUser.avatarInitials || "fox" });
+      if (survey.length) localStorage.setItem("vio_parent_survey", JSON.stringify(survey));
+      navigate("/profile-picker");
+    }).catch(() => alert("Tạo hồ sơ bé thất bại. Vui lòng thử lại."))
+      .finally(() => setLoading(false));
   }
 
-  // ── Step 3 (final) ─────────────────────────────
-  function handleFinish() {
-    if (!registeredUser || isLoading) return;
-    const avatar = AVATAR_OPTIONS[selectedAvatar];
-    setIsLoading(true);
-
-    childrenService
-      .addChild(registeredUser.id, {
-        name: childName.trim(),
-        grade,
-        avatarEmoji: avatar.emoji,
-        avatarBg: avatar.bg,
-        plan: "FREE",
-        gender: "boy",
-      })
-      .then(() => {
-        // Đăng nhập frontend context
-        login({
-          nickname: registeredUser.name || parentName.trim(),
-          phone: registeredUser.phone,
-          email: registeredUser.email || "",
-          avatarId: registeredUser.avatarInitials || "fox",
-        });
-
-        if (selectedSurvey.length > 0) {
-          localStorage.setItem("vio_parent_survey", JSON.stringify(selectedSurvey));
-        }
-
-        navigate("/profile-picker");
-      })
-      .catch((err: any) => {
-        console.error("Tạo hồ sơ bé thất bại:", err);
-        alert("Tạo hồ sơ bé thất bại. Vui lòng thử lại.");
-      })
-      .finally(() => setIsLoading(false));
-  }
-
-  function toggleSurvey(id: string) {
-    setSelectedSurvey((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
-    );
-  }
+  const fieldClass = "w-full rounded-2xl border-2 border-slate-200 bg-slate-50 py-3.5 pl-11 pr-4 text-sm font-semibold outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100/70 dark:border-slate-700 dark:bg-slate-950 dark:focus:ring-orange-900/30";
 
   return (
-    <div className="min-h-screen w-full overflow-y-auto relative flex items-center justify-center py-6 px-4">
-      {/* Animated gradient background */}
-      <div
-        className="absolute inset-0 animate-gradient-x"
-        style={{
-          background:
-            "linear-gradient(135deg, #dbeafe 0%, #fef9c3 25%, #d1fae5 50%, #fce7f3 75%, #e0e7ff 100%)",
-          backgroundSize: "400% 400%",
-        }}
-      />
-
-      {/* Decorative elements */}
-      <div className="absolute top-12 left-[8%] w-20 h-20 rounded-full bg-yellow-300/25 animate-float-slow blur-sm" />
-      <div
-        className="absolute top-1/3 right-[5%] w-14 h-14 rounded-full bg-pink-300/25 animate-float-slow blur-sm"
-        style={{ animationDelay: "1.5s" }}
-      />
-      <div
-        className="absolute bottom-16 left-[12%] w-12 h-12 rounded-full bg-blue-300/25 animate-float-slow blur-sm"
-        style={{ animationDelay: "0.8s" }}
-      />
-      <div className="absolute top-[10%] left-[20%] text-4xl opacity-10 animate-pulse select-none">
-        ✨
-      </div>
-      <div
-        className="absolute bottom-[15%] right-[10%] text-3xl opacity-10 animate-pulse select-none"
-        style={{ animationDelay: "1s" }}
-      >
-        ⭐
-      </div>
-
-      {/* Main card */}
-      <div className="relative z-10 w-full max-w-5xl">
-        {/* Logo header */}
-        <div className="flex items-center justify-center gap-2.5 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-white shadow-lg flex items-center justify-center">
-            <img
-              src="/robot-head.png"
-              alt="ViOlympicKids"
-              className="w-7 h-7 object-contain"
-            />
+    <AuthLayout className="h-dvh overflow-hidden" contentClassName="h-dvh min-h-0 overflow-hidden pb-4 pt-20">
+      <motion.div initial={reduceMotion ? false : { opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} className="auth-surface mx-3 flex h-[calc(100dvh-6rem)] min-h-0 w-full max-w-6xl overflow-hidden rounded-[36px] border-4 border-white bg-white/90 shadow-2xl backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/95">
+        <aside className="relative hidden w-[39%] shrink-0 flex-col items-center justify-center overflow-hidden border-r border-slate-200 bg-gradient-to-br from-blue-50 via-white to-orange-50 p-8 text-center dark:border-slate-700 dark:from-slate-900 dark:via-slate-900 dark:to-blue-950/40 md:flex">
+          <div className="absolute left-8 top-8 h-24 w-24 rounded-full bg-blue-300/25 blur-3xl" />
+          <div className="absolute bottom-10 right-4 h-32 w-32 rounded-full bg-orange-300/25 blur-3xl" />
+          <motion.div animate={reduceMotion ? undefined : { y: [0, -6, 0] }} transition={{ duration: 4, repeat: Infinity }} className="relative">
+            <img src="/logo.png" alt="ViOlympicKids" className="h-64 w-64 object-contain drop-shadow-xl lg:h-72 lg:w-72" />
+            <span className="absolute -right-7 top-3 rotate-6 rounded-2xl border-2 border-blue-200 bg-white px-4 py-2 text-sm font-extrabold text-blue-500 shadow-lg dark:border-blue-800 dark:bg-slate-800">Sẵn sàng học vui! 🚀</span>
+          </motion.div>
+          <h1 className="gradient-text text-4xl font-black">ViOlympicKids</h1>
+          <p className="mt-3 max-w-sm text-sm font-medium leading-6 text-slate-500 dark:text-slate-400">Một tài khoản phụ huynh, cả hành trình học tập đầy cảm hứng cho con.</p>
+          <div className="mt-7 flex items-center gap-3">
+            {[1, 2, 3].map((item) => <span key={item} className={`h-2.5 rounded-full transition-all ${step === item ? "w-9 bg-orange-500" : "w-2.5 bg-slate-300 dark:bg-slate-600"}`} />)}
           </div>
-          <span className="text-xl font-extrabold tracking-tight">
-            <span className="text-blue-500">ViOlympic</span>
-            <span style={{ color: "var(--brand-primary)" }}>Kids</span>
-          </span>
-        </div>
+        </aside>
 
-        {/* ══════════════════════════════════════════
-            Step 1: Tạo tài khoản phụ huynh
-           ══════════════════════════════════════════ */}
-        {step === 1 && (
-          <div className="bg-white/90 backdrop-blur-md rounded-[2rem] shadow-2xl border-2 border-white/80 overflow-hidden max-w-lg mx-auto">
-            <div className="p-8 md:p-10">
-              {/* Step progress indicator */}
-              <div className="flex items-center justify-center gap-2 mb-6">
-                {[1, 2, 3].map((s) => (
-                  <div key={s} className="flex items-center gap-2">
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-                        s === 1
-                          ? "bg-gradient-to-br from-orange-400 to-orange-500 text-white shadow-md shadow-orange-200"
-                          : "bg-gray-100 text-gray-400"
-                      }`}
-                    >
-                      {s}
-                    </div>
-                    {s < 3 && (
-                      <div className={`w-8 h-0.5 rounded-full transition-all duration-300 ${
-                        s < 1 ? "bg-orange-300" : "bg-gray-200"
-                      }`} />
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              <h2 className="text-2xl font-extrabold text-gray-800 mb-1 text-center">
-                Tạo tài khoản phụ huynh
-              </h2>
-              <p className="text-sm text-gray-400 text-center mb-6">
-                Chỉ mất 30 giây để bắt đầu hành trình cùng con ✨
-              </p>
-
-              {/* Input fields */}
-              <div className="space-y-3">
-                {/* Parent Name */}
-                <div>
-                  <div className="relative">
-                    <User
-                      size={16}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                    />
-                    <input
-                      type="text"
-                      value={parentName}
-                      onChange={(e) => {
-                        setParentName(e.target.value);
-                        setStep1Errors((p) => ({ ...p, parentName: "" }));
-                      }}
-                      placeholder="Họ và tên phụ huynh"
-                      className={`w-full pl-11 pr-4 py-3.5 rounded-2xl border-2 text-sm font-medium outline-none transition-all ${
-                        step1Errors.parentName
-                          ? "border-red-300 bg-red-50 focus:border-red-400"
-                          : "border-gray-200 bg-gray-50 focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
-                      }`}
-                    />
-                  </div>
-                  {step1Errors.parentName && (
-                    <p className="mt-1.5 ml-1 text-xs text-red-500 font-medium">
-                      ⚠️ {step1Errors.parentName}
-                    </p>
-                  )}
-                </div>
-
-
-                {/* Phone */}
-                <div>
-                  <div className="relative">
-                    <Phone
-                      size={16}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                    />
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => {
-                        setPhone(e.target.value.replace(/[^0-9]/g, ""));
-                        setStep1Errors((p) => ({ ...p, phone: "" }));
-                      }}
-                      placeholder="Nhập số điện thoại của bạn"
-                      maxLength={10}
-                      className={`w-full pl-11 pr-4 py-3.5 rounded-2xl border-2 text-sm font-medium outline-none transition-all ${
-                        step1Errors.phone
-                          ? "border-red-300 bg-red-50 focus:border-red-400"
-                          : "border-gray-200 bg-gray-50 focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
-                      }`}
-                    />
-                  </div>
-                  {step1Errors.phone && (
-                    <p className="mt-1.5 ml-1 text-xs text-red-500 font-medium">
-                      ⚠️ {step1Errors.phone}
-                    </p>
-                  )}
-                </div>
-
-                {/* Password */}
-                <div>
-                  <div className="relative">
-                    <Lock
-                      size={16}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                    />
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => {
-                        setPassword(e.target.value);
-                        setStep1Errors((p) => ({ ...p, password: "" }));
-                      }}
-                      placeholder="Tạo mật khẩu (ít nhất 6 ký tự)"
-                      className={`w-full pl-11 pr-12 py-3.5 rounded-2xl border-2 text-sm font-medium outline-none transition-all ${
-                        step1Errors.password
-                          ? "border-red-300 bg-red-50 focus:border-red-400"
-                          : "border-gray-200 bg-gray-50 focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
-                      }`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
-                    >
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                  {step1Errors.password && (
-                    <p className="mt-1.5 ml-1 text-xs text-red-500 font-medium">
-                      ⚠️ {step1Errors.password}
-                    </p>
-                  )}
-                  {/* Password strength bar */}
-                  {password && (
-                    <div className="mt-2 px-1">
-                      <div className="flex gap-1.5 mb-1">
-                        {[1, 2, 3, 4].map((i) => (
-                          <div
-                            key={i}
-                            className="h-1 flex-1 rounded-full transition-all duration-300"
-                            style={{
-                              backgroundColor:
-                                i <= passwordStrength.level
-                                  ? passwordStrength.color
-                                  : "#e5e7eb",
-                            }}
-                          />
-                        ))}
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <ShieldCheck size={12} style={{ color: passwordStrength.color }} />
-                        <span
-                          className="text-[11px] font-semibold transition-colors"
-                          style={{ color: passwordStrength.color }}
-                        >
-                          {passwordStrength.label}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Confirm Password */}
-                <div>
-                  <div className="relative">
-                    <Lock
-                      size={16}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                    />
-                    <input
-                      type={showConfirmPassword ? "text" : "password"}
-                      value={confirmPassword}
-                      onChange={(e) => {
-                        setConfirmPassword(e.target.value);
-                        setStep1Errors((p) => ({ ...p, confirmPassword: "" }));
-                      }}
-                      placeholder="Xác nhận mật khẩu"
-                      className={`w-full pl-11 pr-12 py-3.5 rounded-2xl border-2 text-sm font-medium outline-none transition-all ${
-                        step1Errors.confirmPassword
-                          ? "border-red-300 bg-red-50 focus:border-red-400"
-                          : "border-gray-200 bg-gray-50 focus:border-orange-400 focus:ring-2 focus:ring-orange-100"
-                      }`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setShowConfirmPassword(!showConfirmPassword)
-                      }
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
-                    >
-                      {showConfirmPassword ? (
-                        <EyeOff size={16} />
-                      ) : (
-                        <Eye size={16} />
-                      )}
-                    </button>
-                  </div>
-                  {step1Errors.confirmPassword && (
-                    <p className="mt-1.5 ml-1 text-xs text-red-500 font-medium">
-                      ⚠️ {step1Errors.confirmPassword}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Terms */}
-              <label className="flex items-start gap-2.5 mt-4 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={agreed}
-                  onChange={(e) => {
-                    setAgreed(e.target.checked);
-                    setStep1Errors((p) => ({ ...p, agreed: "" }));
-                  }}
-                  className="mt-0.5 w-4 h-4 rounded border-gray-300 accent-orange-500"
-                />
-                <span className="text-xs text-gray-500 leading-relaxed">
-                  Tôi đồng ý với{" "}
-                  <span className="text-blue-600 hover:underline font-medium cursor-pointer">
-                    Điều khoản dịch vụ
-                  </span>{" "}
-                  và{" "}
-                  <span className="text-blue-600 hover:underline font-medium cursor-pointer">
-                    Chính sách bảo mật
-                  </span>{" "}
-                  của ViOlympic Kids
-                </span>
-              </label>
-              {step1Errors.agreed && (
-                <p className="mt-1 ml-6 text-xs text-red-500 font-medium">
-                  ⚠️ {step1Errors.agreed}
-                </p>
-              )}
-
-              {/* CTA Button */}
-              <button
-                type="button"
-                onClick={handleStep1Submit}
-                disabled={isLoading}
-                className="w-full mt-5 py-4 rounded-2xl text-base font-extrabold text-white flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
-                style={{
-                  background:
-                    "linear-gradient(135deg, var(--brand-primary) 0%, #f97316 100%)",
-                  boxShadow: "0 4px 15px rgba(249,115,22,0.35)",
-                }}
-              >
-                {isLoading ? (
-                  <>
-                    <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Đang xử lý...
-                  </>
-                ) : (
-                  <>
-                    Tạo tài khoản phụ huynh
-                    <ArrowRight size={18} strokeWidth={2.5} />
-                  </>
-                )}
-              </button>
-
-              {/* Divider */}
-              <div className="flex items-center gap-3 my-5">
-                <div className="flex-1 h-px bg-gray-200" />
-                <span className="text-gray-400 text-xs font-medium">
-                  hoặc tiếp tục với
-                </span>
-                <div className="flex-1 h-px bg-gray-200" />
-              </div>
-
-              {/* Google Login */}
-              <div className="flex justify-center">
-                <GoogleLogin
-                  onSuccess={(credentialResponse) => {
-                    if (credentialResponse.credential) {
-                      handleGoogleSuccess(credentialResponse.credential);
-                    }
-                  }}
-                  onError={() => alert("Đăng nhập Google thất bại.")}
-                  text="continue_with"
-                  shape="pill"
-                  size="large"
-                  width="320"
-                />
-              </div>
-
-              {/* Login link */}
-              <p className="mt-5 text-center text-sm text-gray-400">
-                Đã có tài khoản?{" "}
-                <Link
-                  to="/login"
-                  className="text-orange-500 hover:text-orange-600 font-bold transition-colors"
-                >
-                  Đăng nhập ngay
-                </Link>
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* ══════════════════════════════════════════
-            Step 2: Thiết lập hồ sơ cho bé
-           ══════════════════════════════════════════ */}
-        {step === 2 && (
-          <div className="bg-white/90 backdrop-blur-md rounded-[2rem] shadow-2xl border-2 border-white/80 p-8 md:p-10 max-w-2xl mx-auto">
-            <button
-              onClick={() => setStep(1)}
-              className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition mb-4"
-            >
-              <ArrowLeft size={16} /> Quay lại
-            </button>
-
-            {/* Step progress indicator */}
-            <div className="flex items-center justify-center gap-2 mb-6">
-              {[1, 2, 3].map((s) => (
-                <div key={s} className="flex items-center gap-2">
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-                      s < 2
-                        ? "bg-green-500 text-white shadow-md shadow-green-200"
-                        : s === 2
-                        ? "bg-gradient-to-br from-orange-400 to-orange-500 text-white shadow-md shadow-orange-200"
-                        : "bg-gray-100 text-gray-400"
-                    }`}
-                  >
-                    {s < 2 ? <Check size={14} strokeWidth={3} /> : s}
-                  </div>
-                  {s < 3 && (
-                    <div className={`w-8 h-0.5 rounded-full transition-all duration-300 ${
-                      s < 2 ? "bg-green-300" : "bg-gray-200"
-                    }`} />
-                  )}
+        <section className="register-form-scroll min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto">
+          <div className="mx-auto flex min-h-full w-full max-w-2xl flex-col justify-center px-5 py-7 sm:px-9 lg:px-12">
+            <div className="mb-6 flex items-center justify-center gap-2">
+              {[1, 2, 3].map((item) => (
+                <div key={item} className="flex items-center gap-2">
+                  <span className={`grid h-8 w-8 place-items-center rounded-full text-xs font-black ${item < step ? "bg-emerald-500 text-white" : item === step ? "bg-orange-500 text-white shadow-lg shadow-orange-200/60" : "bg-slate-100 text-slate-400 dark:bg-slate-800"}`}>{item < step ? <Check size={14} /> : item}</span>
+                  {item < 3 && <span className={`h-0.5 w-8 rounded-full sm:w-12 ${item < step ? "bg-emerald-400" : "bg-slate-200 dark:bg-slate-700"}`} />}
                 </div>
               ))}
             </div>
 
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 rounded-2xl bg-orange-100 flex items-center justify-center text-3xl mx-auto mb-4">
-                🎉
-              </div>
-              <h2 className="text-2xl font-extrabold text-gray-800 mb-1">
-                Chào mừng ba mẹ!
-              </h2>
-              <p className="text-sm text-gray-400">
-                Hãy tạo góc học tập cho con nhé
-              </p>
-            </div>
-
-            {/* Avatar preview */}
-            <div className="flex flex-col items-center mb-6">
-              <div
-                className="w-24 h-24 rounded-3xl flex items-center justify-center text-5xl shadow-lg transition-all duration-300 border-4 border-white"
-                style={{
-                  backgroundColor: AVATAR_OPTIONS[selectedAvatar].bg,
-                }}
-              >
-                {AVATAR_OPTIONS[selectedAvatar].emoji}
-              </div>
-              <p className="text-sm font-semibold text-gray-500 mt-2">
-                {childName.trim() || "Tên của bé"}
-              </p>
-              <span
-                className="text-xs font-bold px-3 py-1 rounded-full mt-1"
-                style={{
-                  backgroundColor: "var(--brand-primary)",
-                  color: "white",
-                }}
-              >
-                {grade}
-              </span>
-            </div>
-
-            {/* Child name */}
-            <div className="mb-5">
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                Tên / Biệt danh của bé 👋
-              </label>
-              <input
-                autoFocus
-                type="text"
-                value={childName}
-                onChange={(e) => setChildName(e.target.value)}
-                placeholder="VD: Tí, Na, Cà Chua..."
-                className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 bg-gray-50 text-sm font-semibold text-gray-800 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition placeholder:font-normal placeholder:text-gray-300"
-              />
-            </div>
-
-
-            {/* Avatar picker */}
-            <div className="mb-7">
-              <label className="block text-sm font-bold text-gray-700 mb-3">
-                Chọn avatar cho bé 🎨
-              </label>
-              <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
-                {AVATAR_OPTIONS.map((av, i) => (
-                  <button
-                    key={av.label}
-                    type="button"
-                    onClick={() => setSelectedAvatar(i)}
-                    className={`relative flex flex-col items-center gap-1.5 py-3 rounded-2xl border-2 transition-all duration-200 ${
-                      selectedAvatar === i
-                        ? "border-orange-400 bg-orange-50 shadow-md scale-105"
-                        : "border-gray-100 hover:border-gray-200 hover:bg-gray-50"
-                    }`}
-                  >
-                    <div
-                      className="w-11 h-11 rounded-xl flex items-center justify-center text-2xl shadow-sm"
-                      style={{ backgroundColor: av.bg }}
-                    >
-                      {av.emoji}
-                    </div>
-                    <span className="text-[10px] font-semibold text-gray-500 leading-tight text-center">
-                      {av.label}
-                    </span>
-                    {selectedAvatar === i && (
-                      <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center shadow">
-                        <Check
-                          size={11}
-                          className="text-white"
-                          strokeWidth={3}
-                        />
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleStep2Submit}
-              disabled={!childName.trim()}
-              className="w-full py-4 rounded-2xl text-base font-extrabold text-white flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
-              style={{
-                background: childName.trim()
-                  ? "linear-gradient(135deg, var(--brand-primary) 0%, #f97316 100%)"
-                  : "#d1d5db",
-                boxShadow: childName.trim()
-                  ? "0 4px 15px rgba(249,115,22,0.35)"
-                  : "none",
-              }}
-            >
-              Tiếp tục
-              <ArrowRight size={18} strokeWidth={2.5} />
-            </button>
-          </div>
-        )}
-
-        {/* ══════════════════════════════════════════
-            Step 3: Khảo sát ngắn
-           ══════════════════════════════════════════ */}
-        {step === 3 && (
-          <div className="bg-white/90 backdrop-blur-md rounded-[2rem] shadow-2xl border-2 border-white/80 p-8 md:p-10 max-w-2xl mx-auto">
-            <button
-              onClick={() => setStep(2)}
-              className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition mb-4"
-            >
-              <ArrowLeft size={16} /> Quay lại
-            </button>
-
-            {/* Step progress indicator */}
-            <div className="flex items-center justify-center gap-2 mb-6">
-              {[1, 2, 3].map((s) => (
-                <div key={s} className="flex items-center gap-2">
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
-                      s < 3
-                        ? "bg-green-500 text-white shadow-md shadow-green-200"
-                        : "bg-gradient-to-br from-orange-400 to-orange-500 text-white shadow-md shadow-orange-200"
-                    }`}
-                  >
-                    {s < 3 ? <Check size={14} strokeWidth={3} /> : s}
-                  </div>
-                  {s < 3 && (
-                    <div className="w-8 h-0.5 rounded-full bg-green-300 transition-all duration-300" />
-                  )}
+            {step === 1 && (
+              <motion.div key="account" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                <h2 className="text-center text-2xl font-black text-slate-800 dark:text-white">Tạo tài khoản phụ huynh</h2>
+                <p className="mb-5 mt-1 text-center text-sm text-slate-400">Chỉ vài bước để bắt đầu hành trình cùng con ✨</p>
+                <div className="space-y-3">
+                  <Field icon={<User size={17} />} error={errors.parentName}><input value={parentName} onChange={(e) => setParentName(e.target.value)} placeholder="Họ và tên phụ huynh" className={fieldClass} /></Field>
+                  <Field icon={<Phone size={17} />} error={errors.phone}><input value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))} maxLength={10} inputMode="numeric" placeholder="Số điện thoại" className={fieldClass} /></Field>
+                  <Field icon={<Lock size={17} />} error={errors.password}><input value={password} onChange={(e) => setPassword(e.target.value)} type={showPassword ? "text" : "password"} placeholder="Mật khẩu (ít nhất 6 ký tự)" className={`${fieldClass} pr-12`} /><EyeButton shown={showPassword} onClick={() => setShowPassword(!showPassword)} /></Field>
+                  {password && <div className="flex gap-1.5 px-1">{[1, 2, 3, 4].map((item) => <span key={item} className={`h-1 flex-1 rounded-full ${item <= strength ? "bg-orange-500" : "bg-slate-200 dark:bg-slate-700"}`} />)}</div>}
+                  <Field icon={<Lock size={17} />} error={errors.confirmPassword}><input value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} type={showConfirm ? "text" : "password"} placeholder="Xác nhận mật khẩu" className={`${fieldClass} pr-12`} /><EyeButton shown={showConfirm} onClick={() => setShowConfirm(!showConfirm)} /></Field>
                 </div>
-              ))}
-            </div>
+                <label className="mt-4 flex cursor-pointer items-start gap-2.5 text-xs leading-5 text-slate-500"><input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-1 accent-orange-500" /><span>Tôi đồng ý với <b className="text-blue-600">Điều khoản dịch vụ</b> và <b className="text-blue-600">Chính sách bảo mật</b>.</span></label>
+                {errors.agreed && <p className="mt-1 text-xs font-semibold text-red-500">{errors.agreed}</p>}
+                <button onClick={createAccount} disabled={loading} className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-orange-400 to-pink-500 py-3.5 font-extrabold text-white shadow-lg shadow-orange-200/50 transition hover:-translate-y-0.5 disabled:opacity-60">{loading ? "Đang xử lý..." : "Tạo tài khoản"}<ArrowRight size={18} /></button>
+                <div className="my-4 flex items-center gap-3 text-xs font-semibold text-slate-400"><span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />Hoặc tiếp tục với<span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" /></div>
+                <div className="google-auth-shell google-auth-icon mx-auto leading-none">
+                  <GoogleLogin onSuccess={(response) => response.credential && googleLogin(response.credential)} onError={() => alert("Đăng nhập Google thất bại.")} type="standard" theme={darkGoogleButton ? "filled_black" : "outline"} shape="pill" size="large" width="220" />
+                  <GoogleLabel />
+                </div>
+              </motion.div>
+            )}
 
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 rounded-2xl bg-blue-100 flex items-center justify-center text-3xl mx-auto mb-4">
-                💬
-              </div>
-              <h2 className="text-2xl font-extrabold text-gray-800 mb-1">
-                Một câu hỏi nhỏ thôi!
-              </h2>
-              <p className="text-sm text-gray-400 leading-relaxed max-w-md mx-auto">
-                Ba mẹ đang gặp khó khăn gì khi kèm con học Toán?
-                <br />
-                <span className="text-gray-300">(Chọn tất cả phù hợp)</span>
-              </p>
-            </div>
+            {step === 2 && (
+              <motion.div key="child" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                <Back onClick={() => setStep(1)} />
+                <h2 className="text-center text-2xl font-black text-slate-800 dark:text-white">Tạo góc học tập cho bé</h2>
+                <p className="mb-6 mt-1 text-center text-sm text-slate-400">Chọn tên và nhân vật bé yêu thích</p>
+                <div className="mb-5 flex items-center gap-4 rounded-3xl bg-orange-50 p-4 dark:bg-orange-950/20"><span className="grid h-20 w-20 shrink-0 place-items-center rounded-3xl border-4 border-white text-4xl shadow-md" style={{ backgroundColor: AVATARS[avatarIndex].bg }}>{AVATARS[avatarIndex].emoji}</span><div><b className="text-lg text-slate-800 dark:text-white">{childName || "Tên của bé"}</b><p className="mt-1 text-sm font-semibold text-orange-500">Lớp 2</p></div></div>
+                <label className="mb-2 block text-sm font-bold text-slate-700 dark:text-slate-200">Tên hoặc biệt danh của bé</label>
+                <input autoFocus value={childName} onChange={(e) => setChildName(e.target.value)} placeholder="Ví dụ: Tí, Na, Cà Chua..." className="mb-5 w-full rounded-2xl border-2 border-slate-200 bg-slate-50 px-4 py-3.5 font-semibold outline-none focus:border-orange-400 dark:border-slate-700 dark:bg-slate-950" />
+                <p className="mb-3 text-sm font-bold text-slate-700 dark:text-slate-200">Chọn avatar</p>
+                <div className="grid grid-cols-4 gap-3">{AVATARS.map((avatar, index) => <button key={avatar.label} onClick={() => setAvatarIndex(index)} className={`relative rounded-2xl border-2 p-2 transition ${avatarIndex === index ? "border-orange-400 bg-orange-50 dark:bg-orange-950/20" : "border-slate-100 dark:border-slate-700"}`}><span className="mx-auto grid h-11 w-11 place-items-center rounded-xl text-2xl" style={{ backgroundColor: avatar.bg }}>{avatar.emoji}</span><small className="mt-1 block truncate text-[10px] font-bold text-slate-500">{avatar.label}</small></button>)}</div>
+                <button onClick={() => childName.trim() && setStep(3)} disabled={!childName.trim()} className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-orange-400 to-pink-500 py-3.5 font-extrabold text-white disabled:opacity-40">Tiếp tục<ArrowRight size={18} /></button>
+              </motion.div>
+            )}
 
-            {/* Survey options */}
-            <div className="space-y-3 mb-8">
-              {SURVEY_OPTIONS.map((opt) => {
-                const active = selectedSurvey.includes(opt.id);
-                return (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    onClick={() => toggleSurvey(opt.id)}
-                    className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl border-2 transition-all duration-200 text-left ${
-                      active
-                        ? "border-orange-400 bg-orange-50 shadow-sm"
-                        : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
-                    }`}
-                  >
-                    <span className="text-2xl">{opt.emoji}</span>
-                    <span
-                      className={`text-sm font-semibold flex-1 ${
-                        active ? "text-orange-700" : "text-gray-700"
-                      }`}
-                    >
-                      {opt.label}
-                    </span>
-                    <div
-                      className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
-                        active
-                          ? "bg-orange-500 border-orange-500"
-                          : "border-gray-300"
-                      }`}
-                    >
-                      {active && (
-                        <Check
-                          size={14}
-                          className="text-white"
-                          strokeWidth={3}
-                        />
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 mb-6 flex items-start gap-3">
-              <Sparkles size={18} className="text-blue-500 shrink-0 mt-0.5" />
-              <p className="text-xs text-blue-700 leading-relaxed">
-                Dữ liệu này giúp AI đưa ra lời khuyên và lộ trình học phù hợp
-                nhất cho <strong>{childName || "bé"}</strong>. Bạn có thể bỏ qua
-                bước này.
-              </p>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={handleFinish}
-                disabled={isLoading}
-                className="flex-1 py-3.5 rounded-2xl border-2 border-gray-200 text-sm font-semibold text-gray-500 hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Bỏ qua
-              </button>
-              <button
-                type="button"
-                onClick={handleFinish}
-                disabled={isLoading}
-                className="flex-[2] py-3.5 rounded-2xl text-sm font-extrabold text-white flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] shadow-lg hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed"
-                style={{
-                  background:
-                    "linear-gradient(135deg, var(--brand-primary) 0%, #f97316 100%)",
-                  boxShadow: "0 4px 15px rgba(249,115,22,0.35)",
-                }}
-              >
-                {isLoading ? "Đang xử lý..." : "Bắt đầu học ngay! 🚀"}
-              </button>
-            </div>
+            {step === 3 && (
+              <motion.div key="survey" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                <Back onClick={() => setStep(2)} />
+                <div className="text-center"><span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-blue-100 text-3xl">💬</span><h2 className="mt-4 text-2xl font-black text-slate-800 dark:text-white">Một câu hỏi nhỏ thôi!</h2><p className="mb-6 mt-1 text-sm text-slate-400">Ba mẹ đang gặp khó khăn gì khi kèm con học Toán?</p></div>
+                <div className="space-y-3">{SURVEYS.map((item) => { const active = survey.includes(item.id); return <button key={item.id} onClick={() => setSurvey((old) => active ? old.filter((id) => id !== item.id) : [...old, item.id])} className={`flex w-full items-center gap-4 rounded-2xl border-2 p-4 text-left transition ${active ? "border-orange-400 bg-orange-50 dark:bg-orange-950/20" : "border-slate-200 dark:border-slate-700"}`}><span className="text-2xl">{item.emoji}</span><b className="flex-1 text-sm text-slate-700 dark:text-slate-200">{item.label}</b><span className={`grid h-6 w-6 place-items-center rounded-lg border-2 ${active ? "border-orange-500 bg-orange-500 text-white" : "border-slate-300"}`}>{active && <Check size={14} />}</span></button>; })}</div>
+                <div className="mt-5 flex items-start gap-3 rounded-2xl bg-blue-50 p-4 text-xs leading-5 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300"><Sparkles size={17} className="mt-0.5 shrink-0" />Thông tin này giúp hệ thống gợi ý lộ trình phù hợp hơn cho bé.</div>
+                <div className="mt-6 flex gap-3"><button onClick={finish} disabled={loading} className="flex-1 rounded-2xl border-2 border-slate-200 py-3.5 text-sm font-bold text-slate-500 dark:border-slate-700">Bỏ qua</button><button onClick={finish} disabled={loading} className="flex-[2] rounded-2xl bg-gradient-to-r from-orange-400 to-pink-500 py-3.5 text-sm font-extrabold text-white disabled:opacity-60">{loading ? "Đang xử lý..." : "Bắt đầu học ngay! 🚀"}</button></div>
+              </motion.div>
+            )}
           </div>
-        )}
-
-        {/* Footer */}
-        <div className="mt-6 text-center text-gray-400 text-xs">
-          <span className="mx-2 cursor-pointer hover:text-gray-600 transition-colors">
-            Chính sách bảo mật
-          </span>
-          {" • "}
-          <span className="mx-2 cursor-pointer hover:text-gray-600 transition-colors">
-            Điều khoản sử dụng
-          </span>
-        </div>
-      </div>
-    </div>
+        </section>
+      </motion.div>
+    </AuthLayout>
   );
+}
+
+function Field({ icon, error, children }: { icon: React.ReactNode; error?: string; children: React.ReactNode }) {
+  return <div><div className="relative"><span className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-slate-400">{icon}</span>{children}</div>{error && <p className="ml-1 mt-1 text-xs font-semibold text-red-500">{error}</p>}</div>;
+}
+
+function EyeButton({ shown, onClick }: { shown: boolean; onClick: () => void }) {
+  return <button type="button" onClick={onClick} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">{shown ? <EyeOff size={17} /> : <Eye size={17} />}</button>;
+}
+
+function Back({ onClick }: { onClick: () => void }) {
+  return <button onClick={onClick} className="mb-4 inline-flex items-center gap-1 text-sm font-bold text-slate-400 hover:text-orange-500"><ArrowLeft size={16} /> Quay lại</button>;
+}
+
+function GoogleLabel() {
+  return <span className="google-auth-visible-icon" aria-hidden="true"><svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" /><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" /><path fill="#FBBC05" d="M10.53 28.59A14.2 14.2 0 0 1 9.77 24c0-1.6.27-3.14.76-4.59l-7.98-6.19A24 24 0 0 0 0 24c0 3.88.92 7.54 2.56 10.78z" /><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" /></svg><span>Đăng nhập với Google</span></span>;
 }

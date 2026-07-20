@@ -19,6 +19,7 @@ import { useAuth } from "@/features/auth/context/auth";
 import { ProfileSelector } from "./ProfileSelector";
 import { ChildAvatarBar } from "./ChildAvatarBar";
 import { FeedbackWidget } from "@/shared/components/ui/FeedbackWidget";
+import { ThemeToggle } from "@/shared/ui/ThemeToggle";
 
 // ─── Nav items ────────────────────────────────────────────────
 const navItems = [
@@ -270,7 +271,7 @@ export function ParentDashboardLayout() {
 
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="parent-shell flex h-screen bg-gray-50 dark:bg-slate-950 overflow-hidden">
       {/* Desktop sidebar */}
       <div className="hidden lg:flex flex-col h-full">
         <Sidebar />
@@ -292,7 +293,7 @@ export function ParentDashboardLayout() {
       {/* Main content area */}
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         {/* Topbar */}
-        <header className="relative z-10 animate-fade-in-down flex items-center justify-between px-6 py-3.5 bg-white border-b border-gray-100 shadow-sm">
+        <header className="relative z-10 animate-fade-in-down flex items-center justify-between px-6 py-3.5 bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 shadow-sm">
           <div className="flex items-center gap-3">
             <button
               className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition"
@@ -309,6 +310,7 @@ export function ParentDashboardLayout() {
           </div>
 
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             {/* Notification bell */}
             <button className="relative p-2 rounded-xl hover:bg-gray-100 transition">
               <Bell size={19} className="text-gray-500" />

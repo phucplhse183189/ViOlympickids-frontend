@@ -13,10 +13,10 @@ export function HowItWorksSection() {
   const { ref, inView } = useInView<HTMLElement>();
   const steps = stepStyles.map((s, i) => ({ ...s, ...t.howItWorks.steps[i] }));
   return (
-    <section ref={ref} className="py-24 bg-white">
+    <section ref={ref} className="bg-white pb-10 pt-16 transition-colors duration-300 dark:bg-slate-950 sm:pb-12 sm:pt-20">
       <div className="container mx-auto px-6 max-w-5xl">
         <h2
-          className={`reveal ${inView ? "visible" : ""} text-4xl font-bold mb-16 text-center text-gray-800`}
+          className={`reveal ${inView ? "visible" : ""} mb-10 text-center text-3xl font-bold text-gray-800 dark:text-slate-100 sm:mb-12 sm:text-4xl`}
         >
           {t.howItWorks.title}
         </h2>
@@ -33,10 +33,10 @@ export function HowItWorksSection() {
                 >
                   {item.step}
                 </div>
-                <h4 className="text-xl font-bold mb-2 text-gray-800">
+                <h4 className="text-xl font-bold mb-2 text-gray-800 dark:text-slate-100">
                   {item.title}
                 </h4>
-                <p className="text-gray-500">{item.description}</p>
+                <p className="text-gray-500 dark:text-slate-400">{item.description}</p>
               </div>
               {index < steps.length - 1 && (
                 <div

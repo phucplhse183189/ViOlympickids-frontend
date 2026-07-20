@@ -22,27 +22,21 @@ export function CoursesSection() {
     <section
       id="courses"
       ref={ref}
-      className="relative overflow-hidden py-20 sm:py-24 bg-blue-50"
+      className="relative overflow-hidden bg-blue-50 py-20 transition-colors duration-300 dark:bg-slate-900 sm:py-24"
     >
       {/* Decorative background blobs + shimmer */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -top-24 left-[-6%] h-72 w-72 rounded-full bg-cyan-200/45 blur-3xl animate-float-slow" />
         <div className="absolute top-[18%] right-[-10%] h-80 w-80 rounded-full bg-orange-200/35 blur-3xl animate-pulse-slow" />
-        <div className="absolute bottom-[-10%] left-[40%] h-72 w-72 rounded-full bg-purple-200/25 blur-3xl" />
-        <div
-          className={`absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/65 to-transparent ${
-            inView ? "animate-gradient-x" : ""
-          }`}
-          style={{ backgroundSize: "200% 200%" }}
-        />
+        <div className="absolute bottom-[-10%] left-[40%] h-72 w-72 rounded-full bg-blue-200/25 blur-3xl" />
       </div>
 
-      <div className="container relative mx-auto px-4 sm:px-6 max-w-5xl">
+      <div className="container relative mx-auto max-w-6xl px-4 sm:px-6">
         {/* Header */}
         <div
           className={`reveal ${inView ? "visible" : ""} text-center max-w-2xl mx-auto mb-12 sm:mb-16`}
         >
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-gray-800 whitespace-nowrap">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-gray-800 dark:text-slate-100 whitespace-nowrap">
             {t.courses.title}{" "}
             <span style={{ color: "var(--brand-primary)" }}>
               {t.courses.titleAccent}
@@ -51,7 +45,7 @@ export function CoursesSection() {
         </div>
 
         {/* Pricing cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-8 max-w-5xl mx-auto items-stretch">
+        <div className="mx-auto grid max-w-6xl grid-cols-1 items-stretch gap-5 md:grid-cols-3 lg:gap-7">
           {t.courses.plans.map((plan, i) => (
             <div
               key={plan.name}
@@ -59,13 +53,13 @@ export function CoursesSection() {
                 inView ? "visible" : ""
               } relative flex flex-col rounded-3xl p-5 sm:p-7 md:p-8 ${
                 plan.highlight
-                  ? "bg-white border-2 border-orange-400 shadow-2xl scale-[1.03]"
-                  : "bg-white shadow-md"
+                  ? "scale-[1.02] border-2 border-[#ff6f61] bg-white shadow-[0_18px_45px_-20px_rgba(255,111,97,0.45)] dark:bg-slate-900"
+                  : "border border-slate-200 bg-white shadow-md dark:border-slate-700 dark:bg-slate-900"
               }`}
             >
               {/* Badge */}
               {plan.badge && (
-                <span className="absolute -top-4 left-1/2 -translate-x-1/2 bg-orange-400 text-white text-xs font-bold px-4 py-1 rounded-full whitespace-nowrap shadow">
+                <span className="absolute -top-4 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#ff6f61] px-4 py-1.5 text-xs font-bold text-white shadow">
                   {plan.badge}
                 </span>
               )}
@@ -75,8 +69,8 @@ export function CoursesSection() {
                 <span
                   className={
                     plan.highlight
-                      ? "inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-400 to-rose-400 shadow-sm animate-float-slow"
-                      : "inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-50 ring-1 ring-slate-200 shadow-sm"
+                      ? "inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#ff6f61] shadow-sm"
+                      : "inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-50 ring-1 ring-slate-200 shadow-sm dark:bg-slate-800 dark:ring-slate-700"
                   }
                   aria-hidden
                 >
@@ -87,10 +81,10 @@ export function CoursesSection() {
                       : "🚀"}
                 </span>
                 <div>
-                  <h3 className="text-lg sm:text-2xl font-extrabold text-gray-800">
+                  <h3 className="text-lg sm:text-2xl font-extrabold text-gray-800 dark:text-slate-100">
                     {plan.name}
                   </h3>
-                  <p className="text-xs sm:text-sm text-gray-400">
+                  <p className="text-xs text-gray-400 dark:text-slate-400 sm:text-sm">
                     {plan.subtitle}
                   </p>
                 </div>
@@ -99,15 +93,15 @@ export function CoursesSection() {
               {/* Price */}
               <div className="mb-2">
                 <span
-                  className="text-4xl font-extrabold"
+                  className={`text-4xl font-extrabold ${plan.highlight ? "" : "text-slate-800 dark:text-slate-100"}`}
                   style={{
-                    color: plan.highlight ? "var(--brand-primary)" : "#1f2937",
+                    color: plan.highlight ? "var(--brand-primary)" : undefined,
                   }}
                 >
                   {plan.price}
                 </span>
                 {plan.period && (
-                  <span className="text-base text-gray-500 font-medium">
+                  <span className="text-base font-medium text-gray-500 dark:text-slate-400">
                     {plan.period}
                   </span>
                 )}
@@ -119,7 +113,7 @@ export function CoursesSection() {
                   {plan.pricing.map((p) => (
                     <span
                       key={p}
-                      className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-full"
+                      className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-500 dark:bg-slate-800 dark:text-slate-300"
                     >
                       {p}
                     </span>
@@ -137,7 +131,7 @@ export function CoursesSection() {
                   <li
                     key={f.text}
                     className={`flex items-start gap-3 text-sm transition-transform hover:-translate-y-0.5 ${
-                      f.included ? "text-gray-700 font-medium" : "text-gray-400"
+                      f.included ? "text-gray-700 font-medium dark:text-slate-200" : "text-gray-400 dark:text-slate-500"
                     }`}
                   >
                     <span
@@ -165,7 +159,7 @@ export function CoursesSection() {
                 className={`mt-8 group w-full relative overflow-hidden py-4 font-bold text-base rounded-2xl shadow-lg hover:-translate-y-1 hover:shadow-xl active:translate-y-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 ${
                   plan.highlight
                     ? "text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                 }`}
                 style={
                   plan.highlight
