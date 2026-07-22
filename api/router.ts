@@ -35,6 +35,7 @@ import lessonsCompleted from "./_internal/lessons_completed.js";
 import lessonsTopics from "./_internal/lessons_topics.js";
 import lessonsIdComplete from "./_internal/lessons_[id]_complete.js";
 import lessonsIdQuiz from "./_internal/lessons_[id]_quiz.js";
+import lessonsMap from "./_internal/lessons_map.js";
 
 import parentProfile from "./_internal/parent_profile.js";
 
@@ -100,6 +101,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (group === "lessons") {
+    if (segs.length === 1 && segs[0] === "map") return lessonsMap(req, res);
     if (segs.length === 1 && segs[0] === "topics") return lessonsTopics(req, res);
     if (segs.length === 1 && segs[0] === "completed") return lessonsCompleted(req, res);
     if (segs.length === 2 && segs[1] === "quiz") { req.query.id = segs[0]; return lessonsIdQuiz(req, res); }

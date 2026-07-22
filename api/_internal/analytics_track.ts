@@ -18,6 +18,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const path = String(body.path || "").slice(0, 300);
     const visitorId = String(body.visitorId || "").slice(0, 64);
     const sessionId = String(body.sessionId || "").slice(0, 64);
+    const requestHost = String(body.hostname || req.headers["x-forwarded-host"] || req.headers.host || "")
+      .split(":")[0]
+      .toLocaleLowerCase();
+
+    if (["localhost", "127.0.0.1", "::1"].includes(requestHost)) {
+      return res.status(204).end();
+    }
 
     if (!path || !visitorId || !sessionId) {
       return res.status(400).json({ error: "Thiếu dữ liệu bắt buộc" });

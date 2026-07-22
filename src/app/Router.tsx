@@ -33,6 +33,9 @@ import { Math2B2GamePage } from "@/features/student/pages/Math2B2GamePage";
 import { Math2B7Game } from "@/features/student/pages/Math2B7Game";
 import { PipeBalanceGame } from "@/features/student/pages/PipeBalanceGame";
 import { LeaderboardPage } from "@/features/student/pages/LeaderboardPage";
+import { Math2B29TimeLab } from "@/features/student/pages/Math2B29TimeLab";
+import { Math2B29TheoryPage } from "@/features/student/pages/Math2B29TheoryPage";
+import { Math2B29QuizPage } from "@/features/student/pages/Math2B29QuizPage";
 import { AddChildPage } from "@/features/dashboard/pages/AddChildPage";
 import { ParentDashboardLayout } from "@/features/dashboard/components/ParentDashboardLayout";
 import { StudentLayout } from "@/features/student/components/StudentLayout";
@@ -78,6 +81,9 @@ export function RouterProvider() {
       <Route path="/student" element={<StudentLayout />}>
         <Route index element={<Math2TableOfContents />} />
         <Route path="leaderboard" element={<LeaderboardPage />} />
+        <Route path="game/math2-b29-time-lab" element={<Math2B29TimeLab />} />
+        <Route path="theory/math2-b29" element={<Math2B29TheoryPage />} />
+        <Route path="quiz/math2-b29" element={<Math2B29QuizPage />} />
         <Route path="game/math2-b1" element={<Math2B1Game />} />
         <Route path="game/math2-b7" element={<Math2B7Game />} />
         <Route path="game/pipe-balance" element={<PipeBalanceGame />} />

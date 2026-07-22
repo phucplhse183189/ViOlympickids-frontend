@@ -5,6 +5,8 @@ import { queryClient } from "@/shared/lib/queryClient";
 import { adminQueryOptions } from "@/features/admin/api/adminQueries";
 import { useAdminUiStore } from "@/features/admin/stores/adminUiStore";
 import { ThemeToggle } from "@/shared/ui/ThemeToggle";
+import { useLang } from "@/shared/lib/i18n";
+import { AdminLocaleBridge } from "@/features/admin/components/AdminLocaleBridge";
 
 const ADMIN_SESSION_KEY = "vio_admin_session";
 
@@ -179,6 +181,16 @@ const NAV_SECTIONS = [
 ];
 
 const NAV_ITEMS = NAV_SECTIONS.flatMap((section) => section.items);
+const ADMIN_NAV_EN: Record<string, string> = {
+  "/admin": "Overview",
+  "/admin/performance": "Learning performance",
+  "/admin/finance": "Finance & Owner",
+  "/admin/analytics": "Traffic analytics",
+  "/admin/users": "User management",
+  "/admin/lessons": "Lesson management",
+  "/admin/feedback": "Feedback management",
+  "/admin/leaderboard": "Leaderboard management",
+};
 
 export function AdminLayout() {
   const navigate = useNavigate();
@@ -186,6 +198,9 @@ export function AdminLayout() {
   const [adminName, setAdminName] = useState("Admin");
   const mainRef = useRef<HTMLElement>(null);
   const reduceMotion = useReducedMotion();
+  const { lang, setLang } = useLang();
+  const navLabel = (item: (typeof NAV_ITEMS)[number]) => lang === "vi" ? item.label : ADMIN_NAV_EN[item.path] || item.label;
+  const sectionLabel = (title: string) => lang === "vi" ? title : title === "Điều hành" ? "Operations" : "Data management";
   const { sidebarCollapsed, mobileMenuOpen, toggleSidebar, setMobileMenuOpen } =
     useAdminUiStore();
 
@@ -237,7 +252,7 @@ export function AdminLayout() {
   };
 
   return (
-    <div className="admin-shell flex h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950">
+    <AdminLocaleBridge><div className="admin-shell flex h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950">
       <motion.aside
         initial={false}
         animate={{ width: sidebarCollapsed ? 80 : 288 }}
@@ -261,7 +276,7 @@ export function AdminLayout() {
             <div key={section.title}>
               {!sidebarCollapsed && (
                 <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                  {section.title}
+                  {sectionLabel(section.title)}
                 </p>
               )}
               <div className="space-y-1.5">
@@ -288,7 +303,7 @@ export function AdminLayout() {
                     </div>
                     {!sidebarCollapsed && (
                       <span className="text-sm font-semibold truncate">
-                        {item.label}
+                        {navLabel(item)}
                       </span>
                     )}
                     {isActive(item.path) && !sidebarCollapsed && (
@@ -346,11 +361,12 @@ export function AdminLayout() {
 
           <div className="hidden lg:block">
             <h1 className="text-slate-900 font-extrabold text-lg">
-              {NAV_ITEMS.find((item) => isActive(item.path))?.label || "Admin"}
+              {(() => { const item = NAV_ITEMS.find((entry) => isActive(entry.path)); return item ? navLabel(item) : "Admin"; })()}
             </h1>
           </div>
 
           <div className="flex items-center gap-3">
+            <button type="button" onClick={() => setLang(lang === "vi" ? "en" : "vi")} className="grid h-10 min-w-10 place-items-center rounded-xl border border-slate-200 bg-white px-2 text-xs font-black text-slate-600 shadow-sm transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700" aria-label={lang === "vi" ? "Switch admin to English" : "Chuyển trang quản trị sang tiếng Việt"}>{lang === "vi" ? "EN" : "VI"}</button>
             <ThemeToggle />
             <div className="flex items-center gap-3 pl-3 border-l border-slate-200">
               <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-violet-500 rounded-lg flex items-center justify-center">
@@ -404,7 +420,7 @@ export function AdminLayout() {
               {NAV_SECTIONS.map((section) => (
                 <div key={section.title} className="space-y-1.5">
                   <p className="px-3 pt-1 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                    {section.title}
+                    {sectionLabel(section.title)}
                   </p>
                   {section.items.map((item) => (
                     <Link
@@ -420,7 +436,7 @@ export function AdminLayout() {
                     >
                       {item.icon}
                       <span className="text-sm font-semibold">
-                        {item.label}
+                        {navLabel(item)}
                       </span>
                     </Link>
                   ))}
@@ -447,6 +463,6 @@ export function AdminLayout() {
           </AnimatePresence>
         </main>
       </div>
-    </div>
+    </div></AdminLocaleBridge>
   );
 }

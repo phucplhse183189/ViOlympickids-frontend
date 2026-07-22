@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { KidsTopbar } from "@/features/student/components/KidsTopbar";
 import { ParentGate } from "@/shared/ui/ParentGate";
-import { FeedbackWidget } from "@/shared/components/ui/FeedbackWidget";
 
 function isProtectedStudentRoute(pathname: string) {
   return (
@@ -129,7 +128,7 @@ export function StudentLayout() {
     <div className="min-h-screen bg-sky-100 font-kids overflow-x-hidden">
       {!protectedRoute && <KidsTopbar />}
 
-      <div className={protectedRoute ? "" : "pt-20"}>
+      <div className={protectedRoute ? "" : "pt-[72px]"}>
         <Outlet />
       </div>
 
@@ -144,7 +143,6 @@ export function StudentLayout() {
         />
       )}
       
-      {!protectedRoute && <FeedbackWidget />}
     </div>
   );
 }

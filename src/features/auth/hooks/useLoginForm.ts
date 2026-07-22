@@ -6,34 +6,40 @@ import * as authService from "@/features/auth/api/authService";
 const ADMIN_SESSION_KEY = "vio_admin_session";
 
 interface LoginErrors {
-  phone?: string;
+  identifier?: string;
   password?: string;
   general?: string;
 }
 
 function validatePhone(phone: string): boolean {
-  return /^(0[3|5|7|8|9])[0-9]{8}$/.test(phone);
+  return /^(0[35789])[0-9]{8}$/.test(phone);
 }
 
-function normalizePhone(value: string): string {
-  return value.replace(/\D/g, "");
+function validateEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function normalizeIdentifier(value: string): string {
+  const trimmed = value.trim();
+  return trimmed.includes("@") ? trimmed.toLocaleLowerCase() : trimmed.replace(/\D/g, "");
 }
 
 export function useLoginForm() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [phone, setPhone] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<LoginErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(false);
 
-  const validate = (fields = { phone, password }): LoginErrors => {
+  const validate = (fields = { identifier, password }): LoginErrors => {
     const e: LoginErrors = {};
-    if (!fields.phone.trim()) {
-      e.phone = "Vui lòng nhập số điện thoại.";
-    } else if (!validatePhone(fields.phone)) {
-      e.phone = "Số điện thoại không đúng định dạng.";
+    const value = fields.identifier.trim();
+    if (!value) {
+      e.identifier = "Vui lòng nhập email hoặc số điện thoại.";
+    } else if (value.includes("@") ? !validateEmail(value) : !validatePhone(value.replace(/\D/g, ""))) {
+      e.identifier = value.includes("@") ? "Email không đúng định dạng." : "Số điện thoại không đúng định dạng.";
     }
     if (!fields.password) {
       e.password = "Vui lòng nhập mật khẩu.";
@@ -50,16 +56,16 @@ export function useLoginForm() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setTouched({ phone: true, password: true });
+    setTouched({ identifier: true, password: true });
     const errs = validate();
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
 
-    const normalizedPhone = normalizePhone(phone);
+    const normalizedIdentifier = normalizeIdentifier(identifier);
     setIsLoading(true);
 
     authService
-      .login(normalizedPhone, password)
+      .login(normalizedIdentifier, password)
       .then((user: any) => {
         if (user.role === "admin") {
           sessionStorage.setItem(
@@ -75,7 +81,7 @@ export function useLoginForm() {
         } else {
           login({
             nickname: user.name,
-            email: user.phone,
+            email: user.email || user.phone,
             avatarId: user.avatarInitials || "panda",
             tier: "free",
           });
@@ -87,7 +93,7 @@ export function useLoginForm() {
         }
       })
       .catch((_: any) => {
-        setErrors({ general: "Số điện thoại hoặc mật khẩu không đúng." });
+        setErrors({ general: "Email, số điện thoại hoặc mật khẩu không đúng." });
       })
       .finally(() => {
         setIsLoading(false);
@@ -95,8 +101,8 @@ export function useLoginForm() {
   };
 
   return {
-    phone,
-    setPhone,
+    identifier,
+    setIdentifier,
     password,
     setPassword,
     errors,

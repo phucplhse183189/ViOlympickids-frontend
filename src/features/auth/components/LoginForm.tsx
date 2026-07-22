@@ -7,8 +7,8 @@ import { Eye, EyeOff } from "lucide-react";
 export function LoginForm() {
   const { t } = useLang();
   const {
-    phone,
-    setPhone,
+    identifier,
+    setIdentifier,
     password,
     setPassword,
     errors,
@@ -33,27 +33,29 @@ export function LoginForm() {
           <span>⚠️</span> {errors.general}
         </div>
       )}
-      {/* Số điện thoại */}
+      {/* Email hoặc số điện thoại */}
       <div>
         <label className="block text-gray-500 font-semibold mb-2 ml-1">
           {t.loginForm.phoneLabel}
         </label>
         <input
-          type="tel"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ""))}
-          onBlur={() => handleBlur("phone")}
+          type="text"
+          inputMode="email"
+          autoComplete="username"
+          value={identifier}
+          onChange={(e) => setIdentifier(e.target.value)}
+          onBlur={() => handleBlur("identifier")}
           placeholder={t.loginForm.phonePlaceholder}
-          maxLength={10}
+          maxLength={200}
           className={`${inputBase} ${
-            touched.phone && errors.phone
+            touched.identifier && errors.identifier
               ? errorRing
               : "border-2 border-blue-100 bg-blue-50 placeholder-blue-300 focus:border-blue-300 focus:shadow-[0_0_0_4px_rgba(174,203,235,0.4)]"
           }`}
         />
-        {touched.phone && errors.phone && (
+        {touched.identifier && errors.identifier && (
           <p className="mt-1.5 ml-1 text-xs text-red-500 font-semibold flex items-center gap-1">
-            <span>⚠️</span> {errors.phone}
+            <span>⚠️</span> {errors.identifier}
           </p>
         )}
       </div>

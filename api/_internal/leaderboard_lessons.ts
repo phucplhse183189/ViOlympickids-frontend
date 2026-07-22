@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, or } from "drizzle-orm";
 import { db, schema } from "../_db.js";
 
 /**
@@ -7,6 +7,7 @@ import { db, schema } from "../_db.js";
  * Trả về danh sách bài học có câu hỏi quiz (dùng cho dropdown chọn bài).
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  res.setHeader("Cache-Control", "public, max-age=60, s-maxage=300, stale-while-revalidate=600");
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -23,10 +24,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       })
       .from(schema.lessons)
       .innerJoin(schema.topics, eq(schema.topics.id, schema.lessons.topicId))
-      .innerJoin(
+      .leftJoin(
         schema.quizQuestions,
         eq(schema.quizQuestions.lessonId, schema.lessons.id)
       )
+      // Bài 29 dùng bộ câu hỏi tương tác riêng ở phía client thay vì bảng
+      // quiz_questions, nhưng vẫn là một bài quiz có chấm điểm/xếp hạng.
+      .where(or(eq(schema.lessons.lessonNumber, 29), eq(schema.quizQuestions.lessonId, schema.lessons.id)))
       .orderBy(
         schema.lessons.id,
         asc(schema.topics.topicNumber),

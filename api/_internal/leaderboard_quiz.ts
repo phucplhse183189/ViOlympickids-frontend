@@ -29,6 +29,7 @@ interface LeaderboardResult {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  res.setHeader("Cache-Control", "private, no-store");
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -51,7 +52,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // ── Kiểm tra cache ────────────────────────────────────────────────────
-    const cacheKey = `leaderboard:${rawLessonId}`;
+    // Always cache a lesson by its canonical UUID. Quiz submissions invalidate
+    // this same key, so a board requested through a slug can never stay stale.
+    const cacheKey = rawLessonId === "global" ? "leaderboard:global" : `leaderboard:${lessonId}`;
     let cached = getCached<{ ranked: RankedEntry[]; totalParticipants: number }>(cacheKey);
 
     if (!cached) {

@@ -3,6 +3,9 @@ import { createRoot } from "react-dom/client";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import "./index.css";
 import { App } from "@/app";
+import { installSpeechSynthesisGuard } from "@/shared/lib/speechSynthesisGuard";
+
+installSpeechSynthesisGuard();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

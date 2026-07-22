@@ -1,12 +1,12 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { eq } from "drizzle-orm";
+import { eq, or, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { db, schema } from "../_db.js";
 
 /**
  * POST /api/auth/login
- * Body: { phone: string, password: string }
- * Đăng nhập bằng SĐT + mật khẩu
+ * Body: { identifier: string, password: string }
+ * Đăng nhập bằng email hoặc SĐT + mật khẩu
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
@@ -14,33 +14,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { phone, password } = req.body as {
-      phone: string;
+    const { identifier: rawIdentifier, phone, password } = req.body as {
+      identifier?: string;
+      phone?: string;
       password: string;
     };
+    const identifier = (rawIdentifier || phone || "").trim();
 
-    if (!phone || !password) {
-      return res.status(400).json({ error: "Vui lòng nhập số điện thoại và mật khẩu" });
+    if (!identifier || !password) {
+      return res.status(400).json({ error: "Vui lòng nhập email hoặc số điện thoại và mật khẩu" });
     }
 
-    // Chuẩn hóa SĐT — chỉ giữ chữ số
-    const normalizedPhone = phone.replace(/\D/g, "");
+    const isEmail = identifier.includes("@");
+    const normalizedIdentifier = isEmail ? identifier.toLocaleLowerCase() : identifier.replace(/\D/g, "");
 
-    // Tìm user theo SĐT
+    // Tìm user theo email hoặc SĐT. Giữ nhánh phone để tương thích dữ liệu cũ.
     const [user] = await db
       .select()
       .from(schema.users)
-      .where(eq(schema.users.phone, normalizedPhone))
+      .where(or(
+        eq(schema.users.phone, normalizedIdentifier),
+        sql`lower(${schema.users.email}) = ${normalizedIdentifier}`,
+      ))
       .limit(1);
 
     if (!user) {
-      return res.status(401).json({ error: "Số điện thoại hoặc mật khẩu không đúng" });
+      return res.status(401).json({ error: "Email, số điện thoại hoặc mật khẩu không đúng" });
     }
 
     // So sánh mật khẩu
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
-      return res.status(401).json({ error: "Số điện thoại hoặc mật khẩu không đúng" });
+      return res.status(401).json({ error: "Email, số điện thoại hoặc mật khẩu không đúng" });
     }
 
     // Trả về thông tin user (không trả passwordHash)

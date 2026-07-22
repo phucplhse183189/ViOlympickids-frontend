@@ -12,6 +12,8 @@ export function PageTracker() {
 
   useEffect(() => {
     const path = location.pathname;
+    const hostname = window.location.hostname.toLocaleLowerCase();
+    if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1") return;
     if (path === lastTracked.current) return; // tránh đếm trùng (StrictMode)
     if (path.startsWith("/admin")) return;
     lastTracked.current = path;

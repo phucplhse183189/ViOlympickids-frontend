@@ -195,8 +195,8 @@ export const translations = {
       ],
     },
     loginForm: {
-      phoneLabel: "Số điện thoại",
-      phonePlaceholder: "Nhập số điện thoại của bạn",
+      phoneLabel: "Email hoặc số điện thoại",
+      phonePlaceholder: "Nhập email hoặc số điện thoại",
       passwordLabel: "Mật khẩu",
       passwordPlaceholder: "Nhập mật khẩu của bạn",
       forgotPassword: "Quên mật khẩu?",
@@ -479,8 +479,8 @@ export const translations = {
       ],
     },
     loginForm: {
-      phoneLabel: "Phone number",
-      phonePlaceholder: "Enter your phone number",
+      phoneLabel: "Email or phone number",
+      phonePlaceholder: "Enter your email or phone number",
       passwordLabel: "Password",
       passwordPlaceholder: "Enter your password",
       forgotPassword: "Forgot password?",

@@ -44,9 +44,12 @@ function detectDevice(): "mobile" | "tablet" | "desktop" {
  * ảnh hưởng trải nghiệm người dùng.
  */
 export async function trackPageView(path: string): Promise<void> {
+  const hostname = window.location.hostname.toLocaleLowerCase();
+  if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1") return;
   try {
     await apiPost("/analytics/track", {
       path,
+      hostname,
       referrer: document.referrer || null,
       device: detectDevice(),
       visitorId: getVisitorId(),
@@ -56,5 +59,4 @@ export async function trackPageView(path: string): Promise<void> {
     /* bỏ qua lỗi tracking */
   }
 }
-
 

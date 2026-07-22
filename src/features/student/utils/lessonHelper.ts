@@ -14,7 +14,8 @@ export function canAccessLesson(
   return PLAN_RANK[userPlan] >= PLAN_RANK[lesson.requiredPlan];
 }
 
-export function getMath2LessonPlayRoute(lesson: { gameType: string | null }): string | null {
+export function getMath2LessonPlayRoute(lesson: { gameType: string | null; lessonNumber?: number }): string | null {
+  if (lesson.lessonNumber === 29) return "/student/theory/math2-b29";
   if (!lesson.gameType) return null;
   switch (lesson.gameType) {
     case "number-review-game":

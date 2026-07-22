@@ -22,6 +22,10 @@ import * as THREE from "three";
 import { useActiveChild } from "@/features/dashboard/context/activeChild";
 import { speakVietnameseWithCaptionProgress } from "@/features/student/utils/speakVietnameseWithCaption";
 import { PreRollAdModal } from "@/shared/ui/PreRollAdModal";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { AnimatePresence } from "framer-motion";
+import { useLang } from "@/shared/lib/i18n";
+import { LessonDetailsModal } from "@/features/student/components/LessonDetailsModal";
 
 // --- 3D Design ---
 function FloatingMathShapes() {
@@ -439,22 +443,21 @@ function Math2Background3D() {
 // --- Main Page Component ---
 export function Math2TableOfContents() {
   const navigate = useNavigate();
+  const { lang } = useLang();
   const { activeChild } = useActiveChild();
   const [selectedLesson, setSelectedLesson] = useState<{
     lesson: any;
     topic: any;
   } | null>(null);
 
-  const [topics, setTopics] = useState<lessonService.TopicWithLessons[]>([]);
-  const [completedIdsSet, setCompletedIdsSet] = useState<Set<string>>(new Set());
+  const queryClient = useQueryClient();
+  const mapQueryKey = ["student", "learning-map", activeChild?.id || "none"] as const;
+  const mapQuery = useQuery({ queryKey: mapQueryKey, queryFn: ({ signal }) => lessonService.getStudentMap(activeChild!.id, signal), enabled: Boolean(activeChild), staleTime: 30_000, refetchOnWindowFocus: true, retry: 2 });
+  const topics = mapQuery.data?.topics ?? [];
+  const completedIdsSet = useMemo(() => new Set(mapQuery.data?.completedLessonIds ?? []), [mapQuery.data?.completedLessonIds]);
 
   useEffect(() => {
-    lessonService.getTopics().then(setTopics).catch(console.error);
-  }, []);
-
-  const [progressTick, setProgressTick] = useState(0);
-  useEffect(() => {
-    const bump = () => setProgressTick((t) => t + 1);
+    const bump = () => void queryClient.invalidateQueries({ queryKey: mapQueryKey });
     const onVis = () => {
       if (document.visibilityState === "visible") bump();
     };
@@ -464,16 +467,7 @@ export function Math2TableOfContents() {
       window.removeEventListener("math2-progress-updated", bump);
       document.removeEventListener("visibilitychange", onVis);
     };
-  }, []);
-
-  useEffect(() => {
-    if (activeChild) {
-      lessonService
-        .getCompleted(activeChild.id)
-        .then((ids) => setCompletedIdsSet(new Set(ids)))
-        .catch(console.error);
-    }
-  }, [activeChild, progressTick]); // Re-fetch on progress tick
+  }, [queryClient, activeChild?.id]);
 
   const [showAd, setShowAd] = useState(false);
   const [pendingRoute, setPendingRoute] = useState<string | null>(null);
@@ -659,21 +653,31 @@ export function Math2TableOfContents() {
   }, []);
 
   useEffect(() => {
+    // The map data arrives asynchronously. Measure once React has committed
+    // the lesson nodes, then once more after the browser finishes layout.
     updatePositions();
+    const frame = window.requestAnimationFrame(() => {
+      updatePositions();
+      window.requestAnimationFrame(updatePositions);
+    });
     window.addEventListener("resize", updatePositions);
     // Observe DOM changes (like images loading or fonts rendering causing shifts)
     const observer = new ResizeObserver(updatePositions);
     if (scrollRef.current?.firstChild) {
       observer.observe(scrollRef.current.firstChild as Element);
     }
+    nodeRefs.current.forEach((node) => {
+      if (node) observer.observe(node);
+    });
     const timeout = setTimeout(updatePositions, 500); // safety fallback
 
     return () => {
       window.removeEventListener("resize", updatePositions);
+      window.cancelAnimationFrame(frame);
       observer.disconnect();
       clearTimeout(timeout);
     };
-  }, [updatePositions]);
+  }, [updatePositions, topics]);
 
   useEffect(() => {
     if (robotNodeIndex == null || !scrollRef.current) return;
@@ -736,7 +740,6 @@ export function Math2TableOfContents() {
   const modalL = selectedLesson?.lesson ?? null;
   const modalPlayRoute = modalL ? getMath2LessonPlayRoute(modalL) : null;
   const modalCanStart = Boolean(
-    modalL?.gameType &&
     modalL &&
     activeChild &&
     canAccessLesson(modalL, activeChild.plan) &&
@@ -1066,7 +1069,8 @@ export function Math2TableOfContents() {
       `}</style>
 
       {/* Premium Game Modal */}
-      {selectedLesson && (
+      <AnimatePresence>{selectedLesson && <LessonDetailsModal lesson={selectedLesson.lesson} topic={selectedLesson.topic} childPlan={activeChild.plan} completed={completedIds.has(selectedLesson.lesson.id)} lang={lang} canStart={modalCanStart} onClose={() => setSelectedLesson(null)} onStart={() => { const L = selectedLesson.lesson; const route = modalPlayRoute; if (!canAccessLesson(L, activeChild.plan) || !route) return; const isPremium = activeChild.plan === "PRO" || activeChild.plan === "VIP"; if (L.gameType === "number-sequence-chart" && !isPremium) { setPendingRoute(route); setShowAd(true); } else navigate(route); }} />}</AnimatePresence>
+      {selectedLesson && activeChild && Boolean(0) && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-slate-950/60 backdrop-blur-md transition-opacity animate-in fade-in"
@@ -1150,7 +1154,7 @@ export function Math2TableOfContents() {
                 onClick={() => {
                   const L = selectedLesson.lesson;
                   const route = modalPlayRoute;
-                  if (!L.gameType || !canAccessLesson(L, activeChild.plan) || !route) return;
+                  if (!canAccessLesson(L, activeChild.plan) || !route) return;
                   const isPremium = activeChild.plan === "PRO" || activeChild.plan === "VIP";
                   if (L.gameType === "number-sequence-chart" && !isPremium) {
                     setPendingRoute(route);

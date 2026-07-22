@@ -378,7 +378,7 @@ async function seed() {
     [5,27,"Thực hành gấp, cắt, ghép, xếp hình",null,"✂️","Thực hành hình học.","PRO"],
     [5,28,"Luyện tập chung",null,"🏋️","Tổng hợp chủ đề 5.","PRO"],
     // Topic 6
-    [6,29,"Ngày – giờ, giờ – phút",null,"⏰","Đơn vị thời gian.","PRO"],
+    [6,29,"Ngày – giờ, giờ – phút","time-lab-game","⏰","Đơn vị thời gian.","PRO"],
     [6,30,"Ngày – tháng",null,"📅","Tìm hiểu ngày trong tháng.","PRO"],
     [6,31,"Thực hành xem đồng hồ, xem lịch",null,"🔬","Thực hành thời gian.","PRO"],
     [6,32,"Luyện tập chung",null,"🏋️","Tổng hợp chủ đề 6.","PRO"],

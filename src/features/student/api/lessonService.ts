@@ -43,6 +43,17 @@ export interface CompletedRecord {
   completedAt: string;
 }
 
+export interface StudentMapResponse {
+  topics: TopicWithLessons[];
+  completedLessonIds: string[];
+  student: { id: string; plan: "FREE" | "PRO" | "VIP"; status: string };
+  generatedAt: string;
+}
+
+export async function getStudentMap(childId: string, signal?: AbortSignal): Promise<StudentMapResponse> {
+  return apiGet<StudentMapResponse>(`/lessons/map?childId=${encodeURIComponent(childId)}`, { signal, ttlMs: 0 });
+}
+
 /**
  * Lấy tất cả chủ đề kèm bài học
  */

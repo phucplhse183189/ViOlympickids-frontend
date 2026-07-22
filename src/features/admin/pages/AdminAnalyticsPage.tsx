@@ -17,8 +17,6 @@ import {
 import {
   Area,
   AreaChart,
-  Bar,
-  BarChart,
   CartesianGrid,
   Cell,
   Legend,
@@ -58,6 +56,20 @@ export function AdminAnalyticsPage() {
 
   const dailyData = useMemo(() => (data?.dailyViews || []).map((item) => ({ ...item, label: formatDate(item.date) })), [data]);
   const deviceData = useMemo(() => (data?.deviceBreakdown || []).map((item) => ({ ...item, name: devices[item.device]?.label || item.device, value: item.count })), [data]);
+  const referrerData = useMemo(() => {
+    const grouped = new Map<string, { label: string; count: number; sources: string[] }>();
+    for (const item of data?.topReferrers || []) {
+      const label = formatReferrer(item.referrer);
+      const current = grouped.get(label);
+      if (current) {
+        current.count += item.count;
+        current.sources.push(item.referrer);
+      } else {
+        grouped.set(label, { label, count: item.count, sources: [item.referrer] });
+      }
+    }
+    return Array.from(grouped.values()).sort((a, b) => b.count - a.count).slice(0, 8);
+  }, [data]);
   const pagesPerVisitor = data?.uniqueVisitors ? Math.round((data.totalViews / data.uniqueVisitors) * 10) / 10 : 0;
   const lastUpdated = dataUpdatedAt ? new Date(dataUpdatedAt) : null;
 
@@ -98,14 +110,38 @@ export function AdminAnalyticsPage() {
       </div>
 
       <div className="grid gap-5 xl:grid-cols-2">
-        <Panel title="Trang được quan tâm nhất" subtitle="Xếp hạng theo số lượt xem" icon={MousePointerClick} transition={transition}><div className="space-y-4">{data.topPages.map((page, index) => { const percent = Math.round(page.views / Math.max(data.topPages[0]?.views || 1, 1) * 100); return <motion.div key={page.path} initial={reduceMotion ? false : { opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * .045 }}><div className="mb-1.5 flex items-center justify-between gap-3 text-xs"><span className="min-w-0 truncate font-semibold text-foreground"><span className="mr-2 text-muted-foreground">{String(index + 1).padStart(2, "0")}</span>{page.path}</span><strong>{page.views}</strong></div><div className="h-2 overflow-hidden rounded-full bg-muted"><motion.div initial={{ width: 0 }} animate={{ width: `${percent}%` }} transition={{ duration: reduceMotion ? 0 : .7, delay: .2 + index * .05 }} className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500" /></div></motion.div>})}{!data.topPages.length && <EmptyState />}</div></Panel>
-        <Panel title="Nguồn truy cập" subtitle="Các kênh đưa người dùng đến website" icon={Link2} transition={transition}><div style={{ height: Math.max(280, data.topReferrers.length * 38) }}>{data.topReferrers.length ? <ResponsiveContainer width="100%" height="100%"><BarChart data={data.topReferrers} layout="vertical" margin={{ top: 8, right: 18, left: 10, bottom: 0 }}><CartesianGrid stroke="var(--border)" strokeDasharray="4 6" horizontal={false} /><XAxis type="number" allowDecimals={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} axisLine={false} tickLine={false} /><YAxis type="category" dataKey="referrer" width={125} tick={{ fill: "var(--muted-foreground)", fontSize: 10 }} axisLine={false} tickLine={false} /><Tooltip formatter={(value) => [`${value} lượt`, "Truy cập"]} contentStyle={tooltipStyle} /><Bar dataKey="count" fill="#06b6d4" radius={[0, 8, 8, 0]} barSize={18} /></BarChart></ResponsiveContainer> : <EmptyState />}</div></Panel>
+        <Panel title="Trang được quan tâm nhất" subtitle="Tên trang dễ đọc, kèm đường dẫn để đối chiếu" icon={MousePointerClick} transition={transition}><div className="space-y-4">{data.topPages.map((page, index) => { const percent = Math.round(page.views / Math.max(data.topPages[0]?.views || 1, 1) * 100); return <motion.div key={page.path} initial={reduceMotion ? false : { opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * .045 }}><div className="mb-1.5 flex items-center justify-between gap-3 text-xs"><span className="flex min-w-0 items-baseline gap-2"><span className="shrink-0 text-muted-foreground">{String(index + 1).padStart(2, "0")}</span><strong className="truncate text-foreground">{formatPageName(page.path)}</strong><code className="hidden truncate rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] font-medium text-muted-foreground sm:inline">{page.path}</code></span><strong>{page.views}</strong></div><div className="h-2 overflow-hidden rounded-full bg-muted"><motion.div initial={{ width: 0 }} animate={{ width: `${percent}%` }} transition={{ duration: reduceMotion ? 0 : .7, delay: .2 + index * .05 }} className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500" /></div></motion.div>})}{!data.topPages.length && <EmptyState />}</div></Panel>
+        <Panel title="Nguồn truy cập" subtitle="Các kênh đưa người dùng đến website" icon={Link2} transition={transition}><div className="mb-5 flex items-center justify-between rounded-xl bg-muted/50 px-3 py-2 text-[11px] text-muted-foreground"><span>Đã gộp các đường dẫn cùng nền tảng</span><strong className="text-foreground">{referrerData.reduce((sum, item) => sum + item.count, 0)} lượt</strong></div>{referrerData.length ? <div className="space-y-4">{referrerData.map((item, index) => { const maximum = referrerData[0]?.count || 1; const percent = Math.max(1.5, item.count / maximum * 100); return <motion.div key={item.label} initial={reduceMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * .05 }} title={item.sources.join("\n")}><div className="mb-1.5 flex min-w-0 items-center gap-3"><span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-cyan-500/10 text-[10px] font-black text-cyan-600 dark:text-cyan-300">{String(index + 1).padStart(2, "0")}</span><span className="min-w-0 flex-1 truncate text-xs font-bold text-foreground">{item.label}</span><strong className="shrink-0 text-xs tabular-nums text-foreground">{item.count} lượt</strong><span className="hidden w-10 shrink-0 text-right text-[10px] font-semibold tabular-nums text-muted-foreground sm:block">{Math.round(item.count / Math.max(referrerData.reduce((sum, entry) => sum + entry.count, 0), 1) * 100)}%</span></div><div className="ml-9 h-2.5 overflow-hidden rounded-full bg-muted"><motion.div initial={{ width: 0 }} animate={{ width: `${percent}%` }} transition={{ duration: reduceMotion ? 0 : .65, delay: .1 + index * .04, ease: [0.22, 1, 0.36, 1] }} className="h-full rounded-full bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-500 shadow-[0_0_12px_rgba(14,165,233,.25)]" /></div></motion.div>})}</div> : <EmptyState />}</Panel>
       </div>
     </motion.div>
   );
 }
 
 function formatDate(date: string) { const [, month, day] = date.split("-"); return `${day}/${month}`; }
+function formatPageName(path: string) {
+  const exact: Record<string, string> = {
+    "/": "Trang chủ", "/login": "Đăng nhập", "/register": "Đăng ký", "/profile-picker": "Chọn hồ sơ học sinh",
+    "/add-child": "Thêm hồ sơ học sinh", "/dashboard": "Tổng quan phụ huynh", "/dashboard/subscription": "Gói học tập",
+    "/dashboard/progress": "Tiến độ học tập", "/dashboard/history": "Lịch sử học tập", "/dashboard/payment": "Thanh toán",
+    "/dashboard/profile": "Hồ sơ phụ huynh", "/dashboard/feedback": "Đánh giá và góp ý", "/student": "Khu vực học tập",
+    "/community": "Cộng đồng", "/forgot-password": "Quên mật khẩu", "/reset-password": "Đặt lại mật khẩu",
+  };
+  if (exact[path]) return exact[path];
+  if (path.startsWith("/student/game/")) return "Trò chơi học tập";
+  if (path.startsWith("/student/quiz/")) return "Bài kiểm tra";
+  if (path.startsWith("/student/theory/")) return "Bài học lý thuyết";
+  if (path.startsWith("/student/result/")) return "Kết quả bài học";
+  return "Trang khác";
+}
+function formatReferrer(value: string) {
+  if (!value || value === "Trực tiếp") return "Truy cập trực tiếp";
+  try {
+    const url = new URL(value.startsWith("http") ? value : `https://${value}`);
+    if (url.hostname === "localhost" || url.hostname === "127.0.0.1") return `Máy local${url.pathname === "/" ? "" : ` · ${formatPageName(url.pathname)}`}`;
+    if (url.hostname.endsWith("vercel.app")) return `ViOlympicKids${url.pathname === "/" ? "" : ` · ${formatPageName(url.pathname)}`}`;
+    return url.hostname.replace(/^www\./, "");
+  } catch { return value; }
+}
 function Panel({ title, subtitle, icon: Icon, transition, children }: { title: string; subtitle: string; icon: typeof Eye; transition: object; children: ReactNode }) { return <motion.section variants={sectionMotion} transition={transition} className="rounded-[24px] border border-border bg-card p-5 text-card-foreground shadow-sm sm:p-6"><div className="mb-5 flex items-start justify-between"><div><h3 className="font-bold">{title}</h3><p className="mt-1 text-xs text-muted-foreground">{subtitle}</p></div><span className="grid h-9 w-9 place-items-center rounded-xl bg-sky-500/10 text-sky-500"><Icon className="h-4 w-4" /></span></div>{children}</motion.section>; }
 function EmptyState() { return <div className="grid h-full min-h-32 place-items-center text-sm text-muted-foreground">Chưa có dữ liệu để hiển thị.</div>; }
 function AnalyticsSkeleton() { return <AdminPageLoading title="Đang tải dữ liệu truy cập" description="Đang phân tích lượt xem, thiết bị và nguồn truy cập website." />; }

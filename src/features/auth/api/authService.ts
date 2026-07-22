@@ -15,10 +15,10 @@ export interface UserInfo {
 }
 
 /**
- * Đăng nhập bằng SĐT + mật khẩu
+ * Đăng nhập bằng email hoặc SĐT + mật khẩu
  */
-export async function login(phone: string, password: string): Promise<UserInfo> {
-  return apiPost<UserInfo>("/auth/login", { phone, password });
+export async function login(identifier: string, password: string): Promise<UserInfo> {
+  return apiPost<UserInfo>("/auth/login", { identifier, password });
 }
 
 /**

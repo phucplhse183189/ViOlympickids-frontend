@@ -17,6 +17,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const daysRaw = Number(req.query.days);
     const days = Number.isFinite(daysRaw) && daysRaw > 0 && daysRaw <= 365 ? Math.floor(daysRaw) : 30;
     const interval = sql.raw(`'${days} days'`);
+    // Loại toàn bộ visitor từng phát sinh referrer local để dữ liệu test cũ
+    // không lẫn vào số liệu của các nền tảng đã triển khai.
+    const deployedOnly = sql`
+      visitor_id NOT IN (
+        SELECT visitor_id FROM page_views
+        WHERE lower(COALESCE(referrer, '')) LIKE '%localhost%'
+           OR lower(COALESCE(referrer, '')) LIKE '%127.0.0.1%'
+      )
+    `;
 
     const [
       totalsResult,
@@ -32,12 +41,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           count(DISTINCT visitor_id)::int AS unique_visitors,
           count(DISTINCT session_id)::int AS total_sessions
         FROM page_views
-        WHERE created_at >= now() - interval ${interval}
+        WHERE created_at >= now() - interval ${interval} AND ${deployedOnly}
       `),
       db.execute(sql`
         SELECT count(*)::int AS views_today
         FROM page_views
-        WHERE created_at >= date_trunc('day', now())
+        WHERE created_at >= date_trunc('day', now()) AND ${deployedOnly}
       `),
       db.execute(sql`
         SELECT
@@ -45,14 +54,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           count(*)::int AS views,
           count(DISTINCT visitor_id)::int AS visitors
         FROM page_views
-        WHERE created_at >= now() - interval ${interval}
+        WHERE created_at >= now() - interval ${interval} AND ${deployedOnly}
         GROUP BY 1
         ORDER BY 1
       `),
       db.execute(sql`
         SELECT path, count(*)::int AS views
         FROM page_views
-        WHERE created_at >= now() - interval ${interval}
+        WHERE created_at >= now() - interval ${interval} AND ${deployedOnly}
         GROUP BY path
         ORDER BY views DESC
         LIMIT 10
@@ -60,7 +69,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       db.execute(sql`
         SELECT device, count(*)::int AS count
         FROM page_views
-        WHERE created_at >= now() - interval ${interval}
+        WHERE created_at >= now() - interval ${interval} AND ${deployedOnly}
         GROUP BY device
         ORDER BY count DESC
       `),
@@ -69,7 +78,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           COALESCE(NULLIF(referrer, ''), 'Trực tiếp') AS referrer,
           count(*)::int AS count
         FROM page_views
-        WHERE created_at >= now() - interval ${interval}
+        WHERE created_at >= now() - interval ${interval} AND ${deployedOnly}
         GROUP BY 1
         ORDER BY count DESC
         LIMIT 8

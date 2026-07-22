@@ -11,6 +11,8 @@ interface ApiGetOptions {
   ttlMs?: number;
   /** Bỏ qua kết quả đã cache, nhưng vẫn gộp request trùng đang chạy. */
   force?: boolean;
+  /** Hủy request khi component/query không còn cần kết quả. */
+  signal?: AbortSignal;
 }
 
 interface CacheEntry {
@@ -88,6 +90,7 @@ export async function apiGet<T>(path: string, options: ApiGetOptions = {}): Prom
     method: "GET",
     headers: getAuthHeaders(),
     cache: "no-store",
+    signal: options.signal,
   })
     .then(handleResponse<T>)
     .then((data) => {

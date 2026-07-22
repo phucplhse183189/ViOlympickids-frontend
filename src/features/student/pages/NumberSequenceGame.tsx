@@ -45,6 +45,7 @@ import {
 } from "@/features/student/utils/robotGameLogic";
 import { useActiveChild } from "@/features/dashboard/context/activeChild";
 import { ParentGate } from "@/shared/ui/ParentGate";
+import { useChromeSpeechRecognition } from "@/features/student/hooks/useChromeSpeechRecognition";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SOUND CONTEXT
@@ -211,19 +212,17 @@ function RobotAskBar({
 }: Readonly<{
   value: string;
   onChange: (value: string) => void;
-  onSend: () => void;
+  onSend: (transcript?: string) => void;
   loading: boolean;
   onClose?: () => void;
   autoSendOnVoice?: boolean;
 }>) {
-  const [listening, setListening] = useState(false);
   const [selectedVoice, setSelectedVoice] = useState<string>("");
-  const recognitionRef = useRef<any>(null);
-
-  const supportsVoice =
-    typeof window !== "undefined" &&
-    ((window as any).SpeechRecognition ||
-      (window as any).webkitSpeechRecognition);
+  const { supported: supportsVoice, listening, error: voiceError, toggle: toggleVoice } =
+    useChromeSpeechRecognition((transcript) => {
+      onChange(transcript);
+      if (autoSendOnVoice) onSend(transcript);
+    });
 
   const resolvedVoiceName =
     selectedVoice ||
@@ -252,53 +251,7 @@ function RobotAskBar({
     }
   }, []);
 
-  useEffect(() => {
-    return () => {
-      recognitionRef.current?.stop();
-      recognitionRef.current = null;
-    };
-  }, []);
-
-  const handleToggleVoice = () => {
-    if (!supportsVoice || loading) return;
-
-    if (listening) {
-      recognitionRef.current?.stop();
-      setListening(false);
-      return;
-    }
-
-    const SpeechRecognitionCtor =
-      (window as any).SpeechRecognition ||
-      (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognitionCtor) return;
-
-    const recognition = new SpeechRecognitionCtor();
-    recognitionRef.current = recognition;
-    recognition.lang = "vi-VN";
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-
-    recognition.onresult = (event: any) => {
-      const transcript = event?.results?.[0]?.[0]?.transcript?.trim();
-      if (!transcript) return;
-      onChange(transcript);
-      if (autoSendOnVoice) {
-        onSend();
-      }
-    };
-
-    recognition.onerror = () => {
-      setListening(false);
-    };
-
-    recognition.onend = () => {
-      setListening(false);
-    };
-
-    recognition.start();
-    setListening(true);
-  };
+  const handleToggleVoice = () => { if (!loading) toggleVoice(); };
 
   return (
     <div className="bg-[#F7F3E8]/95 backdrop-blur rounded-3xl shadow-lg border-2 border-amber-200 px-3 py-2.5 sm:px-4 sm:py-3 flex flex-col gap-2.5 overflow-hidden">
@@ -333,9 +286,10 @@ function RobotAskBar({
           >
             {listening ? <MicOff size={16} /> : <Mic size={16} />}
           </button>
+          {voiceError && <span className="sr-only" role="alert">{voiceError}</span>}
           <button
             type="button"
-            onClick={onSend}
+            onClick={() => onSend()}
             className="shrink-0 px-4 sm:px-5 py-2 rounded-full bg-amber-400 text-white text-sm sm:text-base font-extrabold shadow active:scale-95 transition disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={loading}
           >
@@ -402,7 +356,7 @@ function FloatingTitechAssistant({
   onToggle: () => void;
   value: string;
   onChange: (value: string) => void;
-  onSend: () => void;
+  onSend: (transcript?: string) => void;
   loading: boolean;
   onClose: () => void;
 }>) {
@@ -643,8 +597,8 @@ function AppleGardenMap({
     speakWithUnifiedRobotVoice(text, voiceName);
   }, []);
 
-  const sendRobotQuestion = useCallback(async () => {
-    const trimmed = robotInput.trim();
+  const sendRobotQuestion = useCallback(async (spokenQuestion?: string) => {
+    const trimmed = (spokenQuestion ?? robotInput).trim();
     if (!trimmed || robotLoading) return;
 
     setRobotInput("");
@@ -870,7 +824,7 @@ function AppleGardenMap({
           }}
           value={robotInput}
           onChange={setRobotInput}
-          onSend={() => void sendRobotQuestion()}
+          onSend={(transcript) => void sendRobotQuestion(transcript)}
           loading={robotLoading}
           onClose={() => setRobotChatOpen(false)}
         />
@@ -938,8 +892,8 @@ function BridgeMap({
     speakWithUnifiedRobotVoice(text, voiceName);
   }, []);
 
-  const sendRobotQuestion = useCallback(async () => {
-    const trimmed = robotInput.trim();
+  const sendRobotQuestion = useCallback(async (spokenQuestion?: string) => {
+    const trimmed = (spokenQuestion ?? robotInput).trim();
     if (!trimmed || robotLoading) return;
 
     setRobotInput("");
@@ -1124,7 +1078,7 @@ function BridgeMap({
         }}
         value={robotInput}
         onChange={setRobotInput}
-        onSend={() => void sendRobotQuestion()}
+        onSend={(transcript) => void sendRobotQuestion(transcript)}
         loading={robotLoading}
         onClose={() => setRobotChatOpen(false)}
       />
@@ -1182,8 +1136,8 @@ function TrainMap({
     speakWithUnifiedRobotVoice(text, voiceName);
   }, []);
 
-  const sendRobotQuestion = useCallback(async () => {
-    const trimmed = robotInput.trim();
+  const sendRobotQuestion = useCallback(async (spokenQuestion?: string) => {
+    const trimmed = (spokenQuestion ?? robotInput).trim();
     if (!trimmed || robotLoading) return;
 
     setRobotInput("");
@@ -1440,7 +1394,7 @@ function TrainMap({
         }}
         value={robotInput}
         onChange={setRobotInput}
-        onSend={() => void sendRobotQuestion()}
+        onSend={(transcript) => void sendRobotQuestion(transcript)}
         loading={robotLoading}
         onClose={() => setRobotChatOpen(false)}
       />
@@ -1496,8 +1450,8 @@ function BalloonCityMap({
     speakWithUnifiedRobotVoice(text, voiceName);
   }, []);
 
-  const sendRobotQuestion = useCallback(async () => {
-    const trimmed = robotInput.trim();
+  const sendRobotQuestion = useCallback(async (spokenQuestion?: string) => {
+    const trimmed = (spokenQuestion ?? robotInput).trim();
     if (!trimmed || robotLoading) return;
 
     setRobotInput("");
@@ -1739,7 +1693,7 @@ function BalloonCityMap({
         }}
         value={robotInput}
         onChange={setRobotInput}
-        onSend={() => void sendRobotQuestion()}
+        onSend={(transcript) => void sendRobotQuestion(transcript)}
         loading={robotLoading}
         onClose={() => setRobotChatOpen(false)}
       />
@@ -1789,8 +1743,8 @@ function RabbitRaceMap({
     speakWithUnifiedRobotVoice(text, voiceName);
   }, []);
 
-  const sendRobotQuestion = useCallback(async () => {
-    const trimmed = robotInput.trim();
+  const sendRobotQuestion = useCallback(async (spokenQuestion?: string) => {
+    const trimmed = (spokenQuestion ?? robotInput).trim();
     if (!trimmed || robotLoading) return;
 
     setRobotInput("");
@@ -1976,7 +1930,7 @@ function RabbitRaceMap({
         }}
         value={robotInput}
         onChange={setRobotInput}
-        onSend={() => void sendRobotQuestion()}
+        onSend={(transcript) => void sendRobotQuestion(transcript)}
         loading={robotLoading}
         onClose={() => setRobotChatOpen(false)}
       />

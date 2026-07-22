@@ -1,478 +1,95 @@
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AlertCircle, ArrowLeft, BookOpen, Check, ChevronDown, Crown, Medal, Radio, Sparkles, Target, Trophy, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Trophy, ArrowLeft, Sparkles } from "lucide-react";
-import {
-  ACTIVE_CHILD_ID_KEY,
-  CHILD_PROFILES_STORAGE_KEY,
-} from "@/shared/lib/constants";
-import * as leaderboardService from "@/features/student/api/leaderboardService";
-import type {
-  LeaderboardEntry,
-  LeaderboardResponse,
-  QuizLesson,
-} from "@/features/student/api/leaderboardService";
-import "./LeaderboardPage.css";
+import { useActiveChild } from "@/features/dashboard/context/activeChild";
+import * as service from "@/features/student/api/leaderboardService";
+import type { LeaderboardEntry, QuizLesson } from "@/features/student/api/leaderboardService";
+import { useLang } from "@/shared/lib/i18n";
 
-// ══════════════════════════════════════════════════════════════════════════════
-// HELPERS
-// ══════════════════════════════════════════════════════════════════════════════
+type Copy = { vi: string; en: string };
+const copy = (lang: "vi" | "en", value: Copy) => value[lang];
+const queryKeys = {
+  lessons: ["student", "leaderboard", "lessons"] as const,
+  board: (lessonId: string, childId: string) => ["student", "leaderboard", lessonId, childId] as const,
+};
 
-function getActiveChildId(): string | null {
-  return (
-    localStorage.getItem(ACTIVE_CHILD_ID_KEY) ||
-    sessionStorage.getItem(ACTIVE_CHILD_ID_KEY) ||
-    null
-  );
+function scorePercent(entry: LeaderboardEntry) {
+  return entry.totalQuestions ? Math.round((entry.score / entry.totalQuestions) * 100) : 0;
 }
 
-function getActiveChildName(): string {
-  try {
-    const activeId = getActiveChildId();
-    const raw = localStorage.getItem(CHILD_PROFILES_STORAGE_KEY);
-    if (raw && activeId) {
-      const profiles = JSON.parse(raw);
-      const match = profiles.find((p: { id: string }) => p.id === activeId);
-      if (match) return match.name;
-    }
-  } catch { /* ignore */ }
-  return "Bé";
+function Avatar({ entry, large = false }: { entry: LeaderboardEntry; large?: boolean }) {
+  return <div className={`grid shrink-0 place-items-center rounded-2xl border-2 border-white/80 shadow-md dark:border-slate-700 ${large ? "h-16 w-16 text-3xl" : "h-11 w-11 text-xl"}`} style={{ background: entry.avatarBg || "linear-gradient(135deg,#dbeafe,#e0e7ff)" }}>{entry.avatarEmoji || "🦊"}</div>;
 }
 
-/** Background decoration emojis */
-const BG_DECOS = [
-  { emoji: "⭐", top: "5%", left: "8%", delay: "0s", size: "1.8rem" },
-  { emoji: "🌟", top: "12%", left: "85%", delay: "1.2s", size: "2.2rem" },
-  { emoji: "🏅", top: "30%", left: "3%", delay: "2.5s", size: "1.6rem" },
-  { emoji: "✨", top: "45%", left: "92%", delay: "0.8s", size: "1.4rem" },
-  { emoji: "🎯", top: "60%", left: "6%", delay: "3s", size: "1.5rem" },
-  { emoji: "💫", top: "25%", left: "90%", delay: "1.8s", size: "1.7rem" },
-  { emoji: "🌈", top: "70%", left: "88%", delay: "2.2s", size: "2rem" },
-  { emoji: "🎪", top: "80%", left: "5%", delay: "0.5s", size: "1.9rem" },
-];
-
-// ══════════════════════════════════════════════════════════════════════════════
-// SUB-COMPONENTS
-// ══════════════════════════════════════════════════════════════════════════════
-
-/** Top 3 Podium */
-function TopPodium({ entries }: Readonly<{ entries: LeaderboardEntry[] }>) {
-  // Reorder: [2nd, 1st, 3rd] for visual layout
-  const first = entries[0] || null;
-  const second = entries[1] || null;
-  const third = entries[2] || null;
-  const ordered = [second, first, third]; // center = 1st place
-
-  const medals = ["🥈", "🥇", "🥉"];
-  const classes = ["silver", "gold", "bronze"];
-
-  if (!first) {
-    return (
-      <div className="lb-empty">
-        <div className="lb-empty-icon">🏆</div>
-        <p className="lb-empty-text">
-          Chưa có bảng xếp hạng.
-          <br />
-          Hãy là người đầu tiên chinh phục nhé! 🚀
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="lb-podium-container">
-      {/* Sparkle decorations */}
-      <span className="lb-sparkle" style={{ top: "10%", left: "20%", animationDelay: "0s" }}>✨</span>
-      <span className="lb-sparkle" style={{ top: "5%", left: "50%", animationDelay: "0.5s" }}>🌟</span>
-      <span className="lb-sparkle" style={{ top: "15%", left: "75%", animationDelay: "1s" }}>✨</span>
-
-      {ordered.map((entry, i) => {
-        if (!entry) return <div key={i} className="lb-podium-slot" style={{ width: 90 }} />;
-        const cls = classes[i];
-        const isFirst = i === 1;
-        return (
-          <div key={entry.childId} className="lb-podium-slot">
-            {/* Crown/Medal above avatar */}
-            {isFirst ? (
-              <span className="lb-podium-crown">👑</span>
-            ) : (
-              <span className="lb-podium-medal">{medals[i]}</span>
-            )}
-
-            {/* Avatar */}
-            <div className={`lb-podium-avatar ${cls}`}>
-              {entry.avatarEmoji || "🦊"}
-            </div>
-
-            {/* Podium block */}
-            <div className={`lb-podium-block ${cls}`}>
-              <span className="lb-podium-rank">{entry.rank}</span>
-              <span className="lb-podium-name" title={entry.name}>
-                {entry.name}
-              </span>
-              <span className="lb-podium-score">
-                {entry.score}/{entry.totalQuestions}
-              </span>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
+function PodiumCard({ entry, place, lang }: { entry: LeaderboardEntry; place: 1 | 2 | 3; lang: "vi" | "en" }) {
+  const styles = place === 1 ? "border-amber-300 bg-gradient-to-b from-amber-50 to-yellow-100 dark:border-amber-500/40 dark:from-amber-500/15 dark:to-yellow-500/5" : place === 2 ? "border-slate-300 bg-gradient-to-b from-white to-slate-100 dark:border-slate-600 dark:from-slate-800 dark:to-slate-900" : "border-orange-300 bg-gradient-to-b from-orange-50 to-amber-100 dark:border-orange-500/40 dark:from-orange-500/15 dark:to-slate-900";
+  return <motion.article initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: place * .06 }} className={`relative flex min-w-0 flex-1 flex-col items-center rounded-[24px] border p-4 text-center shadow-sm ${styles} ${place === 1 ? "-mt-5 pb-7 pt-6" : "mt-4"}`}>
+    <span className={`absolute -top-4 grid h-8 min-w-8 place-items-center rounded-full px-2 text-sm font-black text-white shadow-lg ${place === 1 ? "bg-amber-400" : place === 2 ? "bg-slate-400" : "bg-orange-500"}`}>{place === 1 ? <Crown className="h-4 w-4" /> : place}</span>
+    <Avatar entry={entry} large />
+    <h3 className="mt-3 w-full truncate text-sm font-black text-slate-900 dark:text-white" title={entry.name}>{entry.name}</h3>
+    <p className="mt-1 text-[11px] font-bold text-slate-500 dark:text-slate-400">{copy(lang, { vi: `Lần thử ${entry.attemptNumber}`, en: `Attempt ${entry.attemptNumber}` })}</p>
+    <span className="mt-3 rounded-full bg-white/80 px-3 py-1 text-xs font-black text-slate-800 shadow-sm dark:bg-slate-950/60 dark:text-white">{entry.score}/{entry.totalQuestions} · {scorePercent(entry)}%</span>
+  </motion.article>;
 }
 
-/** Rank rows for positions 4-10 */
-function RankList({ entries }: Readonly<{ entries: LeaderboardEntry[] }>) {
-  if (entries.length === 0) return null;
-
-  return (
-    <div className="lb-rank-list">
-      {entries.map((entry) => (
-        <div
-          key={entry.childId}
-          className="lb-rank-row"
-          style={{ animationDelay: `${(entry.rank - 3) * 0.05}s` }}
-        >
-          <div className="lb-rank-number">{entry.rank}</div>
-          <div
-            className="lb-rank-avatar"
-            style={entry.avatarBg ? { background: entry.avatarBg } : undefined}
-          >
-            {entry.avatarEmoji || "🦊"}
-          </div>
-          <div className="lb-rank-info">
-            <div className="lb-rank-name">{entry.name}</div>
-            <div className="lb-rank-detail">
-              Lần thử: {entry.attemptNumber}
-            </div>
-          </div>
-          <div className="lb-rank-score-badge">
-            {entry.score}/{entry.totalQuestions}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+function LeaderRow({ entry, isMe, lang }: { entry: LeaderboardEntry; isMe: boolean; lang: "vi" | "en" }) {
+  return <motion.div layout className={`grid grid-cols-[36px_44px_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border p-3 transition ${isMe ? "border-indigo-300 bg-indigo-50 ring-2 ring-indigo-500/10 dark:border-indigo-500/50 dark:bg-indigo-500/10" : "border-slate-200 bg-white hover:border-indigo-200 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-indigo-500/40"}`}>
+    <span className="grid h-8 w-8 place-items-center rounded-xl bg-slate-100 text-xs font-black text-slate-600 dark:bg-slate-800 dark:text-slate-300">{entry.rank}</span><Avatar entry={entry} />
+    <div className="min-w-0"><div className="flex items-center gap-2"><p className="truncate text-sm font-black text-slate-900 dark:text-white">{entry.name}</p>{isMe && <span className="rounded-full bg-indigo-500 px-2 py-0.5 text-[9px] font-black uppercase text-white">{copy(lang, { vi: "Bạn", en: "You" })}</span>}</div><p className="mt-0.5 text-[11px] font-semibold text-slate-400">{copy(lang, { vi: `Lần thử ${entry.attemptNumber}`, en: `Attempt ${entry.attemptNumber}` })}</p></div>
+    <div className="text-right"><p className="text-sm font-black text-slate-900 dark:text-white">{entry.score}/{entry.totalQuestions}</p><p className="text-[10px] font-bold text-emerald-500">{scorePercent(entry)}%</p></div>
+  </motion.div>;
 }
 
-/** Sticky "My Rank" card — shown when user is outside top 10 or not participated */
-function MyRankCard({
-  myRank,
-  totalParticipants,
-  hasAttempted,
-}: Readonly<{
-  myRank: LeaderboardEntry | null;
-  totalParticipants: number;
-  hasAttempted: boolean;
-}>) {
-  const navigate = useNavigate();
+function LoadingState() { return <div className="grid gap-4 lg:grid-cols-[1fr_340px]"><div className="rounded-[28px] border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"><div className="mx-auto h-56 max-w-xl animate-pulse rounded-3xl bg-slate-100 dark:bg-slate-800" /><div className="mt-6 space-y-3">{[1,2,3,4].map(i => <div key={i} className="h-16 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800" />)}</div></div><div className="h-72 animate-pulse rounded-[28px] bg-slate-200/70 dark:bg-slate-800" /></div>; }
 
-  // Case 1: Student has NOT attempted this quiz
-  if (!hasAttempted) {
-    return (
-      <div className="lb-not-participated">
-        <div className="lb-not-participated-inner">
-          <div className="lb-not-participated-icon">🚀</div>
-          <div>
-            <p className="lb-not-participated-text">
-              Con chưa tham gia bài này. Hãy làm quiz ngay để được vinh danh
-              trên Bảng Vàng nhé! 🌟
-            </p>
-            <button
-              onClick={() => navigate("/student")}
-              style={{
-                marginTop: 8,
-                padding: "6px 16px",
-                borderRadius: 999,
-                border: "none",
-                background: "linear-gradient(135deg, #3b82f6, #6366f1)",
-                color: "white",
-                fontWeight: 800,
-                fontSize: "0.75rem",
-                cursor: "pointer",
-                boxShadow: "0 3px 10px rgba(99,102,241,0.3)",
-              }}
-            >
-              🎯 Đi làm quiz
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Case 2: Student is in top 10 — no floating card needed
-  if (!myRank || myRank.rank <= 10) return null;
-
-  // Case 3: Student is outside top 10 — show encouraging rank card
-  const gap = myRank.rank - 10;
-  const encourageMsg =
-    gap <= 5
-      ? `Chỉ còn ${gap} bậc nữa là lọt Top 10 rồi! Cố lên nào! 💪`
-      : gap <= 15
-        ? `Con đang tiến bộ tốt lắm! Thử lại để leo hạng nhé! 🌟`
-        : `Mỗi lần làm đều giỏi hơn! Tiếp tục nào! 🎯`;
-
-  return (
-    <div className="lb-my-rank">
-      <div className="lb-my-rank-inner">
-        <div className="lb-my-rank-badge">
-          {myRank.avatarEmoji || "🌟"}
-        </div>
-        <div className="lb-my-rank-text">
-          <div className="lb-my-rank-label">
-            🏅 Con đang ở Hạng #{myRank.rank} / {totalParticipants} bạn
-          </div>
-          <div className="lb-my-rank-encourage">{encourageMsg}</div>
-        </div>
-        <div
-          style={{
-            padding: "4px 10px",
-            borderRadius: 999,
-            background: "linear-gradient(135deg, #dcfce7, #bbf7d0)",
-            color: "#15803d",
-            fontSize: "0.75rem",
-            fontWeight: 900,
-            flexShrink: 0,
-          }}
-        >
-          {myRank.score}/{myRank.totalQuestions}
-        </div>
-      </div>
-    </div>
-  );
+function LessonPicker({ lessons, value, onChange, lang }: { lessons: QuizLesson[]; value: string; onChange: (value: string) => void; lang: "vi" | "en" }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const selected = lessons.find(lesson => lesson.id === value);
+  const label = (lesson?: QuizLesson) => lesson?.id === "global" ? copy(lang, { vi: "Tổng kết toàn khóa", en: "Overall leaderboard" }) : lesson?.title || copy(lang, { vi: "Chọn bài thi", en: "Select quiz" });
+  useEffect(() => { const close = (event: MouseEvent) => { if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false); }; document.addEventListener("mousedown", close); return () => document.removeEventListener("mousedown", close); }, []);
+  return <div ref={ref} className="relative w-full sm:w-[440px]"><button type="button" onClick={() => setOpen(current => !current)} aria-expanded={open} className={`flex h-11 w-full items-center gap-3 rounded-2xl border bg-white px-3 text-left text-sm font-bold shadow-sm outline-none transition dark:bg-slate-900 ${open ? "border-indigo-400 ring-4 ring-indigo-500/10" : "border-slate-200 hover:border-indigo-300 dark:border-slate-700"}`}><BookOpen className="h-4 w-4 shrink-0 text-indigo-500" /><span className="flex-1 truncate text-slate-700 dark:text-slate-200">{selected?.emoji || "📝"} {label(selected)}</span><ChevronDown className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`} /></button><AnimatePresence>{open && <motion.div initial={{ opacity: 0, y: -6, scale: .98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: .98 }} transition={{ duration: .16 }} className="absolute left-0 right-0 top-full z-50 mt-2 max-h-72 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-1.5 shadow-2xl dark:border-slate-700 dark:bg-slate-900">{lessons.map(lesson => <button type="button" key={lesson.id} onClick={() => { onChange(lesson.id); setOpen(false); }} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${lesson.id === value ? "bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300" : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"}`}><span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-slate-100 dark:bg-slate-800">{lesson.emoji || "📝"}</span><span className="flex-1 truncate">{label(lesson)}</span>{lesson.id === value && <Check className="h-4 w-4 text-indigo-500" />}</button>)}</motion.div>}</AnimatePresence></div>;
 }
-
-/** Loading skeleton */
-function LeaderboardSkeleton() {
-  return (
-    <div style={{ padding: "0 1rem" }}>
-      {/* Podium skeleton */}
-      <div style={{ display: "flex", justifyContent: "center", gap: 12, marginBottom: 24, alignItems: "flex-end" }}>
-        <div className="lb-skeleton" style={{ width: 90, height: 110, borderRadius: 16 }} />
-        <div className="lb-skeleton" style={{ width: 90, height: 140, borderRadius: 16 }} />
-        <div className="lb-skeleton" style={{ width: 90, height: 90, borderRadius: 16 }} />
-      </div>
-      {/* List skeleton */}
-      {[1, 2, 3, 4].map((i) => (
-        <div
-          key={i}
-          className="lb-skeleton"
-          style={{ height: 56, marginBottom: 8, maxWidth: "28rem", marginLeft: "auto", marginRight: "auto" }}
-        />
-      ))}
-    </div>
-  );
-}
-
-/** Quiz Selector Pills */
-function QuizSelector({
-  lessons,
-  selectedId,
-  onSelect,
-}: Readonly<{
-  lessons: QuizLesson[];
-  selectedId: string;
-  onSelect: (id: string) => void;
-}>) {
-  return (
-    <div className="lb-quiz-selector">
-      {lessons.map((lesson) => (
-        <button
-          key={lesson.id}
-          id={`quiz-pill-${lesson.id}`}
-          className={`lb-quiz-pill ${selectedId === lesson.id ? "active" : ""}`}
-          onClick={() => onSelect(lesson.id)}
-        >
-          <span>{lesson.emoji || "📝"}</span>
-          <span>{lesson.title}</span>
-        </button>
-      ))}
-    </div>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// MAIN PAGE
-// ══════════════════════════════════════════════════════════════════════════════
 
 export function LeaderboardPage() {
   const navigate = useNavigate();
-  const childId = getActiveChildId();
-  const childName = getActiveChildName();
+  const reduceMotion = useReducedMotion();
+  const { lang } = useLang();
+  const { activeChild, isLoading: childLoading } = useActiveChild();
+  const [selectedId, setSelectedId] = useState("");
+  const lessonsQuery = useQuery({ queryKey: queryKeys.lessons, queryFn: ({ signal }) => service.getQuizLessons(signal), staleTime: 10 * 60_000, retry: 2 });
+  useEffect(() => { if (!selectedId && lessonsQuery.data?.length) setSelectedId(lessonsQuery.data[0].id); }, [lessonsQuery.data, selectedId]);
+  const boardQuery = useQuery({ queryKey: queryKeys.board(selectedId, activeChild?.id || "none"), queryFn: ({ signal }) => service.getLeaderboard(selectedId, activeChild!.id, signal), enabled: Boolean(selectedId && activeChild), staleTime: 5_000, refetchInterval: 10_000, refetchIntervalInBackground: false, refetchOnWindowFocus: true, retry: 2 });
+  const board = boardQuery.data;
+  const podium = useMemo(() => [board?.top10[1], board?.top10[0], board?.top10[2]].filter(Boolean) as LeaderboardEntry[], [board]);
+  const rest = board?.top10.filter(entry => entry.rank > 3) || [];
+  const selectedLesson = lessonsQuery.data?.find(item => item.id === selectedId);
+  const currentInTop = board?.myRank && board.myRank.rank <= 10;
 
-  const [lessons, setLessons] = useState<QuizLesson[]>([]);
-  const [selectedLessonId, setSelectedLessonId] = useState<string>("");
-  const [leaderboard, setLeaderboard] = useState<LeaderboardResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingBoard, setIsLoadingBoard] = useState(false);
+  if (childLoading) return <div className="mx-auto max-w-[1400px] p-5"><LoadingState /></div>;
+  if (!activeChild) return <div className="mx-auto grid min-h-[60vh] max-w-lg place-items-center p-6 text-center"><div><AlertCircle className="mx-auto h-10 w-10 text-amber-500" /><h1 className="mt-4 text-xl font-black dark:text-white">{copy(lang, { vi: "Chưa chọn hồ sơ học sinh", en: "No student profile selected" })}</h1><button onClick={() => navigate("/profile-picker")} className="mt-5 rounded-xl bg-indigo-500 px-5 py-2.5 text-sm font-black text-white">{copy(lang, { vi: "Chọn học sinh", en: "Choose student" })}</button></div></div>;
 
-  // Load quiz lessons on mount
-  useEffect(() => {
-    leaderboardService
-      .getQuizLessons()
-      .then((data) => {
-        setLessons(data);
-        if (data.length > 0) {
-          setSelectedLessonId(data[0].id);
-        }
-        setIsLoading(false);
-      })
-      .catch((err) => {
-        console.error("Failed to load quiz lessons:", err);
-        setIsLoading(false);
-      });
-  }, []);
-
-  // Load leaderboard when quiz selection changes
-  const loadLeaderboard = useCallback(
-    async (lessonId: string) => {
-      if (!lessonId || !childId) return;
-      setIsLoadingBoard(true);
-      try {
-        const data = await leaderboardService.getLeaderboard(lessonId, childId);
-        setLeaderboard(data);
-      } catch (err) {
-        console.error("Failed to load leaderboard:", err);
-        setLeaderboard(null);
-      } finally {
-        setIsLoadingBoard(false);
-      }
-    },
-    [childId],
-  );
-
-  useEffect(() => {
-    if (selectedLessonId) {
-      loadLeaderboard(selectedLessonId);
-    }
-  }, [selectedLessonId, loadLeaderboard]);
-
-  // Determine if the current child has attempted this quiz
-  const hasAttempted = leaderboard?.myRank !== null;
-
-  // Split top10 into podium (1-3) and list (4-10)
-  const podiumEntries = leaderboard?.top10.filter((e) => e.rank <= 3) ?? [];
-  const listEntries = leaderboard?.top10.filter((e) => e.rank > 3) ?? [];
-
-  // Should we show the MyRankCard?
-  const myRankIsInTop10 = leaderboard?.myRank
-    ? leaderboard.myRank.rank <= 10
-    : false;
-  const showMyRankCard = leaderboard !== null && (!myRankIsInTop10 || !hasAttempted);
-
-  return (
-    <div className="lb-page">
-      {/* ═══ Background Decorations ═══ */}
-      {BG_DECOS.map((d, i) => (
-        <span
-          key={i}
-          className="lb-deco"
-          style={{
-            top: d.top,
-            left: d.left,
-            fontSize: d.size,
-            animationDelay: d.delay,
-          }}
-        >
-          {d.emoji}
-        </span>
-      ))}
-
-      {/* ═══ Header ═══ */}
-      <div className="lb-header">
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 4 }}>
-          <Trophy
-            size={28}
-            style={{ color: "#f59e0b", filter: "drop-shadow(0 2px 4px rgba(245,158,11,0.4))" }}
-          />
-          <h1 className="lb-title" id="leaderboard-title">
-            Bảng Xếp Hạng
-          </h1>
-          <Sparkles
-            size={22}
-            style={{ color: "#8b5cf6", filter: "drop-shadow(0 2px 4px rgba(139,92,246,0.4))" }}
-          />
+  return <main className="min-h-[calc(100vh-5rem)] bg-slate-50 px-4 py-6 text-slate-900 dark:bg-[#070d1b] dark:text-slate-100 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-[1400px]">
+      <motion.section initial={reduceMotion ? false : { opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .45, ease: [0.22,1,0.36,1] }} className="relative overflow-hidden rounded-[30px] bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 px-5 py-7 text-white shadow-xl shadow-indigo-500/15 sm:px-8 sm:py-9">
+        <div className="absolute -right-12 -top-20 h-64 w-64 rounded-full bg-white/10 blur-2xl" /><div className="absolute -bottom-24 left-1/3 h-48 w-48 rounded-full bg-amber-300/15 blur-2xl" />
+        <div className="relative flex flex-col justify-between gap-6 lg:flex-row lg:items-end"><div><div className="flex items-center gap-2 text-xs font-black uppercase tracking-[.18em] text-indigo-100"><Trophy className="h-4 w-4 text-amber-300" />{copy(lang, { vi: "Bảng vàng ViOlympicKids", en: "ViOlympicKids Hall of Fame" })}</div><h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">{copy(lang, { vi: "Chinh phục bảng xếp hạng", en: "Climb the leaderboard" })}</h1><p className="mt-2 max-w-2xl text-sm font-semibold text-indigo-100 sm:text-base">{copy(lang, { vi: `Xin chào ${activeChild.name}! Mỗi lần luyện tập là một bước gần hơn tới ngôi đầu.`, en: `Hi ${activeChild.name}! Every practice brings you one step closer to the top.` })}</p></div>
+          {board && <div className="grid grid-cols-2 gap-2 sm:grid-cols-3"><div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur"><Users className="h-4 w-4 text-cyan-200" /><p className="mt-2 text-xl font-black">{board.totalParticipants}</p><p className="text-[10px] font-bold text-indigo-100">{copy(lang, { vi: "Người tham gia", en: "Participants" })}</p></div><div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur"><Medal className="h-4 w-4 text-amber-200" /><p className="mt-2 text-xl font-black">{board.myRank ? `#${board.myRank.rank}` : "—"}</p><p className="text-[10px] font-bold text-indigo-100">{copy(lang, { vi: "Hạng của bạn", en: "Your rank" })}</p></div><div className="hidden rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur sm:block"><Target className="h-4 w-4 text-emerald-200" /><p className="mt-2 text-xl font-black">{board.myRank ? `${scorePercent(board.myRank)}%` : "—"}</p><p className="text-[10px] font-bold text-indigo-100">{copy(lang, { vi: "Điểm tốt nhất", en: "Best score" })}</p></div></div>}
         </div>
-        <p className="lb-subtitle">
-          Xin chào <strong>{childName}</strong>! Xem bạn nào giỏi nhất nào 🏆
-        </p>
-      </div>
+      </motion.section>
 
-      {/* ═══ Quiz Selector ═══ */}
-      {isLoading ? (
-        <div style={{ display: "flex", justifyContent: "center", gap: 8, padding: "0 1rem", marginBottom: 24 }}>
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="lb-skeleton" style={{ width: 120, height: 36, borderRadius: 999 }} />
-          ))}
-        </div>
-      ) : lessons.length > 0 ? (
-        <QuizSelector
-          lessons={lessons}
-          selectedId={selectedLessonId}
-          onSelect={setSelectedLessonId}
-        />
-      ) : (
-        <div className="lb-empty">
-          <div className="lb-empty-icon">📝</div>
-          <p className="lb-empty-text">Chưa có bài quiz nào.</p>
-        </div>
-      )}
+      <motion.section initial={reduceMotion ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .12 }} className="sticky top-[72px] z-20 -mx-4 mt-5 border-y border-slate-200 bg-slate-50/90 px-4 py-3 backdrop-blur-xl dark:border-slate-800 dark:bg-[#070d1b]/90 sm:mx-0 sm:rounded-2xl sm:border sm:px-3"><div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><LessonPicker lessons={lessonsQuery.data || []} value={selectedId} onChange={setSelectedId} lang={lang} /><div className="inline-flex items-center gap-2 self-end rounded-full bg-emerald-50 px-3 py-2 text-[10px] font-black uppercase tracking-wide text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300"><span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" /><span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" /></span><Radio className="h-3.5 w-3.5" />{copy(lang, { vi: "Tự động cập nhật", en: "Live updates" })}</div></div></motion.section>
 
-      {/* ═══ Leaderboard Content ═══ */}
-      {isLoadingBoard ? (
-        <LeaderboardSkeleton />
-      ) : leaderboard ? (
-        <>
-          {/* Top 3 Podium */}
-          <TopPodium entries={podiumEntries} />
-
-          {/* Ranks 4-10 */}
-          <RankList entries={listEntries} />
-        </>
-      ) : null}
-
-      {/* ═══ Sticky My Rank / Not Participated Card ═══ */}
-      {showMyRankCard && leaderboard && (
-        <MyRankCard
-          myRank={leaderboard.myRank}
-          totalParticipants={leaderboard.totalParticipants}
-          hasAttempted={hasAttempted}
-        />
-      )}
-
-      {/* ═══ Back to Table of Contents button ═══ */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          padding: "1rem 0 2rem",
-          position: "relative",
-          zIndex: 10,
-        }}
-      >
-        <button
-          id="leaderboard-back-btn"
-          onClick={() => navigate("/student")}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "10px 20px",
-            borderRadius: 999,
-            border: "2px solid rgba(0,0,0,0.08)",
-            background: "white",
-            color: "#6b7280",
-            fontWeight: 800,
-            fontSize: "0.85rem",
-            cursor: "pointer",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-            transition: "all 0.2s",
-          }}
-        >
-          <ArrowLeft size={16} />
-          Về Mục lục
-        </button>
-      </div>
+      <div className="mt-5">{lessonsQuery.isPending || boardQuery.isPending ? <LoadingState /> : lessonsQuery.isError || boardQuery.isError ? <div className="rounded-[28px] border border-rose-200 bg-rose-50 p-10 text-center dark:border-rose-500/30 dark:bg-rose-500/10"><AlertCircle className="mx-auto h-10 w-10 text-rose-500" /><h2 className="mt-3 text-lg font-black">{copy(lang, { vi: "Không thể tải bảng xếp hạng", en: "Unable to load leaderboard" })}</h2><p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{copy(lang, { vi: "Vui lòng kiểm tra kết nối và thử lại.", en: "Check your connection and try again." })}</p><button onClick={() => { lessonsQuery.refetch(); boardQuery.refetch(); }} className="mt-5 rounded-xl bg-rose-500 px-5 py-2.5 text-sm font-black text-white">{copy(lang, { vi: "Thử lại", en: "Try again" })}</button></div> : board ? <AnimatePresence mode="wait"><motion.div key={selectedId} initial={reduceMotion ? false : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <motion.section initial={reduceMotion ? false : { opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: .16 }} className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6"><div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-[.18em] text-indigo-500">{copy(lang, { vi: "Top thành tích", en: "Top performers" })}</p><h2 className="mt-1 truncate text-xl font-black">{selectedId === "global" ? copy(lang, { vi: "Tổng kết toàn khóa", en: "Overall leaderboard" }) : selectedLesson?.title}</h2></div><motion.div animate={reduceMotion ? undefined : { rotate: [0, 12, -8, 0], scale: [1, 1.15, 1] }} transition={{ duration: 2.8, repeat: Infinity, repeatDelay: 1.5 }}><Sparkles className="h-5 w-5 text-amber-400" /></motion.div></div>
+          {!board.top10.length ? <div className="grid min-h-80 place-items-center text-center"><div><span className="text-5xl">🏆</span><h3 className="mt-4 text-lg font-black">{copy(lang, { vi: "Chưa có thành tích", en: "No scores yet" })}</h3><p className="mt-1 text-sm text-slate-500">{copy(lang, { vi: "Hãy trở thành người đầu tiên hoàn thành bài thi!", en: "Be the first to complete this quiz!" })}</p></div></div> : <><div className="mx-auto mt-10 flex max-w-2xl items-end gap-2 sm:gap-4">{podium.map(entry => <PodiumCard key={entry.childId} entry={entry} place={entry.rank as 1|2|3} lang={lang} />)}</div>{rest.length > 0 && <div className="mt-7 space-y-2 border-t border-slate-100 pt-5 dark:border-slate-800">{rest.map(entry => <LeaderRow key={entry.childId} entry={entry} isMe={entry.childId === activeChild.id} lang={lang} />)}</div>}</>}
+        </motion.section>
+        <motion.aside initial={reduceMotion ? false : { opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: .22 }} className="space-y-4 lg:sticky lg:top-[148px] lg:self-start"><section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"><div className="bg-gradient-to-r from-indigo-500 to-violet-500 p-5 text-white"><p className="text-[10px] font-black uppercase tracking-[.18em] text-indigo-100">{copy(lang, { vi: "Thành tích của bạn", en: "Your performance" })}</p><h2 className="mt-1 text-xl font-black">{activeChild.name}</h2></div>{board.myRank ? <div className="p-5"><div className="flex items-center gap-3"><Avatar entry={board.myRank} large /><div><p className="text-3xl font-black text-indigo-600 dark:text-indigo-400">#{board.myRank.rank}</p><p className="text-xs font-bold text-slate-400">{copy(lang, { vi: `trên ${board.totalParticipants} người tham gia`, en: `of ${board.totalParticipants} participants` })}</p></div></div><div className="mt-5 grid grid-cols-2 gap-2"><div className="rounded-2xl bg-slate-50 p-3 dark:bg-slate-800"><p className="text-[10px] font-bold uppercase text-slate-400">{copy(lang, { vi: "Điểm", en: "Score" })}</p><p className="mt-1 text-lg font-black">{board.myRank.score}/{board.myRank.totalQuestions}</p></div><div className="rounded-2xl bg-slate-50 p-3 dark:bg-slate-800"><p className="text-[10px] font-bold uppercase text-slate-400">{copy(lang, { vi: "Lần thử", en: "Attempt" })}</p><p className="mt-1 text-lg font-black">{board.myRank.attemptNumber}</p></div></div>{!currentInTop && <p className="mt-4 rounded-2xl bg-amber-50 p-3 text-xs font-bold text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">{copy(lang, { vi: "Bạn đang tiến gần Top 10. Luyện tập thêm một lần nữa nhé!", en: "You are getting closer to the Top 10. Give it another try!" })}</p>}</div> : <div className="p-6 text-center"><motion.span className="inline-block text-4xl" animate={reduceMotion ? undefined : { y: [0,-7,0] }} transition={{ duration: 1.8, repeat: Infinity }}>🚀</motion.span><h3 className="mt-3 font-black">{copy(lang, { vi: "Chưa tham gia bài này", en: "Not attempted yet" })}</h3><p className="mt-1 text-xs text-slate-500">{copy(lang, { vi: "Hoàn thành bài thi để xuất hiện trên bảng vàng.", en: "Complete the quiz to appear on the leaderboard." })}</p></div>}</section>
+          <button onClick={() => navigate("/student")} className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white text-sm font-black text-slate-600 shadow-sm transition hover:border-indigo-300 hover:text-indigo-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="h-4 w-4" />{copy(lang, { vi: "Về bản đồ học tập", en: "Back to learning map" })}</button>
+        </motion.aside>
+      </motion.div></AnimatePresence> : null}</div>
     </div>
-  );
+  </main>;
 }

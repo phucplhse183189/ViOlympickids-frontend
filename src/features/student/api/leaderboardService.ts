@@ -40,9 +40,11 @@ export interface QuizLesson {
 export async function getLeaderboard(
   lessonId: string,
   childId: string,
+  signal?: AbortSignal,
 ): Promise<LeaderboardResponse> {
   return apiGet<LeaderboardResponse>(
-    `/leaderboard/${lessonId}?childId=${childId}`,
+    `/leaderboard/${encodeURIComponent(lessonId)}?childId=${encodeURIComponent(childId)}`,
+    { signal, ttlMs: 0 },
   );
 }
 
@@ -66,6 +68,6 @@ export async function submitAttempt(
 /**
  * Lấy danh sách bài học có quiz (cho Quiz Selector)
  */
-export async function getQuizLessons(): Promise<QuizLesson[]> {
-  return apiGet<QuizLesson[]>("/leaderboard/lessons");
+export async function getQuizLessons(signal?: AbortSignal): Promise<QuizLesson[]> {
+  return apiGet<QuizLesson[]>("/leaderboard/lessons", { signal });
 }
