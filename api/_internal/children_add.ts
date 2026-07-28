@@ -42,10 +42,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         grade,
         avatarEmoji,
         avatarBg: avatarBg ?? "bg-blue-100",
-        // Every newly-created student receives the same server-controlled
-        // three-day Pro trial. Client payloads cannot override this benefit.
-        plan: "PRO",
-        planDaysLeft: 3,
+        plan: "FREE",
+        planDaysLeft: null,
         gender,
         status: "active",
       })

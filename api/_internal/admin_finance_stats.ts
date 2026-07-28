@@ -190,7 +190,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // PayOS recent orders (kèm thông tin phụ huynh + bé)
     const recentPaymentOrders = (recentPaymentOrdersResult || []).map((o) => {
       // Thời hạn của dòng lịch sử phải thuộc về chính đơn hàng, không lấy
-      // children.planDaysLeft (số dư gói hiện tại có thể gồm gia hạn/trial).
+      // children.planDaysLeft stores the remaining duration of the current paid plan.
       const entitlementDays = o.cycle === "year" ? 365 : 30;
       const paidAtMs = o.paidAt ? new Date(o.paidAt).getTime() : NaN;
       const expiresAtMs = paidAtMs + entitlementDays * 24 * 60 * 60 * 1000;

@@ -3,11 +3,6 @@ import { useNavigate } from "react-router-dom";
 import * as transactionService from "@/features/dashboard/api/transactionService";
 import { useActiveChild } from "@/features/dashboard/context/activeChild";
 
-const MOCK_TRIAL = {
-  totalDays: 7,
-  usedDays: 5,
-};
-
 function StatusBadge({ status }: { status: transactionService.Transaction["status"] }) {
   const isOk = status === "Thành công";
   return (
@@ -38,8 +33,6 @@ export function BillingManagement() {
   const billing = dashboardData?.billing;
 
   if (!activeChild || !dashboardData) return null;
-  const remaining = MOCK_TRIAL.totalDays - MOCK_TRIAL.usedDays;
-  const progressPct = (MOCK_TRIAL.usedDays / MOCK_TRIAL.totalDays) * 100;
   const [transactions, setTransactions] = useState<transactionService.Transaction[]>([]);
   
   useEffect(() => {
@@ -69,35 +62,16 @@ export function BillingManagement() {
             <p className="text-xs font-semibold uppercase tracking-widest text-blue-500 mb-1">
               Gói hiện tại
             </p>
-            <h2 className="text-xl font-bold text-gray-800">Học thử 7 ngày</h2>
+            <h2 className="text-xl font-bold text-gray-800">Gói {plan}</h2>
             <p className="text-sm text-gray-500 mt-0.5">
-              Miễn phí · Trải nghiệm đầy đủ tính năng
+              {plan === "FREE" ? "Miễn phí" : "Đang sử dụng"}
             </p>
           </div>
 
           {/* Badge */}
           <span className="inline-block bg-blue-50 text-blue-600 text-xs font-bold px-3 py-1 rounded-full border border-blue-200 shrink-0">
-            Đang dùng thử
+            {plan === "FREE" ? "Cơ bản" : "Đang hoạt động"}
           </span>
-        </div>
-
-        {/* Progress bar */}
-        <div className="mt-5">
-          <div className="flex justify-between text-xs text-gray-500 mb-1.5">
-            <span>Tiến trình học thử</span>
-            <span className="font-semibold text-blue-600">
-              Còn {remaining} ngày
-            </span>
-          </div>
-          <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden">
-            <div
-              className="h-2.5 rounded-full bg-gradient-to-r from-blue-400 to-blue-600 transition-all duration-700"
-              style={{ width: `${progressPct}%` }}
-            />
-          </div>
-          <p className="text-xs text-gray-400 mt-1.5">
-            Đã dùng {MOCK_TRIAL.usedDays}/{MOCK_TRIAL.totalDays} ngày học thử
-          </p>
         </div>
 
         {/* Upgrade button */}

@@ -51,8 +51,6 @@ import payosCancelOrder from "./_internal/payos_cancel_order.js";
 import cronDaily from "./_internal/cron_daily.js";
 import chatB1 from "./chat-b1.js";
 
-import migrateTrial from "./_internal/migrate_trial.js";
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
@@ -69,7 +67,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (group === "admin") {
     if (segs.length === 1 && segs[0] === "init-db") return adminInitDb(req, res);
     if (segs.length === 1 && segs[0] === "seed-lessons") return adminSeedLessons(req, res);
-    if (segs.length === 1 && segs[0] === "migrate-trial") return migrateTrial(req, res);
     if (segs.length === 1 && segs[0] === "parents") return adminParents(req, res);
     if (segs.length === 1 && segs[0] === "stats") return adminStats(req, res);
     if (segs.length === 1 && segs[0] === "finance-stats") return adminFinanceStats(req, res);

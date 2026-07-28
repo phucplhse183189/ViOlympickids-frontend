@@ -128,10 +128,3 @@ export interface SmartAlert {
   actionLabel?: string;
   actionLink?: string;
 }
-
-// ── Thông tin dùng thử ───────────────────────────────────────
-
-export interface TrialInfo {
-  totalDays: number;
-  usedDays: number;
-}
