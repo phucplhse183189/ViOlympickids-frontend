@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
@@ -33,7 +33,7 @@ import {
 } from "recharts";
 import { useAdminFinanceQuery } from "@/features/admin/api/adminQueries";
 import type { FinanceStats } from "@/features/admin/api/adminService";
-import { AdminPageLoading } from "@/features/admin/components/ui";
+import { AdminFilterSelect, AdminPageLoading, AdminSearch } from "@/features/admin/components/ui";
 
 const VND = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 });
 const compact = new Intl.NumberFormat("vi-VN", { notation: "compact", maximumFractionDigits: 1 });
@@ -51,6 +51,10 @@ export function AdminFinancePage() {
   const reduceMotion = useReducedMotion();
   const { data, isPending, isFetching, error, refetch } = useAdminFinanceQuery();
   const transition = reduceMotion ? { duration: 0 } : { duration: 0.42, ease: [0.22, 1, 0.36, 1] as const };
+  const [orderSearch, setOrderSearch] = useState("");
+  const [orderStatus, setOrderStatus] = useState("all");
+  const [orderPlan, setOrderPlan] = useState("all");
+  const [orderCycle, setOrderCycle] = useState("all");
 
   const successRate = data?.totalTransactions ? Math.round((data.successTransactions / data.totalTransactions) * 100) : 0;
   const arr = (data?.mrr || 0) * 12;
@@ -60,6 +64,17 @@ export function AdminFinancePage() {
 
   const planData = useMemo(() => (data?.planBreakdown || []).map((item) => ({ ...item, name: item.plan, value: item.revenue })), [data]);
   const orderStatusData = useMemo(() => (data?.paymentOrdersStats || []).map((item) => ({ ...item, name: statusMeta[item.status]?.label || item.status })), [data]);
+  const filteredPaymentOrders = useMemo(() => {
+    const query = orderSearch.trim().toLocaleLowerCase("vi");
+    return (data?.recentPaymentOrders || []).filter((order) => {
+      const matchesSearch = !query || [order.parentName, order.parentPhone, order.childName, order.orderCode]
+        .some((value) => String(value || "").toLocaleLowerCase("vi").includes(query));
+      return matchesSearch
+        && (orderStatus === "all" || order.status === orderStatus)
+        && (orderPlan === "all" || order.plan === orderPlan)
+        && (orderCycle === "all" || order.cycle === orderCycle);
+    });
+  }, [data, orderCycle, orderPlan, orderSearch, orderStatus]);
 
   if (isPending) return <AdminPageLoading title="Đang chuẩn bị báo cáo tài chính" description="Đang tổng hợp doanh thu, thuê bao và giao dịch PayOS mới nhất." />;
   if (error || !data) return <div role="alert" className="mx-auto max-w-2xl rounded-[24px] border border-rose-500/20 bg-card p-8 text-center shadow-sm"><span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-rose-500/10 text-rose-500"><XCircle className="h-5 w-5" /></span><h2 className="mt-4 text-lg font-extrabold text-foreground">Chưa thể tải báo cáo tài chính</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">Kết nối tới máy chủ có thể đang gián đoạn. Dữ liệu của bạn không bị ảnh hưởng.</p><button onClick={() => void refetch()} disabled={isFetching} className="mx-auto mt-5 inline-flex h-10 items-center gap-2 rounded-xl bg-indigo-500 px-4 text-sm font-bold text-white transition hover:bg-indigo-600 disabled:opacity-60"><RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />{isFetching ? "Đang thử lại…" : "Thử tải lại"}</button></div>;
@@ -123,8 +138,17 @@ export function AdminFinancePage() {
 
       <motion.section variants={sectionMotion} transition={transition} className="overflow-hidden rounded-[24px] border border-border bg-card shadow-sm">
         <div className="flex flex-col gap-3 border-b border-border p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"><div><p className="text-xs font-bold uppercase tracking-[.14em] text-muted-foreground">PayOS ledger</p><h3 className="mt-1 text-xl font-bold text-card-foreground">Đơn hàng gần đây</h3></div><div className="flex items-center gap-2 rounded-xl bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-600 dark:text-amber-400"><CalendarClock className="h-4 w-4" /> Số ngày được tính riêng theo ngày thanh toán của từng đơn</div></div>
-        <div className="overflow-x-auto"><table className="w-full min-w-[900px] text-sm"><thead><tr className="bg-muted/40 text-left text-[11px] font-bold uppercase tracking-[.1em] text-muted-foreground"><th className="px-6 py-3.5">Khách hàng</th><th className="px-4 py-3.5">Học sinh</th><th className="px-4 py-3.5">Gói</th><th className="px-4 py-3.5 text-right">Số tiền</th><th className="px-4 py-3.5 text-center">Trạng thái</th><th className="px-6 py-3.5">Thời gian</th></tr></thead><tbody>{data.recentPaymentOrders.map((order, index) => <OrderRow key={order.id} order={order} index={index} reduceMotion={!!reduceMotion} />)}</tbody></table></div>
-        {!data.recentPaymentOrders.length && <div className="p-12 text-center text-sm text-muted-foreground">Chưa có đơn hàng PayOS.</div>}
+        <div className="border-b border-border bg-muted/20 p-4 sm:p-5">
+          <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-[minmax(280px,1fr)_180px_150px_150px]">
+            <AdminSearch value={orderSearch} onChange={setOrderSearch} placeholder="Khách hàng, SĐT, học sinh hoặc mã đơn…" />
+            <AdminFilterSelect label="Trạng thái đơn" value={orderStatus} onChange={setOrderStatus} options={[{ value: "all", label: "Tất cả trạng thái" }, { value: "PAID", label: "Đã thanh toán" }, { value: "PENDING", label: "Đang chờ" }, { value: "CANCELLED", label: "Đã hủy" }]} />
+            <AdminFilterSelect label="Gói học" value={orderPlan} onChange={setOrderPlan} options={[{ value: "all", label: "Tất cả gói" }, { value: "PRO", label: "PRO" }, { value: "VIP", label: "VIP" }]} />
+            <AdminFilterSelect label="Chu kỳ" value={orderCycle} onChange={setOrderCycle} options={[{ value: "all", label: "Mọi chu kỳ" }, { value: "month", label: "Theo tháng" }, { value: "year", label: "Theo năm" }]} />
+          </div>
+          <p className="mt-3 text-xs font-medium text-muted-foreground">Hiển thị {filteredPaymentOrders.length}/{data.recentPaymentOrders.length} đơn hàng</p>
+        </div>
+        {filteredPaymentOrders.length > 0 && <div className="overflow-x-auto"><table className="w-full min-w-[900px] text-sm"><thead><tr className="bg-muted/40 text-left text-[11px] font-bold uppercase tracking-[.1em] text-muted-foreground"><th className="px-6 py-3.5">Khách hàng</th><th className="px-4 py-3.5">Học sinh</th><th className="px-4 py-3.5">Gói</th><th className="px-4 py-3.5 text-right">Số tiền</th><th className="px-4 py-3.5 text-center">Trạng thái</th><th className="px-6 py-3.5">Thời gian</th></tr></thead><tbody>{filteredPaymentOrders.map((order, index) => <OrderRow key={order.id} order={order} index={index} reduceMotion={!!reduceMotion} />)}</tbody></table></div>}
+        {!filteredPaymentOrders.length && <div className="p-12 text-center text-sm text-muted-foreground">{data.recentPaymentOrders.length ? "Không tìm thấy đơn hàng phù hợp với bộ lọc." : "Chưa có đơn hàng PayOS."}</div>}
       </motion.section>
 
       <div className="grid gap-5 xl:grid-cols-[1.45fr_1fr]">
