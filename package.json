@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "db:push": "drizzle-kit push",
     "db:seed": "tsx src/shared/db/seed.ts",
-    "db:seed-b46-quiz": "tsx src/shared/db/seed-b46-quiz.ts"
+    "db:seed-b46-quiz": "tsx src/shared/db/seed-b46-quiz.ts",
+    "db:import-feedback": "tsx scripts/import-feedback-doc.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
