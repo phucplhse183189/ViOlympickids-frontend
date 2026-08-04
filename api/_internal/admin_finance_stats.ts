@@ -122,7 +122,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           sql`${schema.children.plan} IN ('PRO', 'VIP')`
         ),
 
-      // 10 đơn hàng PayOS gần nhất — kèm tên phụ huynh + tên bé
+      // Toàn bộ đơn hàng PayOS — kèm tên phụ huynh + tên bé.
+      // Giao diện tự phân trang sau khi tìm kiếm/lọc.
       db
         .select({
           id: schema.paymentOrders.id,
@@ -141,8 +142,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .from(schema.paymentOrders)
         .leftJoin(schema.users, eq(schema.paymentOrders.parentId, schema.users.id))
         .leftJoin(schema.children, eq(schema.paymentOrders.childId, schema.children.id))
-        .orderBy(desc(schema.paymentOrders.createdAt))
-        .limit(10),
+        .orderBy(desc(schema.paymentOrders.createdAt)),
     ]);
 
     // Tính MRR (Monthly Recurring Revenue) từ billing
